@@ -1,16 +1,11 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { createClient } from "@supabase/supabase-js"
+import { Button } from "@/components/ui/button"
 
-import { Button, buttonVariants } from "@/components/ui/button"
+import { useSupabase } from "./supabase-provider"
 
-export default function IndexPage() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-  const router = useRouter()
+export default async function IndexPage() {
+  const { supabase } = useSupabase()
 
   async function signInWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
