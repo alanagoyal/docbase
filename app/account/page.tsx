@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Session } from "@supabase/auth-helpers-nextjs"
 
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import Avatar from "@/components/avatar"
 
 import { useSupabase } from "../supabase-provider"
 
@@ -19,6 +19,7 @@ export default function Account() {
   const [name, setName] = useState<Profiles["full_name"]>("")
   const [email, setEmail] = useState<Profiles["email"]>("")
   const [avatar, setAvatar] = useState<Profiles["avatar_url"]>("")
+  const [user, setUser] = useState<any>("")
 
   useEffect(() => {
     getProfile()
@@ -28,6 +29,8 @@ export default function Account() {
     const {
       data: { session },
     } = await supabase.auth.getSession()
+
+    setUser(session?.user.id)
 
     console.log(session?.user.id)
 
@@ -90,6 +93,17 @@ export default function Account() {
     <div className="flex flex-col items-center min-h-screen pt-20 py-2">
       <h1 className="text-4xl font-bold mb-4">Your Account</h1>
       <h3 className="text-base mb-4"></h3>
+      <div>
+        <Avatar
+          uid={user.id}
+          url={avatar}
+          size={150}
+          onUpload={(url) => {
+            setAvatar(url)
+            updateProfile({ name, avatar: url })
+          }}
+        />
+      </div>
       <div>
         <Label htmlFor="email">Email</Label>
         <Input
