@@ -6,50 +6,31 @@ import { useSupabase } from "@/app/supabase-provider"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 
-type Profiles = Database["public"]["Tables"]["profiles"]["Row"]
+type Links = Database["public"]["Tables"]["links"]["Row"]
 
-export default function Avatar({
+export default function Doc({
   uid,
   url,
   size,
   onUpload,
 }: {
   uid: string
-  url: Profiles["avatar_url"]
+  url: Links["url"]
   size: number
   onUpload: (url: string) => void
 }) {
   const { supabase } = useSupabase()
-  const [avatarUrl, setAvatarUrl] = useState<Profiles["avatar_url"]>(null)
+  const [docUrl, setDocUrl] = useState<Links["url"]>(null)
   const [uploading, setUploading] = useState(false)
 
-  useEffect(() => {
-    if (url) downloadImage(url)
-  }, [url])
-
-  async function downloadImage(path: string) {
-    try {
-      const { data, error } = await supabase.storage
-        .from("avatars")
-        .download(path)
-      if (error) {
-        throw error
-      }
-      const url = URL.createObjectURL(data)
-      setAvatarUrl(url)
-    } catch (error) {
-      console.log("Error downloading image: ", error)
-    }
-  }
-
-  const uploadAvatar: React.ChangeEventHandler<HTMLInputElement> = async (
+  const uploadDoc: React.ChangeEventHandler<HTMLInputElement> = async (
     event
   ) => {
     try {
       setUploading(true)
 
       if (!event.target.files || event.target.files.length === 0) {
-        throw new Error("You must select an image to upload.")
+        throw new Error("You must select a file to upload.")
       }
 
       const file = event.target.files[0]
@@ -58,7 +39,7 @@ export default function Avatar({
       const filePath = `${fileName}`
 
       let { error: uploadError } = await supabase.storage
-        .from("avatars")
+        .from("docs")
         .upload(filePath, file, { upsert: true })
 
       if (uploadError) {
@@ -67,7 +48,7 @@ export default function Avatar({
 
       onUpload(filePath)
     } catch (error) {
-      alert("Error uploading avatar!")
+      alert("Error uploading doc!")
       console.log(error)
     } finally {
       setUploading(false)
@@ -76,13 +57,8 @@ export default function Avatar({
 
   return (
     <div>
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt="Avatar"
-          className="avatar image"
-          style={{ height: size, width: size }}
-        />
+      {docUrl ? (
+        <div>Doc here</div>
       ) : (
         <div
           className="avatar no-image"
@@ -101,7 +77,7 @@ export default function Avatar({
           type="file"
           id="single"
           accept="image/*"
-          onChange={uploadAvatar}
+          onChange={uploadDoc}
           disabled={uploading}
         />
       </div>

@@ -18,7 +18,6 @@ export interface Database {
           expires: string | null
           id: string
           password: string | null
-          password_protected: boolean | null
           url: string | null
           user_id: string | null
         }
@@ -28,9 +27,8 @@ export interface Database {
           edits_enabled?: boolean | null
           email_protected?: boolean | null
           expires?: string | null
-          id: string
+          id?: string
           password?: string | null
-          password_protected?: boolean | null
           url?: string | null
           user_id?: string | null
         }
@@ -42,7 +40,6 @@ export interface Database {
           expires?: string | null
           id?: string
           password?: string | null
-          password_protected?: boolean | null
           url?: string | null
           user_id?: string | null
         }
@@ -74,21 +71,21 @@ export interface Database {
         Row: {
           created_at: string | null
           email: string | null
-          id: number
+          id: string
           link_id: string | null
           viewed_at: string | null
         }
         Insert: {
           created_at?: string | null
           email?: string | null
-          id?: number
+          id?: string
           link_id?: string | null
           viewed_at?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string | null
-          id?: number
+          id?: string
           link_id?: string | null
           viewed_at?: string | null
         }
@@ -97,7 +94,7 @@ export interface Database {
         Row: {
           created_at: string | null
           download_count: number | null
-          id: number
+          id: string
           last_viewed: string | null
           link_id: string | null
           view_count: number | null
@@ -106,7 +103,7 @@ export interface Database {
         Insert: {
           created_at?: string | null
           download_count?: number | null
-          id?: number
+          id?: string
           last_viewed?: string | null
           link_id?: string | null
           view_count?: number | null
@@ -115,7 +112,7 @@ export interface Database {
         Update: {
           created_at?: string | null
           download_count?: number | null
-          id?: number
+          id?: string
           last_viewed?: string | null
           link_id?: string | null
           view_count?: number | null
