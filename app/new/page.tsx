@@ -15,6 +15,7 @@ type Links = Database["public"]["Tables"]["links"]["Row"]
 export default function NewLink() {
   const { supabase } = useSupabase()
   const [userId, setUserId] = useState<Links["user_id"]>("")
+  const [filePath, setFilePath] = useState<string>("")
   const [url, setUrl] = useState<Links["url"]>("")
   const [password, setPassword] = useState<Links["password"]>(null)
   const [emailProtected, setEmailProtected] =
@@ -39,14 +40,14 @@ export default function NewLink() {
   }
 
   async function createLink({
-    url,
+    filePath,
     password,
     emailProtected,
     expires,
     downloadEnabled,
     editsEnabled,
   }: {
-    url: Links["url"]
+    filePath: string
     password: Links["password"]
     emailProtected: Links["email_protected"]
     expires: Links["expires"]
@@ -54,9 +55,24 @@ export default function NewLink() {
     editsEnabled: Links["edits_enabled"]
   }) {
     try {
+      // compute expiration in seconds
+      const selectedDate = new Date(expires!)
+      const currentDate = new Date()
+
+      const millisecondsUntilExpiration =
+        selectedDate.getTime() - currentDate.getTime()
+      const secondsUntilExpiration = Math.floor(
+        millisecondsUntilExpiration / 1000
+      )
+
+      // create url
+      const { data } = await supabase.storage
+        .from("docs")
+        .createSignedUrl(filePath, secondsUntilExpiration)
+
       const updates = {
         user_id: user,
-        url: url,
+        url: data?.signedUrl,
         password: password,
         email_protected: emailProtected,
         expires: expires,
@@ -84,9 +100,8 @@ export default function NewLink() {
             uid={user}
             url={url}
             size={150}
-            expires={expires || ""}
-            onUpload={(url) => {
-              setUrl(url)
+            onUpload={(filePath) => {
+              setFilePath(filePath)
             }}
           />
         </div>
@@ -117,7 +132,7 @@ export default function NewLink() {
               className="bg-[#21D4FD] text-white font-bold py-2 px-4 rounded w-full"
               onClick={() =>
                 createLink({
-                  url,
+                  filePath,
                   password,
                   emailProtected,
                   expires,

@@ -12,13 +12,11 @@ export default function Doc({
   uid,
   url,
   size,
-  expires,
   onUpload,
 }: {
   uid: string
   url: Links["url"]
   size: number
-  expires: string
   onUpload: (url: string) => void
 }) {
   const { supabase } = useSupabase()
@@ -45,24 +43,7 @@ export default function Doc({
         throw uploadError
       }
 
-      // compute expiration in seconds
-      const selectedDate = new Date(expires)
-      const currentDate = new Date()
-
-      const millisecondsUntilExpiration =
-        selectedDate.getTime() - currentDate.getTime()
-      const secondsUntilExpiration = Math.floor(
-        millisecondsUntilExpiration / 1000
-      )
-
-      // create url
-      const { data, error } = await supabase.storage
-        .from("docs")
-        .createSignedUrl(filePath, secondsUntilExpiration)
-
-      if (data) {
-        onUpload(data.signedUrl)
-      }
+      onUpload(filePath)
     } catch (error) {
       alert("Error uploading doc!")
       console.log(error)
