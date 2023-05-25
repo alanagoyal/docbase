@@ -91,7 +91,7 @@ export default function Account() {
       <div>
         <div>
           <Avatar
-            uid={user.id}
+            uid={user}
             url={avatar}
             size={150}
             onUpload={(url) => {

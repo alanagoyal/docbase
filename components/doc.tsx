@@ -12,15 +12,16 @@ export default function Doc({
   uid,
   url,
   size,
+  expires,
   onUpload,
 }: {
   uid: string
   url: Links["url"]
   size: number
+  expires: string
   onUpload: (url: string) => void
 }) {
   const { supabase } = useSupabase()
-  const [docUrl, setDocUrl] = useState<Links["url"]>(null)
   const [uploading, setUploading] = useState(false)
 
   const uploadDoc: React.ChangeEventHandler<HTMLInputElement> = async (
@@ -32,12 +33,10 @@ export default function Doc({
       if (!event.target.files || event.target.files.length === 0) {
         throw new Error("You must select a file to upload.")
       }
-
       const file = event.target.files[0]
-      const fileExt = file.name.split(".").pop()
-      const fileName = `${uid}.${fileExt}`
-      const filePath = `${fileName}`
+      const filePath = `${file.name}`
 
+      // upload file to storage bucket
       let { error: uploadError } = await supabase.storage
         .from("docs")
         .upload(filePath, file, { upsert: true })
@@ -46,7 +45,24 @@ export default function Doc({
         throw uploadError
       }
 
-      onUpload(filePath)
+      // compute expiration in seconds
+      const selectedDate = new Date(expires)
+      const currentDate = new Date()
+
+      const millisecondsUntilExpiration =
+        selectedDate.getTime() - currentDate.getTime()
+      const secondsUntilExpiration = Math.floor(
+        millisecondsUntilExpiration / 1000
+      )
+
+      // create url
+      const { data, error } = await supabase.storage
+        .from("docs")
+        .createSignedUrl(filePath, secondsUntilExpiration)
+
+      if (data) {
+        onUpload(data.signedUrl)
+      }
     } catch (error) {
       alert("Error uploading doc!")
       console.log(error)
@@ -56,31 +72,20 @@ export default function Doc({
   }
 
   return (
-    <div>
-      {docUrl ? (
-        <div>Doc here</div>
-      ) : (
-        <div
-          className="avatar no-image"
-          style={{ height: size, width: size }}
-        />
-      )}
-      <div style={{ width: size }}>
-        <Label className="button primary block" htmlFor="single">
-          {uploading ? "Uploading ..." : "Upload"}
-        </Label>
-        <Input
-          style={{
-            visibility: "hidden",
-            position: "absolute",
-          }}
-          type="file"
-          id="single"
-          accept="image/*"
-          onChange={uploadDoc}
-          disabled={uploading}
-        />
-      </div>
+    <div style={{ width: size }}>
+      <Label className="button primary block" htmlFor="single">
+        {uploading ? "Uploading ..." : "Upload"}
+      </Label>
+      <Input
+        style={{
+          visibility: "hidden",
+          position: "absolute",
+        }}
+        type="file"
+        id="single"
+        onChange={uploadDoc}
+        disabled={uploading}
+      />
     </div>
   )
 }

@@ -19,7 +19,7 @@ export default function NewLink() {
   const [password, setPassword] = useState<Links["password"]>(null)
   const [emailProtected, setEmailProtected] =
     useState<Links["email_protected"]>(false)
-  const [expires, setExpires] = useState<Links["expires"]>(null)
+  const [expires, setExpires] = useState<Links["expires"]>("")
   const [downloadEnabled, setDownloadEnabled] =
     useState<Links["download_enabled"]>(false)
   const [editsEnabled, setEditsEnabled] =
@@ -55,7 +55,7 @@ export default function NewLink() {
   }) {
     try {
       const updates = {
-        user_id: user.id,
+        user_id: user,
         url: url,
         password: password,
         email_protected: emailProtected,
@@ -81,16 +81,27 @@ export default function NewLink() {
       <div>
         <div>
           <Doc
-            uid={user.id}
+            uid={user}
             url={url}
             size={150}
+            expires={expires || ""}
             onUpload={(url) => {
               setUrl(url)
             }}
           />
         </div>
         <div>
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="expires">Expiration Date</Label>
+          <Input
+            id="expires"
+            type="date"
+            value={expires || ""}
+            className="h-10 p-1"
+            onChange={(e) => setExpires(e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="password">Password (Optional)</Label>
           <Input
             id="password"
             type="password"
