@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { Database } from "types/supabase"
 
 import { useSupabase } from "@/app/supabase-provider"
 
+import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 
@@ -52,20 +53,22 @@ export default function Doc({
     }
   }
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   return (
-    <div style={{ width: size }}>
-      <Label className="button primary block" htmlFor="single">
-        {uploading ? "Uploading ..." : "Upload"}
-      </Label>
-      <Input
-        style={{
-          visibility: "hidden",
-          position: "absolute",
-        }}
-        type="file"
-        id="single"
-        onChange={uploadDoc}
+    <div>
+      <Button
+        className="w-full"
         disabled={uploading}
+        onClick={() => fileInputRef.current && fileInputRef.current.click()}
+      >
+        {uploading ? "Uploading ..." : "Choose a file"}
+      </Button>
+      <Input
+        style={{ visibility: "hidden", position: "absolute" }}
+        type="file"
+        ref={fileInputRef}
+        onChange={uploadDoc}
       />
     </div>
   )

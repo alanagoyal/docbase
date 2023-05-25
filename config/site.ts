@@ -1,8 +1,8 @@
 export type SiteConfig = typeof siteConfig
 
 export const siteConfig = {
-  name: "Docbase",
-  description: "Open-source alternative to Docsend",
+  name: "DocBase",
+  description: "Open-source alternative to DocSend",
   mainNav: [
     {
       title: "Home",

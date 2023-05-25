@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { UserNav } from "@/components/user-nav"
 
 import { useSupabase } from "./supabase-provider"
 
@@ -22,10 +23,10 @@ export default async function IndexPage() {
         <section className="container grid items-center gap-6 pb-8 pt-6 md:py-10">
           <div className="flex max-w-[980px] flex-col items-start gap-2">
             <h1 className="text-3xl font-extrabold leading-tight tracking-tighter sm:text-3xl md:text-5xl lg:text-6xl">
-              Docbase
+              DocBase
             </h1>
             <p className="max-w-[700px] text-lg text-muted-foreground sm:text-xl">
-              Open-source alternative to Docsend
+              The open-source alternative to DocSend
             </p>
           </div>
           <div className="flex gap-4">
@@ -33,7 +34,7 @@ export default async function IndexPage() {
               className=" text-white px-8 py-4 rounded-md text-base"
               onClick={signInWithGoogle}
               style={{
-                background: "linear-gradient(19deg, #21D4FD 0%, #B721FF 100%)",
+                background: "linear-gradient(48deg, #74EBD5 0%, #9FACE6 100%)",
               }}
             >
               Get Started

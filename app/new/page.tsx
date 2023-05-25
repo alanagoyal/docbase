@@ -96,16 +96,6 @@ export default function NewLink() {
       <h3 className="text-base mb-4"></h3>
       <div>
         <div>
-          <Doc
-            uid={user}
-            url={url}
-            size={150}
-            onUpload={(filePath) => {
-              setFilePath(filePath)
-            }}
-          />
-        </div>
-        <div>
           <Label htmlFor="expires">Expiration Date</Label>
           <Input
             id="expires"
@@ -127,9 +117,19 @@ export default function NewLink() {
         </div>
         <div className="pt-1">
           <div className="py-1">
+            <Doc
+              uid={user}
+              url={url}
+              size={150}
+              onUpload={(filePath) => {
+                setFilePath(filePath)
+              }}
+            />
+          </div>
+          <div className="py-1">
             <Button
               type="submit"
-              className="bg-[#21D4FD] text-white font-bold py-2 px-4 rounded w-full"
+              className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"
               onClick={() =>
                 createLink({
                   filePath,
@@ -141,7 +141,7 @@ export default function NewLink() {
                 })
               }
             >
-              Update
+              Upload
             </Button>
           </div>
         </div>

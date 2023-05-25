@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,11 @@ export default function Account() {
     const {
       data: { session },
     } = await supabase.auth.getSession()
+
+    if (!session) {
+      // this is a protected route - only users who are signed in can view this route
+      redirect("/")
+    }
 
     setUser(session?.user.id)
 
@@ -71,7 +76,7 @@ export default function Account() {
       let { error } = await supabase
         .from("profiles")
         .update(updates)
-        .eq("id", user.id)
+        .eq("id", user)
       if (error) throw error
       alert("Updated!")
     } catch (error) {
@@ -124,7 +129,7 @@ export default function Account() {
           <div className="py-1">
             <Button
               type="submit"
-              className="bg-[#21D4FD] text-white font-bold py-2 px-4 rounded w-full"
+              className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"
               onClick={() => updateProfile({ name, avatar })}
             >
               Update
