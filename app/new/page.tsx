@@ -86,10 +86,6 @@ export default function LinkForm() {
   }
 
   function onSubmit(data: LinkFormValues) {
-    console.log("in on submit")
-
-    console.log(data)
-
     if (data) {
       // get from data
       createLink({
@@ -115,9 +111,6 @@ export default function LinkForm() {
     filePath: string
     data: LinkFormValues
   }) {
-    console.log(`filePath: ${filePath}`)
-    console.log(`password: ${data.password}`)
-    console.log(`emailProtected: ${data.emailProtected}`)
     try {
       // compute expiration in seconds
       const selectedDate = new Date(data.expires!)
@@ -133,8 +126,6 @@ export default function LinkForm() {
       const { data: signedUrlData } = await supabase.storage
         .from("docs")
         .createSignedUrl(filePath, secondsUntilExpiration)
-
-      console.log(signedUrlData?.signedUrl)
 
       const updates = {
         user_id: user,
