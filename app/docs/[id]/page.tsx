@@ -18,7 +18,6 @@ import {
   FormLabel,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { useSupabase } from "@/app/supabase-provider"
 
 const linkFormSchema = z.object({
@@ -30,10 +29,9 @@ const linkFormSchema = z.object({
   password: z.string().optional(),
 })
 
-type LinkFormValues = z.infer<typeof linkFormSchema>
-
 type Links = Database["public"]["Tables"]["links"]["Row"]
-type Viewers = Database["public"]["Tables"]["viewers"]["Row"]
+
+type LinkFormValues = z.infer<typeof linkFormSchema>
 
 const defaultValues: Partial<LinkFormValues> = {
   email: "",
@@ -48,6 +46,21 @@ export default function Doc({ params }: { params: { id: string } }) {
     resolver: zodResolver(linkFormSchema),
     defaultValues,
   })
+  const [link, setLink] = useState<any>(null)
+  const [name, setName] = useState<any>(null)
+
+  useEffect(() => {
+    getLink()
+  }, [])
+
+  async function getLink() {
+    const { data: link, error } = await supabase
+      .from("links")
+      .select("user_id (full_name)")
+      .eq("id", id)
+
+    // setName(link?.user_id?.full_name)
+  }
 
   async function onSubmit(data: LinkFormValues) {
     // log viewer
@@ -78,10 +91,7 @@ export default function Doc({ params }: { params: { id: string } }) {
 
   return (
     <div className="flex flex-col items-center min-h-screen pt-20 py-2">
-      <h1 className="text-4xl font-bold mb-4">
-        {" "}
-        Enter password to access document
-      </h1>
+      <h1 className="text-4xl font-bold mb-4"> </h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -92,7 +102,7 @@ export default function Doc({ params }: { params: { id: string } }) {
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">Email</FormLabel>
-                  <FormDescription>
+                  <FormDescription className="mr-2">
                     Please enter your email to view this document
                   </FormDescription>
                 </div>
@@ -109,7 +119,7 @@ export default function Doc({ params }: { params: { id: string } }) {
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
                   <FormLabel className="text-base">Password</FormLabel>
-                  <FormDescription>
+                  <FormDescription className="mr-2">
                     Please enter the password to view this document
                   </FormDescription>
                 </div>

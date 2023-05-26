@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { format, set } from "date-fns"
 import { CalendarIcon } from "lucide-react"
@@ -53,25 +54,15 @@ type Links = Database["public"]["Tables"]["links"]["Row"]
 
 export default function LinkForm() {
   const { supabase } = useSupabase()
-  const [userId, setUserId] = useState<Links["user_id"]>("")
   const [filePath, setFilePath] = useState<string>("")
   const [url, setUrl] = useState<Links["url"]>("")
-  const [password, setPassword] = useState<Links["password"]>(null)
-  const [emailProtected, setEmailProtected] =
-    useState<Links["email_protected"]>(false)
-  const [expires, setExpires] = useState<Links["expires"]>(
-    new Date().toISOString()
-  )
-  const [downloadEnabled, setDownloadEnabled] =
-    useState<Links["download_enabled"]>(false)
-  const [editsEnabled, setEditsEnabled] =
-    useState<Links["edits_enabled"]>(false)
   const [user, setUser] = useState<any>("")
   const { toast } = useToast()
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
     defaultValues,
   })
+  const router = useRouter()
 
   useEffect(() => {
     getUser()
@@ -83,6 +74,9 @@ export default function LinkForm() {
     } = await supabase.auth.getSession()
 
     setUser(session?.user.id || "")
+    if (!session) {
+      router.push("/")
+    }
   }
 
   function onSubmit(data: LinkFormValues) {

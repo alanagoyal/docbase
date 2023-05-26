@@ -2,14 +2,38 @@
 
 import { useEffect, useState } from "react"
 import { redirect, useRouter } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
 
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import Avatar from "@/components/avatar"
 
 import { useSupabase } from "../supabase-provider"
+
+const profileFormSchema = z.object({
+  email: z
+    .string({
+      required_error: "Please enter a valid email",
+    })
+    .email(),
+  name: z.string().optional(),
+})
+
+type ProfileFormValues = z.infer<typeof profileFormSchema>
+
+const defaultValues: Partial<ProfileFormValues> = {
+  email: "",
+  name: "",
+}
 
 type Profiles = Database["public"]["Tables"]["profiles"]["Row"]
 
@@ -20,7 +44,10 @@ export default function Account() {
   const [email, setEmail] = useState<Profiles["email"]>("")
   const [avatar, setAvatar] = useState<Profiles["avatar_url"]>("")
   const [user, setUser] = useState<any>("")
-
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues,
+  })
   useEffect(() => {
     getProfile()
   }, [])
@@ -30,12 +57,10 @@ export default function Account() {
       data: { session },
     } = await supabase.auth.getSession()
 
-    if (!session) {
-      // this is a protected route - only users who are signed in can view this route
-      redirect("/")
-    }
-
     setUser(session?.user.id)
+    if (!session) {
+      router.push("/")
+    }
 
     try {
       let { data, error, status } = await supabase
@@ -59,17 +84,23 @@ export default function Account() {
     }
   }
 
+  function onSubmit(data: ProfileFormValues) {
+    if (data) {
+      updateProfile({ data, avatar })
+    }
+  }
+
   async function updateProfile({
-    name,
+    data,
     avatar,
   }: {
-    name: Profiles["full_name"]
+    data: ProfileFormValues
     avatar: Profiles["avatar_url"]
   }) {
     try {
       const updates = {
         email: email,
-        full_name: name,
+        full_name: data.name,
         avatar_url: avatar,
       }
 
@@ -92,61 +123,47 @@ export default function Account() {
   return (
     <div className="flex flex-col items-center min-h-screen pt-20 py-2">
       <h1 className="text-4xl font-bold mb-4">Your Account</h1>
-      <h3 className="text-base mb-4"></h3>
-      <div>
-        <div>
-          <Avatar
-            uid={user}
-            url={avatar}
-            size={150}
-            onUpload={(url) => {
-              setAvatar(url)
-              updateProfile({ name, avatar: url })
-            }}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {" "}
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base mx-2">Email</FormLabel>
+                </div>
+                <FormControl>
+                  <Input placeholder={email!} {...field} disabled />
+                </FormControl>
+              </FormItem>
+            )}
           />
-        </div>
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="text"
-            value={email || ""}
-            className="h-10 p-1"
-            disabled
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base mx-2">Name</FormLabel>
+                </div>
+                <FormControl>
+                  <Input placeholder={name!} {...field} />
+                </FormControl>
+              </FormItem>
+            )}
           />
-        </div>
-        <div>
-          <Label htmlFor="name">Name</Label>
-          <Input
-            id="name"
-            type="text"
-            value={name || ""}
-            className="h-10 p-1"
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        <div className="pt-1">
           <div className="py-1">
             <Button
               type="submit"
               className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"
-              onClick={() => updateProfile({ name, avatar })}
             >
               Update
             </Button>
           </div>
-
-          <div className="py-1">
-            <Button
-              type="button"
-              className="bg-slate-700 text-white font-bold py-2 px-4 rounded w-full"
-              onClick={() => signOut()}
-            >
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </div>
+        </form>
+      </Form>
     </div>
   )
 }

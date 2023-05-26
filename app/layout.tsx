@@ -1,6 +1,6 @@
 import "@/styles/globals.css"
 import { cookies, headers } from "next/headers"
-import { redirect } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 import { createServerComponentSupabaseClient } from "@supabase/auth-helpers-nextjs"
 
 import { fontSans } from "@/lib/fonts"
@@ -14,11 +14,6 @@ import SupabaseProvider from "./supabase-provider"
 
 interface RootLayoutProps {
   children: React.ReactNode
-}
-
-export const metadata = {
-  title: "DocBase",
-  description: "The open-source alternative to DocSend",
 }
 
 export default async function RootLayout({ children }: RootLayoutProps) {
@@ -43,7 +38,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           <SupabaseProvider session={session}>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
               <div className="relative flex min-h-screen flex-col">
-                <SiteHeader />
+                {session ? <SiteHeader /> : <></>}
                 <Toaster />
                 {children}
                 <div className="flex-1"></div>
