@@ -58,7 +58,6 @@ export function UserNav() {
       }
 
       if (data) {
-        console.log(data)
         setName(data.full_name)
         setEmail(data.email)
         setAvatar(data.avatar_url)

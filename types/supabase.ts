@@ -12,10 +12,9 @@ export interface Database {
       links: {
         Row: {
           created_at: string | null
-          download_enabled: boolean | null
-          edits_enabled: boolean | null
           email_protected: boolean | null
           expires: string | null
+          filename: string | null
           id: string
           password: string | null
           url: string | null
@@ -23,10 +22,9 @@ export interface Database {
         }
         Insert: {
           created_at?: string | null
-          download_enabled?: boolean | null
-          edits_enabled?: boolean | null
           email_protected?: boolean | null
           expires?: string | null
+          filename?: string | null
           id?: string
           password?: string | null
           url?: string | null
@@ -34,10 +32,9 @@ export interface Database {
         }
         Update: {
           created_at?: string | null
-          download_enabled?: boolean | null
-          edits_enabled?: boolean | null
           email_protected?: boolean | null
           expires?: string | null
+          filename?: string | null
           id?: string
           password?: string | null
           url?: string | null

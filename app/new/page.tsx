@@ -63,6 +63,7 @@ export default function LinkForm() {
     defaultValues,
   })
   const router = useRouter()
+  const [protectWithPassword, setProtectWithPassword] = useState<boolean>(true)
 
   useEffect(() => {
     getUser()
@@ -118,6 +119,7 @@ export default function LinkForm() {
         password: data.password,
         email_protected: data.emailProtected,
         expires: data.expires.toISOString(),
+        filename: filePath,
       }
 
       let { data: link, error } = await supabase
@@ -151,8 +153,10 @@ export default function LinkForm() {
             render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
-                  <FormLabel className="text-base">Email Protected</FormLabel>
-                  <FormDescription>
+                  <FormLabel className="text-base pr-2">
+                    Email Protected
+                  </FormLabel>
+                  <FormDescription className="pr-4">
                     Viewers must enter an email to view your document
                   </FormDescription>
                 </div>
@@ -165,12 +169,45 @@ export default function LinkForm() {
               </FormItem>
             )}
           />
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <FormLabel className="text-base pr-2">
+                Password Protected
+              </FormLabel>
+              <FormDescription className="pr-4">
+                Viewers must enter this password to view your document
+              </FormDescription>
+            </div>
+            <FormControl>
+              <Switch
+                checked={protectWithPassword}
+                onCheckedChange={setProtectWithPassword}
+              />
+            </FormControl>
+          </FormItem>
+
+          {protectWithPassword && (
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base pr-2">Password</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Input type="password" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          )}
           <FormField
             control={form.control}
             name="expires"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Expires</FormLabel>
+                <FormLabel className="text-base pr-2">Expires</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -203,28 +240,11 @@ export default function LinkForm() {
                     />
                   </PopoverContent>
                 </Popover>
-                <FormDescription>
+                <FormDescription className="pr-4">
                   Viewers will no longer be able to access your link after this
-                  date.
+                  date
                 </FormDescription>
                 <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">Password</FormLabel>
-                  <FormDescription>
-                    Viewers must enter an email to view your document
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Input type="password" {...field} />
-                </FormControl>
               </FormItem>
             )}
           />
