@@ -46,8 +46,7 @@ export default function Doc({ params }: { params: { id: string } }) {
     resolver: zodResolver(linkFormSchema),
     defaultValues,
   })
-  const [link, setLink] = useState<any>(null)
-  const [name, setName] = useState<any>(null)
+  const [passwordRequired, setPasswordRequired] = useState<boolean>(false)
 
   useEffect(() => {
     getLink()
@@ -56,8 +55,13 @@ export default function Doc({ params }: { params: { id: string } }) {
   async function getLink() {
     const { data: link, error } = await supabase
       .from("links")
-      .select("user_id (full_name)")
+      .select("password, user_id (full_name)")
       .eq("id", id)
+      .single()
+
+    if (link?.password) {
+      setPasswordRequired(true)
+    }
 
     // setName(link?.user_id?.full_name)
   }
@@ -91,7 +95,7 @@ export default function Doc({ params }: { params: { id: string } }) {
 
   return (
     <div className="flex flex-col items-center min-h-screen pt-20 py-2">
-      <h1 className="text-4xl font-bold mb-4"> </h1>
+      <h1 className="text-4xl font-bold mb-4"></h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -112,23 +116,25 @@ export default function Doc({ params }: { params: { id: string } }) {
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">Password</FormLabel>
-                  <FormDescription className="mr-2">
-                    Please enter the password to view this document
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Input type="password" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+          {passwordRequired && (
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Password</FormLabel>
+                    <FormDescription className="mr-2">
+                      Please enter the password to view this document
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Input type="password" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          )}
           <div className="py-1">
             <Button
               className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"

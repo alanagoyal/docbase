@@ -38,7 +38,6 @@ import { useSupabase } from "../supabase-provider"
 
 const linkFormSchema = z.object({
   password: z.string().optional(),
-  emailProtected: z.boolean().optional(),
   expires: z.date({ required_error: "Please enter a valid date" }),
 })
 
@@ -46,7 +45,6 @@ type LinkFormValues = z.infer<typeof linkFormSchema>
 
 const defaultValues: Partial<LinkFormValues> = {
   password: "",
-  emailProtected: true,
   expires: new Date(),
 }
 
@@ -113,11 +111,11 @@ export default function LinkForm() {
         .from("docs")
         .createSignedUrl(filePath, secondsUntilExpiration)
 
+      console.log(signedUrlData?.signedUrl)
       const updates = {
         user_id: user,
         url: signedUrlData?.signedUrl,
         password: data.password,
-        email_protected: data.emailProtected,
         expires: data.expires.toISOString(),
         filename: filePath,
       }
@@ -147,28 +145,6 @@ export default function LinkForm() {
       <h1 className="text-4xl font-bold mb-4">New Link</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <FormField
-            control={form.control}
-            name="emailProtected"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base pr-2">
-                    Email Protected
-                  </FormLabel>
-                  <FormDescription className="pr-4">
-                    Viewers must enter an email to view your document
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
           <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <FormLabel className="text-base pr-2">

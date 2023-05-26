@@ -71,7 +71,7 @@ export default function Doc({
               fileInputRef.current && fileInputRef.current.click()
             }}
           >
-            {uploading ? "Uploading ..." : "Choose a file"}
+            {uploading ? "Uploading..." : "Choose a file"}
           </Button>
           <Input
             style={{ visibility: "hidden", position: "absolute" }}
@@ -85,13 +85,13 @@ export default function Doc({
           {" "}
           <Button
             className="w-full"
-            disabled={uploading}
+            disabled={complete}
             onClick={(e) => {
               e.preventDefault()
               fileInputRef.current && fileInputRef.current.click()
             }}
           >
-            Choose another file
+            Upload complete
           </Button>
         </div>
       )}

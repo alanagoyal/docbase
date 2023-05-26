@@ -28,7 +28,7 @@ export default function Analytics({ params }: { params: { id: string } }) {
   async function getAnalytics() {
     const { data: viewers } = await supabase
       .from("viewers")
-      .select("email")
+      .select("*")
       .eq("link_id", id)
 
     setUniqueViews(viewers?.length)
