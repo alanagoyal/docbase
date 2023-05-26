@@ -26,6 +26,7 @@ export default function Doc({
   const uploadDoc: React.ChangeEventHandler<HTMLInputElement> = async (
     event
   ) => {
+    console.log("in upload doc")
     try {
       setUploading(true)
 
@@ -60,7 +61,10 @@ export default function Doc({
       <Button
         className="w-full"
         disabled={uploading}
-        onClick={() => fileInputRef.current && fileInputRef.current.click()}
+        onClick={(e) => {
+          e.preventDefault()
+          fileInputRef.current && fileInputRef.current.click()
+        }}
       >
         {uploading ? "Uploading ..." : "Choose a file"}
       </Button>

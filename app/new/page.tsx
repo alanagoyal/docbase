@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { format } from "date-fns"
+import { format, set } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
@@ -86,12 +86,18 @@ export default function LinkForm() {
   }
 
   function onSubmit(data: LinkFormValues) {
-    createLink({
-      filePath,
-      password,
-      emailProtected,
-      expires,
-    })
+    console.log("in on submit")
+
+    console.log(data)
+
+    if (data) {
+      // get from data
+      createLink({
+        filePath,
+        data,
+      })
+    }
+
     toast({
       title: "You submitted the following values:",
       description: (
@@ -104,18 +110,17 @@ export default function LinkForm() {
 
   async function createLink({
     filePath,
-    password,
-    emailProtected,
-    expires,
+    data,
   }: {
     filePath: string
-    password: Links["password"]
-    emailProtected: Links["email_protected"]
-    expires: Links["expires"]
+    data: LinkFormValues
   }) {
+    console.log(`filePath: ${filePath}`)
+    console.log(`password: ${data.password}`)
+    console.log(`emailProtected: ${data.emailProtected}`)
     try {
       // compute expiration in seconds
-      const selectedDate = new Date(expires!)
+      const selectedDate = new Date(data.expires!)
       const currentDate = new Date()
 
       const millisecondsUntilExpiration =
@@ -125,16 +130,18 @@ export default function LinkForm() {
       )
 
       // create url
-      const { data } = await supabase.storage
+      const { data: signedUrlData } = await supabase.storage
         .from("docs")
         .createSignedUrl(filePath, secondsUntilExpiration)
 
+      console.log(signedUrlData?.signedUrl)
+
       const updates = {
         user_id: user,
-        url: data?.signedUrl,
-        password: password,
-        email_protected: emailProtected,
-        expires: expires,
+        url: signedUrlData?.signedUrl,
+        password: data.password,
+        email_protected: data.emailProtected,
+        expires: data.expires.toISOString(),
       }
 
       let { data: link, error } = await supabase
