@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { LogOut, Settings, User } from "lucide-react"
+import { LogOut, PlusCircle, Settings, User } from "lucide-react"
 
 import { Database } from "@/types/supabase"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -41,6 +41,7 @@ export function UserNav() {
 
     setUser(session?.user.id)
 
+    // fix this for unauthorized users
     if (!session) {
       return null
     }
@@ -110,6 +111,12 @@ export function UserNav() {
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
           </DropdownMenuItem>
+          <Link href="/new">
+            <DropdownMenuItem>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              <span>New Link</span>
+            </DropdownMenuItem>
+          </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={signOut}>
