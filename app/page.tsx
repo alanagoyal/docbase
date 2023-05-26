@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { UserNav } from "@/components/user-nav"
 
 import { useSupabase } from "./supabase-provider"
 

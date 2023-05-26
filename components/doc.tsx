@@ -22,6 +22,7 @@ export default function Doc({
 }) {
   const { supabase } = useSupabase()
   const [uploading, setUploading] = useState(false)
+  const [complete, setComplete] = useState(false)
 
   const uploadDoc: React.ChangeEventHandler<HTMLInputElement> = async (
     event
@@ -51,6 +52,7 @@ export default function Doc({
       console.log(error)
     } finally {
       setUploading(false)
+      setComplete(true)
     }
   }
 
@@ -58,22 +60,41 @@ export default function Doc({
 
   return (
     <div>
-      <Button
-        className="w-full"
-        disabled={uploading}
-        onClick={(e) => {
-          e.preventDefault()
-          fileInputRef.current && fileInputRef.current.click()
-        }}
-      >
-        {uploading ? "Uploading ..." : "Choose a file"}
-      </Button>
-      <Input
-        style={{ visibility: "hidden", position: "absolute" }}
-        type="file"
-        ref={fileInputRef}
-        onChange={uploadDoc}
-      />
+      {" "}
+      {!complete ? (
+        <div>
+          <Button
+            className="w-full"
+            disabled={uploading}
+            onClick={(e) => {
+              e.preventDefault()
+              fileInputRef.current && fileInputRef.current.click()
+            }}
+          >
+            {uploading ? "Uploading ..." : "Choose a file"}
+          </Button>
+          <Input
+            style={{ visibility: "hidden", position: "absolute" }}
+            type="file"
+            ref={fileInputRef}
+            onChange={uploadDoc}
+          />
+        </div>
+      ) : (
+        <div>
+          {" "}
+          <Button
+            className="w-full"
+            disabled={uploading}
+            onClick={(e) => {
+              e.preventDefault()
+              fileInputRef.current && fileInputRef.current.click()
+            }}
+          >
+            Choose another file
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
