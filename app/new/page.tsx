@@ -46,7 +46,7 @@ type LinkFormValues = z.infer<typeof linkFormSchema>
 const defaultValues: Partial<LinkFormValues> = {
   password: "",
   emailProtected: true,
-  expires: new Date(Number.MAX_VALUE),
+  expires: new Date(),
 }
 
 type Links = Database["public"]["Tables"]["links"]["Row"]
@@ -86,6 +86,12 @@ export default function LinkForm() {
   }
 
   function onSubmit(data: LinkFormValues) {
+    createLink({
+      filePath,
+      password,
+      emailProtected,
+      expires,
+    })
     toast({
       title: "You submitted the following values:",
       description: (
@@ -101,15 +107,11 @@ export default function LinkForm() {
     password,
     emailProtected,
     expires,
-    downloadEnabled,
-    editsEnabled,
   }: {
     filePath: string
     password: Links["password"]
     emailProtected: Links["email_protected"]
     expires: Links["expires"]
-    downloadEnabled: Links["download_enabled"]
-    editsEnabled: Links["edits_enabled"]
   }) {
     try {
       // compute expiration in seconds
@@ -133,8 +135,6 @@ export default function LinkForm() {
         password: password,
         email_protected: emailProtected,
         expires: expires,
-        download_enabled: downloadEnabled,
-        edits_enabled: editsEnabled,
       }
 
       let { data: link, error } = await supabase
@@ -213,80 +213,54 @@ export default function LinkForm() {
                       selected={field.value}
                       onSelect={field.onChange}
                       disabled={(date) =>
-                        date > new Date() || date < new Date("1900-01-01")
+                        date > new Date("2900-01-01") ||
+                        date < new Date("1900-01-01")
                       }
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
                 <FormDescription>
-                  Your date of birth is used to calculate your age.
+                  Viewers will no longer be able to access your link after this
+                  date.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Password</FormLabel>
+                  <FormDescription>
+                    Viewers must enter an email to view your document
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Input type="password" {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <Doc
+            uid={user}
+            url={url}
+            size={150}
+            onUpload={(filePath) => {
+              setFilePath(filePath)
+            }}
+          />
+          <Button
+            className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"
+            type="submit"
+          >
+            Create Link
+          </Button>
         </form>
       </Form>
-      <div>
-        <div>
-          <Label htmlFor="expires">Expiration Date</Label>
-          <Input
-            id="expires"
-            type="date"
-            value={expires || ""}
-            className="h-10 p-1"
-            onChange={(e) => setExpires(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="emailProtected">Email Protected</Label>
-          <Switch
-            checked={emailProtected!}
-            onCheckedChange={setEmailProtected}
-          />
-        </div>
-        <div>
-          <Label htmlFor="password">Password (Optional)</Label>
-          <Input
-            id="password"
-            type="password"
-            value={password || ""}
-            className="h-10 p-1"
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <div className="pt-1">
-          <div className="py-1">
-            <Doc
-              uid={user}
-              url={url}
-              size={150}
-              onUpload={(filePath) => {
-                setFilePath(filePath)
-              }}
-            />
-          </div>
-          <div className="py-1">
-            <Button
-              type="submit"
-              className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"
-              onClick={() =>
-                createLink({
-                  filePath,
-                  password,
-                  emailProtected,
-                  expires,
-                  downloadEnabled,
-                  editsEnabled,
-                })
-              }
-            >
-              Upload
-            </Button>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
