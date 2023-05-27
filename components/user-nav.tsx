@@ -32,7 +32,7 @@ export function UserNav() {
 
   useEffect(() => {
     getProfile()
-  }, [user])
+  }, [])
 
   async function getProfile() {
     const {
@@ -40,11 +40,6 @@ export function UserNav() {
     } = await supabase.auth.getSession()
 
     setUser(session?.user.id)
-
-    // fix this for unauthorized users
-    if (!session) {
-      return null
-    }
 
     try {
       let { data, error, status } = await supabase

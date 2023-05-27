@@ -18,6 +18,7 @@ import {
   FormLabel,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { toast } from "@/components/ui/use-toast"
 import { useSupabase } from "@/app/supabase-provider"
 
 const linkFormSchema = z.object({
@@ -89,7 +90,9 @@ export default function Doc({ params }: { params: { id: string } }) {
     if (link?.password === data.password) {
       router.push(`${link?.url}`)
     } else {
-      alert("Incorrect password")
+      toast({
+        description: "Incorrect password",
+      })
     }
   }
 
