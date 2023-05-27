@@ -69,7 +69,7 @@ export default function Doc({
               fileInputRef.current && fileInputRef.current.click()
             }}
           >
-            {uploading ? "Uploading..." : "Choose a file"}
+            {uploading ? "Uploading..." : "Upload"}
           </Button>
           <Input
             style={{ visibility: "hidden", position: "absolute" }}
@@ -89,7 +89,7 @@ export default function Doc({
               fileInputRef.current && fileInputRef.current.click()
             }}
           >
-            Upload complete
+            Uploaded
           </Button>
         </div>
       )}
