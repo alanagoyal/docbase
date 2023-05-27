@@ -154,7 +154,7 @@ export default function Account() {
               </FormItem>
             )}
           />
-          <div className="py-1">
+          <div className="py-1 flex justify-center">
             <Button
               type="submit"
               className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"

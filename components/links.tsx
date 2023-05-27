@@ -1,6 +1,14 @@
 import Link from "next/link"
 import { Activity, Copy, Eye, Trash } from "lucide-react"
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip"
+import { toast } from "./ui/use-toast"
+
 export function Links({
   allLinks,
   onDeleteLink,
@@ -13,10 +21,14 @@ export function Links({
     navigator.clipboard
       .writeText(link)
       .then(() => {
-        console.log("Link copied to clipboard:", link)
+        toast({
+          description: "Your link has been copied",
+        })
       })
       .catch((error) => {
-        console.error("Failed to copy link:", error)
+        toast({
+          description: "There was an error copying your link",
+        })
       })
   }
   return (
@@ -35,23 +47,44 @@ export function Links({
             <div>
               <Link href={`/analytics/${link.id}`}>
                 {" "}
-                <Activity className="h-4 w-4 ml-4 text-muted-foreground" />
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Activity className="h-4 w-4 ml-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>View Analytics</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </Link>
             </div>
             <div>
               {" "}
-              <Copy
-                className="h-4 w-4 ml-4 text-muted-foreground"
-                onClick={() => handleCopyLink(link.id)}
-                style={{ cursor: "pointer" }}
-              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Copy
+                      className="h-4 w-4 ml-4 text-muted-foreground"
+                      onClick={() => handleCopyLink(link.id)}
+                      style={{ cursor: "pointer" }}
+                    />{" "}
+                  </TooltipTrigger>
+                  <TooltipContent>Copy Link</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div>
-              <Trash
-                className="h-4 w-4 ml-4 text-muted-foreground"
-                onClick={() => onDeleteLink(link.id)}
-                style={{ cursor: "pointer" }}
-              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Trash
+                      className="h-4 w-4 ml-4 text-muted-foreground"
+                      onClick={() => onDeleteLink(link.id)}
+                      style={{ cursor: "pointer" }}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>Delete Link</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         ))}

@@ -11,7 +11,7 @@ export default async function IndexPage() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: "http://docbase.vercel.app/account/",
+        redirectTo: "http://docbase.vercel.app/new/",
       },
     })
   }

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Plus } from "lucide-react"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 
@@ -45,7 +45,7 @@ type LinkFormValues = z.infer<typeof linkFormSchema>
 
 const defaultValues: Partial<LinkFormValues> = {
   password: "",
-  expires: new Date(),
+  expires: new Date("2900-01-01"),
 }
 
 type Links = Database["public"]["Tables"]["links"]["Row"]
