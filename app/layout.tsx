@@ -1,8 +1,10 @@
 import "@/styles/globals.css"
+import { Metadata } from "next"
 import { cookies, headers } from "next/headers"
 import { redirect, useRouter } from "next/navigation"
 import { createServerComponentSupabaseClient } from "@supabase/auth-helpers-nextjs"
 
+import { siteConfig } from "@/config/site"
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
@@ -11,6 +13,39 @@ import { TailwindIndicator } from "@/components/tailwind-indicator"
 import { ThemeProvider } from "@/components/theme-provider"
 
 import SupabaseProvider from "./supabase-provider"
+
+export const metadata: Metadata = {
+  title: {
+    default: "DocBase",
+    template: `%s - DocBase`,
+  },
+  description: "Open-Source Alternative to DocSend",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "black" },
+  ],
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-16x16.png",
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteConfig.url,
+    title: siteConfig.name,
+    description: siteConfig.description,
+    siteName: siteConfig.name,
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@alanaagoyal",
+    creator: "@alanaagoyal",
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: siteConfig.ogImage,
+  },
+}
 
 interface RootLayoutProps {
   children: React.ReactNode
