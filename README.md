@@ -1,22 +1,25 @@
-# next-template
+## next-template
 
-A Next.js 13 template for building apps with Radix UI and Tailwind CSS.
+I'm using @shadcn's template and UI components: https://github.com/shadcn/next-template
 
-## Usage
+## Getting Started
 
-```bash
-npx create-next-app -e https://github.com/shadcn/next-template
-```
+Clone the repository
+`git clone https://github.com/alanagoyal/docbase`
 
-## Features
+### Install dependencies
 
-- Radix UI Primitives
-- Tailwind CSS
-- Fonts with `next/font`
-- Icons from [Lucide](https://lucide.dev)
-- Dark mode with `next-themes`
-- Automatic import sorting with `@ianvs/prettier-plugin-sort-imports`
-- Tailwind CSS class sorting, merging and linting.
+npm install
+
+### Run the application
+
+Run the application in the command line and it will be available at http://localhost:3000.
+
+`npm run dev`
+
+### Deploy
+
+Deploy using [Vercel](https://vercel.com)
 
 ## License
 
