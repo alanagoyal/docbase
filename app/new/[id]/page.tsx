@@ -34,7 +34,7 @@ import { ToastAction } from "@/components/ui/toast"
 import { useToast } from "@/components/ui/use-toast"
 import Doc from "@/components/doc"
 
-import { useSupabase } from "../supabase-provider"
+import { useSupabase } from "../../supabase-provider"
 
 const linkFormSchema = z.object({
   password: z.string().optional(),
@@ -50,7 +50,8 @@ const defaultValues: Partial<LinkFormValues> = {
 
 type Links = Database["public"]["Tables"]["links"]["Row"]
 
-export default function LinkForm() {
+export default function LinkForm({ params }: { params: { id: string } }) {
+  const id = params.id
   const { supabase } = useSupabase()
   const [filePath, setFilePath] = useState<string>("")
   const [url, setUrl] = useState<Links["url"]>("")
@@ -64,10 +65,23 @@ export default function LinkForm() {
   const [protectWithPassword, setProtectWithPassword] = useState<boolean>(true)
   const [protectWithExpiration, setProtectWithExpiration] =
     useState<boolean>(true)
+  const [linkData, setLinkData] = useState<any>(null)
 
   useEffect(() => {
     getUser()
+    getLink()
   }, [])
+
+  async function getLink() {
+    const { data: link, error } = await supabase
+      .from("links")
+      .select("*")
+      .eq("id", id)
+      .single()
+
+    setLinkData(link)
+    console.log(link)
+  }
 
   async function getUser() {
     const {
@@ -90,31 +104,6 @@ export default function LinkForm() {
     }
   }
 
-  async function createUrl({
-    filePath,
-    data,
-  }: {
-    filePath: string
-    data: LinkFormValues
-  }) {
-    // compute expiration in seconds
-    const selectedDate = new Date(data.expires!)
-    const currentDate = new Date()
-
-    const millisecondsUntilExpiration =
-      selectedDate.getTime() - currentDate.getTime()
-    const secondsUntilExpiration = Math.floor(
-      millisecondsUntilExpiration / 1000
-    )
-
-    // create url
-    const { data: signedUrlData } = await supabase.storage
-      .from("docs")
-      .createSignedUrl(filePath, secondsUntilExpiration)
-
-    return signedUrlData?.signedUrl
-  }
-
   async function createLink({
     filePath,
     data,
@@ -123,14 +112,30 @@ export default function LinkForm() {
     data: LinkFormValues
   }) {
     try {
-      const signedUrl = await createUrl({ filePath, data })
+      // compute expiration in seconds
+      const selectedDate = new Date(data.expires!)
+      const currentDate = new Date()
+
+      const millisecondsUntilExpiration =
+        selectedDate.getTime() - currentDate.getTime()
+      const secondsUntilExpiration = Math.floor(
+        millisecondsUntilExpiration / 1000
+      )
+
+      // create url
+      const { data: signedUrlData } = await supabase.storage
+        .from("docs")
+        .createSignedUrl(filePath, secondsUntilExpiration)
+
+      console.log(signedUrlData?.signedUrl)
       const updates = {
         user_id: user,
-        url: signedUrl,
+        url: signedUrlData?.signedUrl,
         password: data.password,
         expires: data.expires.toISOString(),
         filename: filePath,
       }
+
       let { data: link, error } = await supabase
         .from("links")
         .insert(updates)
@@ -141,7 +146,7 @@ export default function LinkForm() {
       toast({
         description: "Your link has been created successfully",
         action: (
-          <Link href={`/links/${link?.id}`}>
+          <Link href={`/docs/${link?.id}`}>
             <ToastAction altText="Try again">Visit</ToastAction>
           </Link>
         ),

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Activity, Eye, Trash } from "lucide-react"
+import { Activity, Copy, Eye, Trash } from "lucide-react"
 
 export function Links({
   allLinks,
@@ -8,6 +8,17 @@ export function Links({
   allLinks: any
   onDeleteLink: (linkId: string) => void
 }) {
+  const handleCopyLink = (linkId: string) => {
+    const link = `https://docbase.vercel.app/links/${linkId}`
+    navigator.clipboard
+      .writeText(link)
+      .then(() => {
+        console.log("Link copied to clipboard:", link)
+      })
+      .catch((error) => {
+        console.error("Failed to copy link:", error)
+      })
+  }
   return (
     <div>
       {allLinks &&
@@ -22,21 +33,24 @@ export function Links({
               </p>
             </div>
             <div>
-              <Link href={link.url}>
+              <Link href={`/analytics/${link.id}`}>
                 {" "}
                 <Activity className="h-4 w-4 ml-4 text-muted-foreground" />
               </Link>
             </div>
             <div>
-              <Link href={`/analytics/${link.id}`}>
-                {" "}
-                <Eye className="h-4 w-4 ml-4 text-muted-foreground" />
-              </Link>
+              {" "}
+              <Copy
+                className="h-4 w-4 ml-4 text-muted-foreground"
+                onClick={() => handleCopyLink(link.id)}
+                style={{ cursor: "pointer" }}
+              />
             </div>
             <div>
               <Trash
                 className="h-4 w-4 ml-4 text-muted-foreground"
                 onClick={() => onDeleteLink(link.id)}
+                style={{ cursor: "pointer" }}
               />
             </div>
           </div>
