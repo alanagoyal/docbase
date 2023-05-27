@@ -100,7 +100,7 @@ export default function Doc({ params }: { params: { id: string } }) {
   return (
     <div className="flex flex-col items-center min-h-screen pt-20 py-2">
       <h1 className="text-4xl font-bold mb-4">
-        {name} is sharing a document with you
+        {name && `${name} is sharing a document with you`}
       </h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">

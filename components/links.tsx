@@ -41,7 +41,7 @@ export function Links({
                 {link.filename}
               </p>
               <p className="text-sm text-muted-foreground">
-                {new Date(link.created_at).toISOString()}
+                {new Date(link.created_at).toLocaleString("en-US")}
               </p>
             </div>
             <div>

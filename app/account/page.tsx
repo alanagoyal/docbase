@@ -16,6 +16,7 @@ import {
   FormLabel,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { toast } from "@/components/ui/use-toast"
 
 import { useSupabase } from "../supabase-provider"
 
@@ -105,7 +106,9 @@ export default function Account() {
         .update(updates)
         .eq("id", user)
       if (error) throw error
-      alert("Updated!")
+      toast({
+        description: "Your profile has been updated",
+      })
     } catch (error) {
       console.log(error)
     }

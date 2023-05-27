@@ -63,7 +63,7 @@ export default function LinkForm() {
   const router = useRouter()
   const [protectWithPassword, setProtectWithPassword] = useState<boolean>(true)
   const [protectWithExpiration, setProtectWithExpiration] =
-    useState<boolean>(true)
+    useState<boolean>(false)
 
   useEffect(() => {
     getUser()
@@ -97,6 +97,9 @@ export default function LinkForm() {
     filePath: string
     data: LinkFormValues
   }) {
+    if (!protectWithExpiration) {
+      data.expires = new Date("2900-01-01")
+    }
     // compute expiration in seconds
     const selectedDate = new Date(data.expires!)
     const currentDate = new Date()
@@ -124,9 +127,7 @@ export default function LinkForm() {
   }) {
     try {
       const signedUrl = await createUrl({ filePath, data })
-      if (!protectWithExpiration) {
-        data.expires = new Date("2900-01-01")
-      }
+
       const updates = {
         user_id: user,
         url: signedUrl,

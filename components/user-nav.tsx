@@ -72,14 +72,7 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarFallback>
-              {name
-                ? name
-                    .split(" ")
-                    .map((name) => name.charAt(0).toUpperCase())
-                    .join("")
-                : ""}
-            </AvatarFallback>
+            <AvatarFallback>{email?.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

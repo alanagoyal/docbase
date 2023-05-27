@@ -6,6 +6,7 @@ import { useSupabase } from "@/app/supabase-provider"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
+import { toast } from "./ui/use-toast"
 
 type Links = Database["public"]["Tables"]["links"]["Row"]
 
@@ -25,12 +26,11 @@ export default function Doc({
   const uploadDoc: React.ChangeEventHandler<HTMLInputElement> = async (
     event
   ) => {
-    console.log("in upload doc")
     try {
       setUploading(true)
 
       if (!event.target.files || event.target.files.length === 0) {
-        throw new Error("You must select a file to upload.")
+        throw new Error("You must select a file to upload")
       }
       const file = event.target.files[0]
       const filePath = `${file.name}`
@@ -46,7 +46,9 @@ export default function Doc({
 
       onUpload(filePath)
     } catch (error) {
-      alert("Error uploading doc!")
+      toast({
+        description: "Error uploading file",
+      })
       console.log(error)
     } finally {
       setUploading(false)
