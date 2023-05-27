@@ -20,11 +20,7 @@ import { Input } from "@/components/ui/input"
 import { useSupabase } from "../supabase-provider"
 
 const profileFormSchema = z.object({
-  email: z
-    .string({
-      required_error: "Please enter a valid email",
-    })
-    .email(),
+  email: z.string().optional(),
   name: z.string().optional(),
 })
 
