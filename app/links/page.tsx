@@ -43,7 +43,7 @@ export default function LinksPage() {
     setAllLinks(links)
   }
   return (
-    <div className="flex flex-col items-center min-h-screen pt-20 py-2">
+    <div className="flex flex-col items-center pt-20 py-2">
       <h1 className="text-4xl font-bold mb-4">Your Links</h1>
       <div className="w-half">
         <Links allLinks={allLinks} onDeleteLink={deleteLink} />

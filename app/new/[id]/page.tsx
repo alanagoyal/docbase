@@ -262,13 +262,12 @@ export default function LinkForm({ params }: { params: { id: string } }) {
           <Doc
             uid={user}
             url={url}
-            size={150}
             onUpload={(filePath) => {
               setFilePath(filePath)
             }}
           />
           <Button
-            className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"
+            className="bg-[#9FACE6] text-white font-bold  px-4 rounded w-full"
             type="submit"
           >
             Create Link

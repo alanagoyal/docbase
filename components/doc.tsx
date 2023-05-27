@@ -12,12 +12,10 @@ type Links = Database["public"]["Tables"]["links"]["Row"]
 export default function Doc({
   uid,
   url,
-  size,
   onUpload,
 }: {
   uid: string
   url: Links["url"]
-  size: number
   onUpload: (url: string) => void
 }) {
   const { supabase } = useSupabase()

@@ -45,7 +45,7 @@ type LinkFormValues = z.infer<typeof linkFormSchema>
 
 const defaultValues: Partial<LinkFormValues> = {
   password: "",
-  expires: new Date("2900-01-01"),
+  expires: new Date(),
 }
 
 type Links = Database["public"]["Tables"]["links"]["Row"]
@@ -124,6 +124,9 @@ export default function LinkForm() {
   }) {
     try {
       const signedUrl = await createUrl({ filePath, data })
+      if (!protectWithExpiration) {
+        data.expires = new Date("2900-01-01")
+      }
       const updates = {
         user_id: user,
         url: signedUrl,
@@ -218,7 +221,7 @@ export default function LinkForm() {
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-[240px] pl-3 text-left font-normal",
+                            "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
                         >
@@ -254,20 +257,22 @@ export default function LinkForm() {
               )}
             />
           )}
-          <Doc
-            uid={user}
-            url={url}
-            size={150}
-            onUpload={(filePath) => {
-              setFilePath(filePath)
-            }}
-          />
-          <Button
-            className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"
-            type="submit"
-          >
-            Create Link
-          </Button>
+          <div className="space-y-4">
+            {" "}
+            <Doc
+              uid={user}
+              url={url}
+              onUpload={(filePath) => {
+                setFilePath(filePath)
+              }}
+            />
+            <Button
+              className="bg-[#9FACE6] text-white font-bold px-4 rounded w-full"
+              type="submit"
+            >
+              Create Link
+            </Button>
+          </div>
         </form>
       </Form>
     </div>

@@ -13,7 +13,7 @@ export function Viewers({ allViews }: { allViews: any }) {
             <div className="ml-4 space-y-1">
               <p className="text-sm font-medium leading-none">{view.email}</p>
               <p className="text-sm text-muted-foreground">
-                {new Date(view.viewed_at).toISOString()}
+                {new Date(view.viewed_at).toLocaleString("en-US")}
               </p>
             </div>
           </div>
