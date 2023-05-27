@@ -58,18 +58,9 @@ create table links (
 -- Set up Storage
 insert into storage.buckets (id, name)
   values ('docs', 'docs');
-
--- Set up access controls for storage.
--- See https://supabase.com/docs/guides/storage#policy-examples for more details.
-create policy "Docs are publicly accessible." on storage.objects
-  for select using (bucket_id = 'docs');
-
-create policy "Anyone can upload a doc." on storage.objects
-  for insert with check (bucket_id = 'docs');
-  for update with check (bucket_id = 'docs');
-  for delete with check (bucket_id = 'docs');
-
 ```
+
+These instructions don't include RLS or access controls for storage. Make sure to add those if you want them!
 
 Grab the project URL and anon key from the API settings and put them in a new .env.local file in the root directory as shown:
 
