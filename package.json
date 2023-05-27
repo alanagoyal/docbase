@@ -30,6 +30,7 @@
     "class-variance-authority": "^0.4.0",
     "clsx": "^1.2.1",
     "date-fns": "^2.30.0",
+    "encoding": "^0.1.13",
     "lucide-react": "^0.221.0",
     "next": "^13.3.0",
     "next-themes": "^0.2.1",
