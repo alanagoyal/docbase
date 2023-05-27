@@ -45,7 +45,8 @@ type LinkFormValues = z.infer<typeof linkFormSchema>
 
 const defaultValues: Partial<LinkFormValues> = {
   password: "",
-  expires: new Date(),
+  // set default expiration date to 1 week from now
+  expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
 }
 
 type Links = Database["public"]["Tables"]["links"]["Row"]
