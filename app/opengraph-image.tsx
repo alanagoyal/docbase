@@ -19,7 +19,6 @@ export default async function handler() {
         DocBase 📘
       </div>
     ),
-
     {
       width: 1200,
       height: 630,
