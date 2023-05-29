@@ -90,7 +90,7 @@ export function UserNav() {
           <Link href="/account">
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+              <span>Account</span>
             </DropdownMenuItem>
           </Link>
           <Link href="/new">
