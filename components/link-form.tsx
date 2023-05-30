@@ -125,7 +125,7 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
       toast({
         description: "Your link has been created successfully",
         action: (
-          <Link href={`/links/${link?.id}`}>
+          <Link href={`/view/${link?.id}`}>
             <ToastAction altText="Visit">Visit</ToastAction>
           </Link>
         ),
