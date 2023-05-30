@@ -36,7 +36,7 @@ create trigger on_auth_user_created
 
 -- Set up table for links
 create table links (
-  id uuid on delete cascade not null primary key,
+  id uuid not null primary key,
   created_at timestamp with time zone,
   user_id uuid references public.profiles,
   url text,
@@ -46,8 +46,8 @@ create table links (
 );
 
 -- Set up table for viewers
-create table links (
-  id uuid on delete cascade not null primary key,
+create table viewers (
+  id uuid not null primary key,
   created_at timestamp with time zone,
   link_id uuid references public.links on delete cascade,
   email text,
