@@ -1,6 +1,6 @@
-"use client"
-
 import { useEffect, useState } from "react"
+import { cookies, headers } from "next/headers"
+import { createServerComponentSupabaseClient } from "@supabase/auth-helpers-nextjs"
 import { Activity, Users } from "lucide-react"
 
 import {
@@ -13,40 +13,33 @@ import {
 import { Viewers } from "@/components/viewers"
 import { useSupabase } from "@/app/supabase-provider"
 
-export default function Analytics({ params }: { params: { id: string } }) {
-  const [totalViews, setTotalViews] = useState<any>(null)
-  const [uniqueViews, setUniqueViews] = useState<any>(null)
-  const [allViews, setAllViews] = useState<any>(null)
+export default async function Analytics({
+  params,
+}: {
+  params: { id: string }
+}) {
   const id = params.id
-  const { supabase } = useSupabase()
-  console.log(allViews)
 
-  useEffect(() => {
-    getAnalytics()
-  }, [])
+  const supabase = createServerComponentSupabaseClient({ cookies, headers })
 
-  async function getAnalytics() {
-    const { data: viewers } = await supabase
-      .from("viewers")
-      .select("*")
-      .eq("link_id", id)
+  const { data: viewers } = await supabase
+    .from("viewers")
+    .select("*")
+    .eq("link_id", id)
 
-    setUniqueViews(viewers?.length)
+  const allViewers = viewers?.length
 
-    const { data: uniqueEmails } = await supabase
-      .from("viewers")
-      .select("email", { count: "exact" })
-      .eq("link_id", id)
+  const { data: uniqueEmails } = await supabase
+    .from("viewers")
+    .select("email", { count: "exact" })
+    .eq("link_id", id)
 
-    setTotalViews(uniqueEmails?.length)
+  const uniqueViewers = uniqueEmails?.length
 
-    const { data: allViews } = await supabase
-      .from("viewers")
-      .select("email, viewed_at")
-      .eq("link_id", id)
-
-    setAllViews(allViews)
-  }
+  const { data: allViews } = await supabase
+    .from("viewers")
+    .select("email, viewed_at")
+    .eq("link_id", id)
 
   return (
     <div className="flex flex-col items-center min-h-screen pt-20 py-2">
@@ -63,7 +56,7 @@ export default function Analytics({ params }: { params: { id: string } }) {
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{totalViews}</div>
+                  <div className="text-2xl font-bold">{allViewers}</div>
                 </CardContent>
               </Card>
               <Card className="w-full">
@@ -74,7 +67,7 @@ export default function Analytics({ params }: { params: { id: string } }) {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{uniqueViews}</div>
+                  <div className="text-2xl font-bold">{uniqueViewers}</div>
                 </CardContent>
               </Card>
             </div>
@@ -84,7 +77,7 @@ export default function Analytics({ params }: { params: { id: string } }) {
               <CardHeader>
                 <CardTitle>Recent Views</CardTitle>
                 <CardDescription>
-                  More information about your {totalViews} views
+                  More information about your {allViewers} views
                 </CardDescription>
               </CardHeader>
               <CardContent>
