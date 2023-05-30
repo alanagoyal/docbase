@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { PopoverTrigger } from "@radix-ui/react-popover"
+import * as bcrypt from "bcryptjs"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
@@ -106,12 +107,14 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
     data: LinkFormValues
   }) {
     try {
+      const passwordHash = bcrypt.hashSync(data.password!, 10)
+
       const signedUrl = await createUrl({ filePath, data })
 
       const updates = {
         user_id: user.id,
         url: signedUrl,
-        password: data.password,
+        password: passwordHash,
         expires: data.expires.toISOString(),
         filename: filePath,
       }

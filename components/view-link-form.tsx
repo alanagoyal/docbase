@@ -4,6 +4,7 @@ import { type } from "os"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
+import * as bcrypt from "bcryptjs"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 
@@ -60,8 +61,10 @@ export default function ViewLinkForm({ link }: { link: any }) {
     if (!passwordRequired) {
       router.push(`${link?.url}`)
     }
+
     // check password
-    if (link?.password === data.password) {
+
+    if (bcrypt.compareSync(data.password!, link.password!)) {
       router.push(`${link?.url}`)
     } else {
       toast({
