@@ -262,8 +262,6 @@ export default function LinkForm() {
           <div className="space-y-4">
             {" "}
             <Doc
-              uid={user}
-              url={url}
               onUpload={(filePath) => {
                 setFilePath(filePath)
               }}

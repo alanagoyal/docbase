@@ -1,15 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { PopoverTrigger } from "@radix-ui/react-popover"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 
-import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -23,85 +22,80 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Switch } from "@/components/ui/switch"
-import { ToastAction } from "@/components/ui/toast"
-import { useToast } from "@/components/ui/use-toast"
-import Doc from "@/components/doc"
+import { useSupabase } from "@/app/supabase-provider"
 
-import { useSupabase } from "../../supabase-provider"
+import Doc from "./doc"
+import { Popover, PopoverContent } from "./ui/popover"
+import { Switch } from "./ui/switch"
+import { ToastAction } from "./ui/toast"
+import { toast } from "./ui/use-toast"
 
 const linkFormSchema = z.object({
+  protectWithPassword: z.boolean(),
+  protectWithExpiration: z.boolean(),
   password: z.string().optional(),
   expires: z.date({ required_error: "Please enter a valid date" }),
 })
 
 type LinkFormValues = z.infer<typeof linkFormSchema>
 
-const defaultValues: Partial<LinkFormValues> = {
-  password: "",
-  expires: new Date(),
-}
-
-type Links = Database["public"]["Tables"]["links"]["Row"]
-
-export default function LinkForm({ params }: { params: { id: string } }) {
-  const id = params.id
+export default function LinkForm({ link, user }: { link: any; user: any }) {
   const { supabase } = useSupabase()
   const [filePath, setFilePath] = useState<string>("")
-  const [url, setUrl] = useState<Links["url"]>("")
-  const [user, setUser] = useState<any>("")
-  const { toast } = useToast()
-  const form = useForm<LinkFormValues>({
-    resolver: zodResolver(linkFormSchema),
-    defaultValues,
-  })
-  const router = useRouter()
-  const [protectWithPassword, setProtectWithPassword] = useState<boolean>(true)
+  const [protectWithPassword, setProtectWithPassword] = useState<boolean>(false)
   const [protectWithExpiration, setProtectWithExpiration] =
     useState<boolean>(true)
-  const [linkData, setLinkData] = useState<any>(null)
+  console.log(link)
+  console.log(user)
+  const form = useForm<LinkFormValues>({
+    resolver: zodResolver(linkFormSchema),
 
-  useEffect(() => {
-    getUser()
-    getLink()
-  }, [])
-
-  async function getLink() {
-    const { data: link, error } = await supabase
-      .from("links")
-      .select("*")
-      .eq("id", id)
-      .single()
-
-    setLinkData(link)
-    console.log(link)
-  }
-
-  async function getUser() {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    setUser(session?.user.id || "")
-    if (!session) {
-      router.push("/")
-    }
-  }
+    defaultValues: {
+      protectWithPassword: link?.password || false,
+      protectWithExpiration: link?.expires || false,
+      password: link?.password || "",
+      expires:
+        (link?.expires && new Date(link?.expires)) ||
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+  })
 
   function onSubmit(data: LinkFormValues) {
-    if (data) {
+    console.log("onSubmit")
+    if (data && filePath) {
       // get from data
       createLink({
         filePath,
         data,
       })
+    } else {
+      console.log("Error with filename")
     }
+  }
+
+  async function createUrl({
+    filePath,
+    data,
+  }: {
+    filePath: string
+    data: LinkFormValues
+  }) {
+    // compute expiration in seconds
+    const selectedDate = new Date(data.expires!)
+    const currentDate = new Date()
+
+    const millisecondsUntilExpiration =
+      selectedDate.getTime() - currentDate.getTime()
+    const secondsUntilExpiration = Math.floor(
+      millisecondsUntilExpiration / 1000
+    )
+
+    // create url
+    const { data: signedUrlData } = await supabase.storage
+      .from("docs")
+      .createSignedUrl(filePath, secondsUntilExpiration)
+
+    return signedUrlData?.signedUrl
   }
 
   async function createLink({
@@ -112,33 +106,18 @@ export default function LinkForm({ params }: { params: { id: string } }) {
     data: LinkFormValues
   }) {
     try {
-      // compute expiration in seconds
-      const selectedDate = new Date(data.expires!)
-      const currentDate = new Date()
+      const signedUrl = await createUrl({ filePath, data })
 
-      const millisecondsUntilExpiration =
-        selectedDate.getTime() - currentDate.getTime()
-      const secondsUntilExpiration = Math.floor(
-        millisecondsUntilExpiration / 1000
-      )
-
-      // create url
-      const { data: signedUrlData } = await supabase.storage
-        .from("docs")
-        .createSignedUrl(filePath, secondsUntilExpiration)
-
-      console.log(signedUrlData?.signedUrl)
       const updates = {
-        user_id: user,
-        url: signedUrlData?.signedUrl,
+        user_id: user.id,
+        url: signedUrl,
         password: data.password,
         expires: data.expires.toISOString(),
         filename: filePath,
       }
-
       let { data: link, error } = await supabase
         .from("links")
-        .insert(updates)
+        .upsert(updates)
         .select("id")
         .single()
       if (error) throw error
@@ -146,8 +125,8 @@ export default function LinkForm({ params }: { params: { id: string } }) {
       toast({
         description: "Your link has been created successfully",
         action: (
-          <Link href={`/docs/${link?.id}`}>
-            <ToastAction altText="Try again">Visit</ToastAction>
+          <Link href={`/links/${link?.id}`}>
+            <ToastAction altText="Visit">Visit</ToastAction>
           </Link>
         ),
       })
@@ -157,8 +136,7 @@ export default function LinkForm({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen pt-20 py-2">
-      <h1 className="text-4xl font-bold mb-4">New Link</h1>
+    <div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
@@ -223,7 +201,7 @@ export default function LinkForm({ params }: { params: { id: string } }) {
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-[240px] pl-3 text-left font-normal",
+                            "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
                         >
@@ -259,19 +237,20 @@ export default function LinkForm({ params }: { params: { id: string } }) {
               )}
             />
           )}
-          <Doc
-            uid={user}
-            url={url}
-            onUpload={(filePath) => {
-              setFilePath(filePath)
-            }}
-          />
-          <Button
-            className="bg-[#9FACE6] text-white font-bold  px-4 rounded w-full"
-            type="submit"
-          >
-            Create Link
-          </Button>
+          <div className="space-y-4">
+            {" "}
+            <Doc
+              onUpload={(filePath) => {
+                setFilePath(filePath)
+              }}
+            />
+            <Button
+              className="bg-[#9FACE6] text-white font-bold px-4 rounded w-full"
+              type="submit"
+            >
+              Create Link
+            </Button>
+          </div>
         </form>
       </Form>
     </div>

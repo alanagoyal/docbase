@@ -10,15 +10,7 @@ import { toast } from "./ui/use-toast"
 
 type Links = Database["public"]["Tables"]["links"]["Row"]
 
-export default function Doc({
-  uid,
-  url,
-  onUpload,
-}: {
-  uid: string
-  url: Links["url"]
-  onUpload: (url: string) => void
-}) {
+export default function Doc({ onUpload }: { onUpload: (url: string) => void }) {
   const { supabase } = useSupabase()
   const [uploading, setUploading] = useState(false)
   const [complete, setComplete] = useState(false)
