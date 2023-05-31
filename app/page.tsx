@@ -57,7 +57,7 @@ export default async function IndexPage() {
           <p>
             Built with <span className="text-red-500">❤️</span> by{" "}
             <a
-              href="https://twitter.com/alanaagoyal/"
+              href={siteConfig.links.twitter}
               target="_blank"
               rel="noopener noreferrer"
             >
