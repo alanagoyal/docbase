@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button"
 
+import Link from "next/link"
+
 import { useSupabase } from "./supabase-provider"
 
 export default async function IndexPage() {
@@ -38,6 +40,11 @@ export default async function IndexPage() {
             >
               Get Started
             </Button>
+            <Link href=""
+              className="text-white text-sm px-8 py-4 font-semibold"
+            >
+              View on Github
+            </Link>
           </div>
         </section>
       </main>
