@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button"
 
 import Link from "next/link"
+import { buttonVariants } from "@/components/ui/button"
+import { siteConfig, SiteConfig } from "@/config/site"
 
 import { useSupabase } from "./supabase-provider"
 
@@ -40,8 +42,8 @@ export default async function IndexPage() {
             >
               Get Started
             </Button>
-            <Link href=""
-              className="text-white text-sm px-8 py-4 font-semibold"
+            <Link href={siteConfig.links.github}
+              className={buttonVariants({variant: "ghost"})}
             >
               View on Github
             </Link>
