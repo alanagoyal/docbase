@@ -2,6 +2,10 @@
 
 import { Button } from "@/components/ui/button"
 
+import Link from "next/link"
+import { buttonVariants } from "@/components/ui/button"
+import { siteConfig, SiteConfig } from "@/config/site"
+
 import { useSupabase } from "./supabase-provider"
 
 export default async function IndexPage() {
@@ -38,6 +42,11 @@ export default async function IndexPage() {
             >
               Get Started
             </Button>
+            <Link href={siteConfig.links.github}
+              className={buttonVariants({variant: "ghost"})}
+            >
+              View on Github
+            </Link>
           </div>
         </section>
       </main>
@@ -48,7 +57,7 @@ export default async function IndexPage() {
           <p>
             Built with <span className="text-red-500">❤️</span> by{" "}
             <a
-              href="https://twitter.com/alanaagoyal/"
+              href={siteConfig.links.twitter}
               target="_blank"
               rel="noopener noreferrer"
             >
