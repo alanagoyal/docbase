@@ -9,7 +9,7 @@ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 
-[Your Project Name] must retain the above copyright notice,
+DocBase must retain the above copyright notice,
 this list of conditions and the following disclaimer.
 
 The above copyright notice and this permission notice shall be
