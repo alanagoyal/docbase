@@ -107,6 +107,7 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
     data: LinkFormValues
   }) {
     try {
+      console.log(data.password)
       const passwordHash = bcrypt.hashSync(data.password!, 10)
 
       const signedUrl = await createUrl({ filePath, data })
@@ -114,7 +115,7 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
       const updates = {
         user_id: user.id,
         url: signedUrl,
-        password: passwordHash,
+        password: data.password ? passwordHash : null,
         expires: data.expires.toISOString(),
         filename: filePath,
       }

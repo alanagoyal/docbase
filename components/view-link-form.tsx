@@ -49,6 +49,10 @@ export default function ViewLinkForm({ link }: { link: any }) {
   const { supabase } = useSupabase()
   const passwordRequired = link?.password ? true : false
 
+  console.log(link?.password)
+
+  console.log(passwordRequired)
+
   async function onSubmit(data: LinkFormValues) {
     // log viewer
     const updates = {
