@@ -96,7 +96,7 @@ export function UserNav() {
           <Link href="/new">
             <DropdownMenuItem>
               <PlusCircle className="mr-2 h-4 w-4" />
-              <span>New Link</span>
+              <span>New Linky Link</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>

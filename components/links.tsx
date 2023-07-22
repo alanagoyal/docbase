@@ -17,7 +17,7 @@ export function Links({
   onDeleteLink: (linkId: string) => void
 }) {
   const handleCopyLink = (linkId: string) => {
-    const link = `https://getdocbase.com/view/${linkId}`
+    const link = `http://localhost:3000/view/${linkId}`
     navigator.clipboard
       .writeText(link)
       .then(() => {
