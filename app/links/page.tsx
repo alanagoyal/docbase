@@ -38,6 +38,7 @@ export default function LinksPage() {
       .from("links")
       .select("*")
       .eq("user_id", session?.user.id)
+    console.log("yamsterino", links, error)
     setAllLinks(links)
   }
   return (
@@ -51,12 +52,12 @@ export default function LinksPage() {
           <Button
             className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"
             onClick={(e) => {
-              e.preventDefault()
+              // e.preventDefault()
             }}
             size="sm"
           >
             <Plus className="mr-2 h-4 w-4" />
-            New Link
+            New Linkster
           </Button>
         </Link>
       </div>

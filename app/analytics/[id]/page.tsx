@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
 import { cookies, headers } from "next/headers"
 import { createServerComponentSupabaseClient } from "@supabase/auth-helpers-nextjs"
+import { Card, Metric, Text } from "@tremor/react"
 import { Activity, Users } from "lucide-react"
 
 import {
-  Card,
+  // Card,
   CardContent,
   CardDescription,
   CardHeader,
@@ -48,27 +49,15 @@ export default async function Analytics({
         <div className="flex-1 space-y-4 p-8 pt-6">
           <div className="flex items-center justify-between space-y-2">
             <div className="grid gap-4 grid-cols-1 md:grid-cols-2 w-full">
-              <Card className="w-full">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium pr-4">
-                    Total Views
-                  </CardTitle>
-                  <Activity className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{allViewers}</div>
-                </CardContent>
+              <Card className="max-w-xs mx-auto">
+                <Text>Total Views</Text>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+                <Metric>{allViewers}</Metric>
               </Card>
-              <Card className="w-full">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium pr-4">
-                    Unique Views
-                  </CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{uniqueViewers}</div>
-                </CardContent>
+              <Card className="max-w-xs mx-auto">
+                <Text>Unique Views</Text>
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <Metric>{uniqueViewers}</Metric>
               </Card>
             </div>
           </div>
