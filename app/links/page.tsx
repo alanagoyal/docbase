@@ -38,7 +38,6 @@ export default function LinksPage() {
       .from("links")
       .select("*")
       .eq("user_id", session?.user.id)
-    console.log("yamsterino", links, error)
     setAllLinks(links)
   }
   return (
