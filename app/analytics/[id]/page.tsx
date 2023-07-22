@@ -28,7 +28,17 @@ export default async function Analytics({
     .select("*")
     .eq("link_id", id)
 
-  const allViewers = viewers?.length
+  const allViews = [
+    {
+      email: "alana@example.com",
+      viewed_at: "2023-07-22T12:34:56Z",
+    },
+    {
+      email: "mathu@example.com",
+      viewed_at: "2023-07-21T09:15:30Z",
+    },
+  ]
+  const allViewers = allViews?.length
 
   const { data: uniqueEmails } = await supabase
     .from("viewers")
@@ -37,10 +47,10 @@ export default async function Analytics({
 
   const uniqueViewers = uniqueEmails?.length
 
-  const { data: allViews } = await supabase
-    .from("viewers")
-    .select("email, viewed_at")
-    .eq("link_id", id)
+  // const { data: allViews } = await supabase
+  //   .from("viewers")
+  //   .select("email, viewed_at")
+  //   .eq("link_id", id)
 
   return (
     <div className="flex flex-col items-center min-h-screen pt-20 py-2">
