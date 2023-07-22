@@ -1,3 +1,12 @@
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+} from "@tremor/react"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function Viewers({ allViews }: { allViews: any }) {
