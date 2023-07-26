@@ -51,7 +51,7 @@ export default function LinksPage() {
           <Button
             className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"
             onClick={(e) => {
-              e.preventDefault()
+              // e.preventDefault()
             }}
             size="sm"
           >

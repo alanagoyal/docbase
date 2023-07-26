@@ -46,8 +46,8 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
   const [protectWithPassword, setProtectWithPassword] = useState<boolean>(false)
   const [protectWithExpiration, setProtectWithExpiration] =
     useState<boolean>(true)
-  console.log(link)
-  console.log(user)
+  console.log("link", link)
+  console.log("user", user)
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
 

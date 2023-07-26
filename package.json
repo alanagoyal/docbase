@@ -15,6 +15,7 @@
     "update-types": "npx supabase gen types typescript --project-id \"dgnvviqfnfrqdxuwuyrm\" > types/supabase.ts"
   },
   "dependencies": {
+    "@heroicons/react": "^1.0.6",
     "@hookform/resolvers": "^3.1.0",
     "@radix-ui/react-avatar": "^1.0.2",
     "@radix-ui/react-dropdown-menu": "^2.0.4",
@@ -26,6 +27,7 @@
     "@radix-ui/react-tooltip": "^1.0.6",
     "@supabase/auth-helpers-nextjs": "^0.6.1",
     "@supabase/supabase-js": "^2.22.0",
+    "@tremor/react": "^3.4.1",
     "@vercel/og": "^0.5.6",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.4.0",
