@@ -22,7 +22,7 @@ export default function LinksPage() {
   async function deleteLink(linkId: string) {
     const { error } = await supabase.from("links").delete().eq("id", linkId)
     if (error) {
-      console.log(error)
+      console.error(error)
     }
     toast({
       description: "Your link has been deleted",

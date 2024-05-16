@@ -58,7 +58,7 @@ export function UserNav() {
         setAvatar(data.avatar_url)
       }
     } catch (error) {
-      console.log(error)
+      console.error(error)
     }
   }
 

@@ -41,7 +41,7 @@ export default function Doc({ onUpload }: { onUpload: (url: string) => void }) {
       toast({
         description: "Error uploading file",
       })
-      console.log(error)
+      console.error(error)
     } finally {
       setUploading(false)
       setComplete(true)

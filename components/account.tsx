@@ -57,7 +57,7 @@ export default function AccountForm({
         description: "Your profile has been updated",
       })
     } catch (error) {
-      console.log(error)
+      console.error(error)
     }
   }
 

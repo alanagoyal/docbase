@@ -29,7 +29,6 @@ export default function SupabaseProvider({
   const router = useRouter()
 
   useEffect(() => {
-    console.log("REFRESHING")
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {

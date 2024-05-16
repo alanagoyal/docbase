@@ -46,8 +46,6 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
   const [protectWithPassword, setProtectWithPassword] = useState<boolean>(false)
   const [protectWithExpiration, setProtectWithExpiration] =
     useState<boolean>(true)
-  console.log(link)
-  console.log(user)
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
 
@@ -62,7 +60,6 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
   })
 
   function onSubmit(data: LinkFormValues) {
-    console.log("onSubmit")
     if (data && filePath) {
       // get from data
       createLink({
@@ -70,7 +67,7 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
         data,
       })
     } else {
-      console.log("Error with filename")
+      console.error("Error with filename")
     }
   }
 
@@ -107,7 +104,6 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
     data: LinkFormValues
   }) {
     try {
-      console.log(data.password)
       const passwordHash = bcrypt.hashSync(data.password!, 10)
 
       const signedUrl = await createUrl({ filePath, data })
@@ -135,7 +131,7 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
         ),
       })
     } catch (error) {
-      console.log(error)
+      console.error(error)
     }
   }
 
