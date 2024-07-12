@@ -1,4 +1,4 @@
-# DocBase
+# Docbase
 
 Docbase is a free & open-source alternative to [DocSend](https://docsend.com), which allows you to securely share documents & track engagement in real-time. With DocBase, you can upload any document, get a secure link (with or without a password or expiration date), and view who interacts with it when. 
 
