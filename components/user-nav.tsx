@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { LogOut, PlusCircle, User, Link as LinkIcon } from "lucide-react"
+import { LogOut, User, Link as LinkIcon, Plus } from "lucide-react"
 
 import { Database } from "@/types/supabase"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -49,22 +49,22 @@ export function UserNav({ account }: { account: User }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <Link href="/account">
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Account</span>
-            </DropdownMenuItem>
-          </Link>
           <Link href="/new">
             <DropdownMenuItem>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              <span>New Link</span>
+              <Plus className="mr-2 h-4 w-4" />
+              <span>New</span>
             </DropdownMenuItem>
           </Link>
           <Link href="/links">
             <DropdownMenuItem>
               <LinkIcon className="mr-2 h-4 w-4" />
               <span>Links</span>
+            </DropdownMenuItem>
+          </Link>
+          <Link href="/account">
+            <DropdownMenuItem>
+              <User className="mr-2 h-4 w-4" />
+              <span>Account</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
