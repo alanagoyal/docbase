@@ -15,52 +15,15 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useSupabase } from "@/app/supabase-provider"
+import { createClient } from "@/utils/supabase/client"
 
-type Profiles = Database["public"]["Tables"]["profiles"]["Row"]
+type User = Database["public"]["Tables"]["users"]["Row"]
 
-export function UserNav() {
-  const { supabase } = useSupabase()
+export function UserNav({ account }: { account: User }) {
+  const supabase = createClient()
   const router = useRouter()
-  const [name, setName] = useState<Profiles["full_name"]>("")
-  const [email, setEmail] = useState<Profiles["email"]>("")
-  const [avatar, setAvatar] = useState<Profiles["avatar_url"]>("")
-  const [user, setUser] = useState<any>("")
-
-  useEffect(() => {
-    getProfile()
-  }, [])
-
-  async function getProfile() {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    setUser(session?.user.id)
-
-    try {
-      let { data, error, status } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session!.user.id)
-        .single()
-
-      if (error && status != 406) {
-        throw error
-      }
-
-      if (data) {
-        setName(data.full_name)
-        setEmail(data.email)
-        setAvatar(data.avatar_url)
-      }
-    } catch (error) {
-      console.error(error)
-    }
-  }
 
   async function signOut() {
     await supabase.auth.signOut()
@@ -72,16 +35,16 @@ export function UserNav() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarFallback>{email?.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>{account.email?.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{name}</p>
+            <p className="text-sm font-medium leading-none">{account.name}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {email}
+              {account.email}
             </p>
           </div>
         </DropdownMenuLabel>

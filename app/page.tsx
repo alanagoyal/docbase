@@ -4,21 +4,10 @@ import { Button } from "@/components/ui/button"
 
 import Link from "next/link"
 import { buttonVariants } from "@/components/ui/button"
-import { siteConfig, SiteConfig } from "@/config/site"
+import { siteConfig } from "@/config/site"
 
-import { useSupabase } from "./supabase-provider"
 
 export default async function IndexPage() {
-  const { supabase } = useSupabase()
-
-  async function signInWithGoogle() {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: "https://getdocbase.com/new/",
-      },
-    })
-  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -33,15 +22,17 @@ export default async function IndexPage() {
             </p>
           </div>
           <div className="flex gap-4">
+            <Link href="/login">
             <Button
               className=" text-white px-8 py-4 rounded-md text-base"
-              onClick={signInWithGoogle}
               style={{
                 background: "linear-gradient(48deg, #74EBD5 0%, #9FACE6 100%)",
               }}
             >
               Get Started
             </Button>
+            </Link>
+
             <Link href={siteConfig.links.github}
               className={buttonVariants({variant: "ghost"})}
             >
@@ -50,22 +41,6 @@ export default async function IndexPage() {
           </div>
         </section>
       </main>
-
-      <footer className="text-center py-8">
-        {" "}
-        <div className="text-center mb-2">
-          <p>
-            Built with <span className="text-red-500">❤️</span> by{" "}
-            <a
-              href={siteConfig.links.twitter}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Alana Goyal
-            </a>{" "}
-          </p>
-        </div>
-      </footer>
     </div>
   )
 }

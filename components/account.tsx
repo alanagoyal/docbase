@@ -14,47 +14,45 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
-import { useSupabase } from "@/app/supabase-provider"
+import { createClient } from "@/utils/supabase/client"
+import { Database } from "@/types/supabase"
 
 const accountFormSchema = z.object({
   email: z.string().optional(),
   name: z.string().optional(),
 })
 
+type User = Database["public"]["Tables"]["users"]["Row"]
 type AccountFormValues = z.infer<typeof accountFormSchema>
 
 export default function AccountForm({
-  user,
-  name,
-  email,
+  account,
 }: {
-  user: string
-  name: string
-  email: string
+  account: User
 }) {
-  const { supabase } = useSupabase()
+  const supabase = createClient()
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
-      email: email || "",
-      name: name || "",
+      email: account.email || "",
+      name: account.name || "",
     },
   })
 
   async function onSubmit(data: AccountFormValues) {
     try {
       const updates = {
-        email: email,
-        full_name: data.name,
+        email: data.email,
+        name: data.name,
       }
 
       let { error } = await supabase
-        .from("profiles")
+        .from("users")
         .update(updates)
-        .eq("id", user)
+        .eq("id", account.id)
       if (error) throw error
       toast({
-        description: "Your profile has been updated",
+        description: "Your account has been updated",
       })
     } catch (error) {
       console.error(error)

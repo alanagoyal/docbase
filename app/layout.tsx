@@ -1,8 +1,6 @@
 import "@/styles/globals.css"
 import { Metadata } from "next"
-import { cookies, headers } from "next/headers"
-import { redirect, useRouter } from "next/navigation"
-import { createServerComponentSupabaseClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from "@/utils/supabase/server"
 
 import { siteConfig } from "@/config/site"
 import { fontSans } from "@/lib/fonts"
@@ -11,8 +9,6 @@ import { Toaster } from "@/components/ui/toaster"
 import { SiteHeader } from "@/components/site-header"
 import { TailwindIndicator } from "@/components/tailwind-indicator"
 import { ThemeProvider } from "@/components/theme-provider"
-
-import SupabaseProvider from "./supabase-provider"
 
 export const metadata: Metadata = {
   title: {
@@ -51,13 +47,16 @@ interface RootLayoutProps {
 }
 
 export default async function RootLayout({ children }: RootLayoutProps) {
-  const supabase = createServerComponentSupabaseClient({
-    headers,
-    cookies,
-  })
+  const supabase = createClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data: account } = await supabase
+    .from("users")
+    .select("*")
+    .eq("auth_id", user?.id)
+    .single()
 
   return (
     <>
@@ -69,17 +68,15 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             fontSans.variable
           )}
         >
-          <SupabaseProvider session={session}>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-              <div className="relative flex min-h-screen flex-col">
-                {session ? <SiteHeader /> : <></>}
-                <Toaster />
-                {children}
-                <div className="flex-1"></div>
-              </div>
-              <TailwindIndicator />
-            </ThemeProvider>
-          </SupabaseProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <div className="relative flex min-h-screen flex-col">
+              {account ? <SiteHeader account={account} /> : <></>}
+              <Toaster />
+              {children}
+              <div className="flex-1"></div>
+            </div>
+            <TailwindIndicator />
+          </ThemeProvider>
         </body>
       </html>
     </>
