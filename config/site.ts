@@ -1,9 +1,7 @@
-export type SiteConfig = typeof siteConfig
-
 export const siteConfig = {
   name: "DocBase",
   description: "Open-source alternative to DocSend",
-  url: "https://getdocbase.com", // Don't end with a slash /
+  url: "https://getdocbase.com",
   ogImage: "https://getdocbase.com/opengraph-image",
   mainNav: [
     {

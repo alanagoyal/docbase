@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react"
-import { cookies, headers } from "next/headers"
-import { createServerComponentSupabaseClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from "@/utils/supabase/server"
 import { Activity, Users } from "lucide-react"
 
 import {
@@ -11,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Viewers } from "@/components/viewers"
-import { useSupabase } from "@/app/supabase-provider"
 
 export default async function Analytics({
   params,
@@ -20,8 +17,8 @@ export default async function Analytics({
 }) {
   const id = params.id
 
-  const supabase = createServerComponentSupabaseClient({ cookies, headers })
-
+  const supabase = createClient()
+  
   const { data: viewers } = await supabase
     .from("viewers")
     .select("*")

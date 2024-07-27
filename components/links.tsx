@@ -1,6 +1,7 @@
-import Link from "next/link"
-import { Activity, Copy, Eye, Trash } from "lucide-react"
+"use client"
 
+import Link from "next/link"
+import { Activity, Copy, Trash } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -8,14 +9,14 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip"
 import { toast } from "./ui/use-toast"
+import { createClient } from "@/utils/supabase/client"
 
 export function Links({
-  allLinks,
-  onDeleteLink,
+  links,
 }: {
-  allLinks: any
-  onDeleteLink: (linkId: string) => void
+  links: any
 }) {
+  const supabase = createClient()
   const handleCopyLink = (linkId: string) => {
     const link = `https://getdocbase.com/view/${linkId}`
     navigator.clipboard
@@ -31,10 +32,14 @@ export function Links({
         })
       })
   }
+
+  const deleteLink = async (linkId: string) => {
+    const { error } = await supabase.from("links").delete().eq("id", linkId)
+  }
   return (
     <div>
-      {allLinks &&
-        allLinks.map((link: any) => (
+      {links &&
+        links.map((link: any) => (
           <div className="flex items-center py-2" key={link.id}>
             <div className="flex-1 ml-4 space-y-1">
               <p className="text-sm font-medium leading-none">
@@ -58,7 +63,6 @@ export function Links({
               </Link>
             </div>
             <div>
-              {" "}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
@@ -78,7 +82,7 @@ export function Links({
                   <TooltipTrigger>
                     <Trash
                       className="h-4 w-4 ml-4 text-muted-foreground"
-                      onClick={() => onDeleteLink(link.id)}
+                      onClick={() => deleteLink(link.id)}
                       style={{ cursor: "pointer" }}
                     />
                   </TooltipTrigger>

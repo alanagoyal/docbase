@@ -1,12 +1,13 @@
-import Link from "next/link"
+"use client"
 
+import Link from "next/link"
 import { Database } from "@/types/supabase"
-import { siteConfig } from "@/config/site"
 import { buttonVariants } from "@/components/ui/button"
 import { Icons } from "@/components/icons"
 import { MainNav } from "@/components/main-nav"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UserNav } from "./user-nav"
+import { siteConfig } from "@/config/site"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 

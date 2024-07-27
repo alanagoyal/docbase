@@ -3,7 +3,6 @@
 import { useState } from "react"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { PopoverTrigger } from "@radix-ui/react-popover"
 import * as bcrypt from "bcryptjs"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
@@ -23,13 +22,13 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { useSupabase } from "@/app/supabase-provider"
-
 import Doc from "./doc"
-import { Popover, PopoverContent } from "./ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Switch } from "./ui/switch"
 import { ToastAction } from "./ui/toast"
 import { toast } from "./ui/use-toast"
+import { createClient } from "@/utils/supabase/client"
+import { Database } from "@/types/supabase"
 
 const linkFormSchema = z.object({
   protectWithPassword: z.boolean(),
@@ -39,9 +38,10 @@ const linkFormSchema = z.object({
 })
 
 type LinkFormValues = z.infer<typeof linkFormSchema>
+type User = Database["public"]["Tables"]["users"]["Row"]
 
-export default function LinkForm({ link, user }: { link: any; user: any }) {
-  const { supabase } = useSupabase()
+export default function LinkForm({ link, account }: { link: any; account: User }) {
+  const supabase = createClient()
   const [filePath, setFilePath] = useState<string>("")
   const [protectWithPassword, setProtectWithPassword] = useState<boolean>(false)
   const [protectWithExpiration, setProtectWithExpiration] =
@@ -61,7 +61,6 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
 
   function onSubmit(data: LinkFormValues) {
     if (data && filePath) {
-      // get from data
       createLink({
         filePath,
         data,
@@ -109,7 +108,7 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
       const signedUrl = await createUrl({ filePath, data })
 
       const updates = {
-        user_id: user.id,
+        user_id: account.id,
         url: signedUrl,
         password: data.password ? passwordHash : null,
         expires: data.expires.toISOString(),
@@ -238,7 +237,6 @@ export default function LinkForm({ link, user }: { link: any; user: any }) {
             />
           )}
           <div className="space-y-4">
-            {" "}
             <Doc
               onUpload={(filePath) => {
                 setFilePath(filePath)

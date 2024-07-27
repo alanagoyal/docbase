@@ -1,17 +1,16 @@
-import React, { useEffect, useRef, useState } from "react"
-import { Database } from "types/supabase"
+"use client"
 
-import { useSupabase } from "@/app/supabase-provider"
+import React, { useRef, useState } from "react"
+import { Database } from "types/supabase"
 
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
-import { Label } from "./ui/label"
 import { toast } from "./ui/use-toast"
+import { createClient } from "@/utils/supabase/client"
 
-type Links = Database["public"]["Tables"]["links"]["Row"]
 
 export default function Doc({ onUpload }: { onUpload: (url: string) => void }) {
-  const { supabase } = useSupabase()
+  const supabase = createClient()
   const [uploading, setUploading] = useState(false)
   const [complete, setComplete] = useState(false)
 

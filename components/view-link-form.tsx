@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
-import { useSupabase } from "@/app/supabase-provider"
+import { createClient } from "@/utils/supabase/client"
 
 const linkFormSchema = z.object({
   email: z
@@ -30,8 +30,6 @@ const linkFormSchema = z.object({
     .email(),
   password: z.string().optional(),
 })
-
-type Links = Database["public"]["Tables"]["links"]["Row"]
 
 type LinkFormValues = z.infer<typeof linkFormSchema>
 
@@ -46,7 +44,7 @@ export default function ViewLinkForm({ link }: { link: any }) {
     defaultValues,
   })
   const router = useRouter()
-  const { supabase } = useSupabase()
+  const supabase = createClient()
   const passwordRequired = link?.password ? true : false
 
   async function onSubmit(data: LinkFormValues) {
