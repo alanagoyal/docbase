@@ -62,8 +62,7 @@ export default function AccountForm({
   return (
     <div>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {" "}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
             name="email"
@@ -73,7 +72,7 @@ export default function AccountForm({
                   <FormLabel className="text-base mx-2">Email</FormLabel>
                 </div>
                 <FormControl>
-                  <Input {...field} disabled />
+                  <Input {...field} disabled autoComplete="off" />
                 </FormControl>
               </FormItem>
             )}
@@ -87,7 +86,7 @@ export default function AccountForm({
                   <FormLabel className="text-base mx-2">Name</FormLabel>
                 </div>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} autoComplete="off" />
                 </FormControl>
               </FormItem>
             )}

@@ -1,13 +1,9 @@
 export const siteConfig = {
   name: "DocBase",
   description: "Open-source alternative to DocSend",
-  url: "https://getdocbase.com",
-  ogImage: "https://getdocbase.com/opengraph-image",
+  url: "https://docbase.vercel.app",
+  ogImage: "https://docbase.vercel.app/opengraph-image",
   mainNav: [
-    {
-      title: "Home",
-      href: "/",
-    },
     {
       title: "Links",
       href: "/links",

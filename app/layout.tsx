@@ -1,5 +1,5 @@
 import "@/styles/globals.css"
-import { Metadata } from "next"
+import { Metadata, Viewport } from "next"
 import { createClient } from "@/utils/supabase/server"
 import { siteConfig } from "@/config/site"
 import { fontSans } from "@/lib/fonts"
@@ -11,14 +11,10 @@ import { ThemeProvider } from "@/components/theme-provider"
 
 export const metadata: Metadata = {
   title: {
-    default: "DocBase",
-    template: `%s - DocBase`,
+    default: "Docbase",
+    template: `%s - Docbase`,
   },
-  description: "Open-Source Alternative to DocSend",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
-  ],
+  description: "Open-source alternative to Docsend",
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -39,6 +35,13 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: siteConfig.ogImage,
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "black" },
+  ],
 }
 
 interface RootLayoutProps {

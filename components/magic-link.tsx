@@ -22,6 +22,7 @@ export default function MagicLink({ redirect }: { redirect: string }) {
   async function signInWithEmail(email: string) {
     setIsSubmitting(true)
     const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL + redirect
+    console.log(redirectUrl)
     const { error } = await supabase.auth.signInWithOtp({
       email: email,
       options: {

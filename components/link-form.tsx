@@ -134,7 +134,7 @@ export default function LinkForm({
         toast({
           description: "Your link has been created successfully",
         })
-        router.push(`/view/${link.id}`)
+        router.push("/links")
       }
     } catch (error) {
       console.error(error)
@@ -142,11 +142,11 @@ export default function LinkForm({
   }
 
   return (
-    <div>
+    <div className="w-full max-w-2xl mx-auto">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
+            <div className="space-y-0.5 flex-grow">
               <FormLabel className="text-base pr-2">
                 Password Protected
               </FormLabel>
@@ -161,30 +161,31 @@ export default function LinkForm({
               />
             </FormControl>
           </FormItem>
-          {protectWithPassword && (
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base pr-2">Password</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          )}
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem className={cn("flex flex-row items-center justify-between rounded-lg border p-4", !protectWithPassword && "hidden")}>
+                <div className="space-y-0.5 flex-grow">
+                  <FormLabel htmlFor="password" className="text-base pr-2">Password</FormLabel>
+                  <FormDescription className="pr-4">
+                    Enter a password to protect your document
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Input id="password" type="password" className="w-[200px]" {...field} disabled={!protectWithPassword} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
           <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
+            <div className="space-y-0.5 flex-grow">
               <FormLabel className="text-base pr-2">
                 Set Expiration Date
               </FormLabel>
               <FormDescription className="pr-4">
                 Viewers will no longer be able to access your link after this
-                date{" "}
+                date
               </FormDescription>
             </div>
             <FormControl>
@@ -194,35 +195,40 @@ export default function LinkForm({
               />
             </FormControl>
           </FormItem>
-          {protectWithExpiration && (
-            <FormField
-              control={form.control}
-              name="expires"
-              render={({ field }) => (
-                <FormItem className="flex flex-col w-full">
-                  <FormLabel className="text-base pr-2">Expires</FormLabel>
+          <FormField
+            control={form.control}
+            name="expires"
+            render={({ field }) => (
+              <FormItem className={cn("flex flex-row items-center justify-between rounded-lg border p-4", !protectWithExpiration && "hidden")}>
+                <div className="space-y-0.5 flex-grow">
+                  <FormLabel htmlFor="expires" className="text-base pr-2">Expires</FormLabel>
+                  <FormDescription className="pr-4">
+                    Viewers will no longer be able to access your link after
+                    this date
+                  </FormDescription>
+                </div>
+                <FormControl>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[200px] pl-3 text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                        disabled={!protectWithExpiration}
+                      >
+                        {field.value ? (
+                          format(field.value, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
-                        className="w-full"
+                        id="expires"
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
@@ -234,16 +240,12 @@ export default function LinkForm({
                       />
                     </PopoverContent>
                   </Popover>
-                  <FormDescription className="pr-4">
-                    Viewers will no longer be able to access your link after
-                    this date
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-          <div className="space-y-4">
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="space-y-2">
             <Doc
               onUpload={(filePath) => {
                 setFilePath(filePath)

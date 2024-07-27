@@ -47,7 +47,9 @@ export function Links({
       link_id: linkId,
       auth_id: account.auth_id,
     })
-
+    toast({
+      description: "Your link has been deleted",
+    })
     router.refresh()
   }
 
@@ -66,7 +68,6 @@ export function Links({
             </div>
             <div>
               <Link href={`/analytics/${link.id}`}>
-                {" "}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>
