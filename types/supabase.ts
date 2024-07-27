@@ -185,6 +185,36 @@ export type Database = {
           },
         ]
       }
+      links: {
+        Row: {
+          created_at: string | null
+          expires: string | null
+          filename: string | null
+          id: string
+          password: string | null
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires?: string | null
+          filename?: string | null
+          id?: string
+          password?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires?: string | null
+          filename?: string | null
+          id?: string
+          password?: string | null
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       side_letters: {
         Row: {
           created_at: string
@@ -255,6 +285,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      viewers: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          link_id: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          link_id?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          link_id?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

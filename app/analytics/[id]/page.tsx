@@ -1,6 +1,5 @@
 import { createClient } from "@/utils/supabase/server"
 import { Activity, Users } from "lucide-react"
-
 import {
   Card,
   CardContent,
@@ -18,7 +17,7 @@ export default async function Analytics({
   const id = params.id
 
   const supabase = createClient()
-  
+
   const { data: viewers } = await supabase
     .from("viewers")
     .select("*")

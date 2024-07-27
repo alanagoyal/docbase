@@ -1,14 +1,9 @@
 "use client"
 
-import { type } from "os"
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as bcrypt from "bcryptjs"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-
-import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -43,27 +38,26 @@ export default function ViewLinkForm({ link }: { link: any }) {
     resolver: zodResolver(linkFormSchema),
     defaultValues,
   })
-  const router = useRouter()
   const supabase = createClient()
   const passwordRequired = link?.password ? true : false
 
   async function onSubmit(data: LinkFormValues) {
     // log viewer
     const updates = {
-      link_id: link?.id,
+      link_id: link.id,
       email: data.email,
       viewed_at: new Date().toISOString(),
     }
-    const { data: viewer } = await supabase.from("viewers").insert(updates)
+    await supabase.from("viewers").insert(updates)
 
     if (!passwordRequired) {
-      router.push(`${link?.url}`)
+      window.open(link?.url, '_blank')
+      return
     }
 
     // check password
-
     if (bcrypt.compareSync(data.password!, link.password!)) {
-      router.push(`${link?.url}`)
+      window.open(link?.url, '_blank')
     } else {
       toast({
         description: "Incorrect password",

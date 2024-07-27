@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-
 import LinkForm from "@/components/link-form"
 
 export default async function Link({ params }: { params: { id: string } }) {

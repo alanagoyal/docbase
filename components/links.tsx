@@ -18,7 +18,7 @@ export function Links({
 }) {
   const supabase = createClient()
   const handleCopyLink = (linkId: string) => {
-    const link = `https://getdocbase.com/view/${linkId}`
+    const link = `${process.env.NEXT_PUBLIC_SITE_URL}/view/${linkId}`
     navigator.clipboard
       .writeText(link)
       .then(() => {
@@ -70,7 +70,7 @@ export function Links({
                       className="h-4 w-4 ml-4 text-muted-foreground"
                       onClick={() => handleCopyLink(link.id)}
                       style={{ cursor: "pointer" }}
-                    />{" "}
+                    />
                   </TooltipTrigger>
                   <TooltipContent>Copy Link</TooltipContent>
                 </Tooltip>

@@ -1,8 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-import { Plus } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import { Links } from "@/components/links"
 
@@ -16,10 +14,16 @@ export default async function LinksPage() {
     redirect("/login")
   }
 
+  const { data: account } = await supabase
+    .from("users")
+    .select()
+    .eq("auth_id", user.id)
+    .single()
+
   const { data: links } = await supabase
     .from("links")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("created_by", account.auth_id)
 
   return links && links.length > 0 ? (
     <div className="flex flex-col items-center pt-20 py-2">

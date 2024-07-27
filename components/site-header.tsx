@@ -1,5 +1,3 @@
-"use client"
-
 import Link from "next/link"
 import { Database } from "@/types/supabase"
 import { buttonVariants } from "@/components/ui/button"

@@ -12,10 +12,10 @@ export default async function Account() {
     redirect("/login")
   }
 
-  const { data: account, error } = await supabase
+  const { data: account } = await supabase
     .from("users")
     .select()
-    .eq("auth_id", user?.id)
+    .eq("auth_id", user.id)
     .single()
 
   return (

@@ -1,14 +1,10 @@
-"use client"
-
 import { Button } from "@/components/ui/button"
-
 import Link from "next/link"
 import { buttonVariants } from "@/components/ui/button"
 import { siteConfig } from "@/config/site"
 
 
-export default async function IndexPage() {
-
+export default function IndexPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <main className="container mx-auto my-48 flex-grow">
@@ -22,7 +18,7 @@ export default async function IndexPage() {
             </p>
           </div>
           <div className="flex gap-4">
-            <Link href="/login">
+            <Link href="/new">
             <Button
               className=" text-white px-8 py-4 rounded-md text-base"
               style={{

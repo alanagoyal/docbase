@@ -46,6 +46,17 @@ create table "public"."investments" (
 
 alter table "public"."investments" enable row level security;
 
+create table "public"."links" (
+    "id" uuid not null default gen_random_uuid(),
+    "created_at" timestamp with time zone default now(),
+    "user_id" uuid,
+    "url" text,
+    "password" text,
+    "expires" timestamp with time zone,
+    "filename" text
+);
+
+
 create table "public"."side_letters" (
     "id" uuid not null default gen_random_uuid(),
     "created_at" timestamp with time zone not null default now(),
@@ -72,6 +83,15 @@ create table "public"."users" (
 
 
 alter table "public"."users" enable row level security;
+
+create table "public"."viewers" (
+    "created_at" timestamp with time zone default now(),
+    "link_id" uuid,
+    "email" text,
+    "viewed_at" timestamp with time zone,
+    "id" uuid not null default gen_random_uuid()
+);
+
 
 CREATE UNIQUE INDEX companies_pkey ON public.companies USING btree (id);
 
@@ -298,6 +318,48 @@ grant truncate on table "public"."investments" to "service_role";
 
 grant update on table "public"."investments" to "service_role";
 
+grant delete on table "public"."links" to "anon";
+
+grant insert on table "public"."links" to "anon";
+
+grant references on table "public"."links" to "anon";
+
+grant select on table "public"."links" to "anon";
+
+grant trigger on table "public"."links" to "anon";
+
+grant truncate on table "public"."links" to "anon";
+
+grant update on table "public"."links" to "anon";
+
+grant delete on table "public"."links" to "authenticated";
+
+grant insert on table "public"."links" to "authenticated";
+
+grant references on table "public"."links" to "authenticated";
+
+grant select on table "public"."links" to "authenticated";
+
+grant trigger on table "public"."links" to "authenticated";
+
+grant truncate on table "public"."links" to "authenticated";
+
+grant update on table "public"."links" to "authenticated";
+
+grant delete on table "public"."links" to "service_role";
+
+grant insert on table "public"."links" to "service_role";
+
+grant references on table "public"."links" to "service_role";
+
+grant select on table "public"."links" to "service_role";
+
+grant trigger on table "public"."links" to "service_role";
+
+grant truncate on table "public"."links" to "service_role";
+
+grant update on table "public"."links" to "service_role";
+
 grant delete on table "public"."side_letters" to "anon";
 
 grant insert on table "public"."side_letters" to "anon";
@@ -381,6 +443,48 @@ grant trigger on table "public"."users" to "service_role";
 grant truncate on table "public"."users" to "service_role";
 
 grant update on table "public"."users" to "service_role";
+
+grant delete on table "public"."viewers" to "anon";
+
+grant insert on table "public"."viewers" to "anon";
+
+grant references on table "public"."viewers" to "anon";
+
+grant select on table "public"."viewers" to "anon";
+
+grant trigger on table "public"."viewers" to "anon";
+
+grant truncate on table "public"."viewers" to "anon";
+
+grant update on table "public"."viewers" to "anon";
+
+grant delete on table "public"."viewers" to "authenticated";
+
+grant insert on table "public"."viewers" to "authenticated";
+
+grant references on table "public"."viewers" to "authenticated";
+
+grant select on table "public"."viewers" to "authenticated";
+
+grant trigger on table "public"."viewers" to "authenticated";
+
+grant truncate on table "public"."viewers" to "authenticated";
+
+grant update on table "public"."viewers" to "authenticated";
+
+grant delete on table "public"."viewers" to "service_role";
+
+grant insert on table "public"."viewers" to "service_role";
+
+grant references on table "public"."viewers" to "service_role";
+
+grant select on table "public"."viewers" to "service_role";
+
+grant trigger on table "public"."viewers" to "service_role";
+
+grant truncate on table "public"."viewers" to "service_role";
+
+grant update on table "public"."viewers" to "service_role";
 
 create policy "Authenticated users can insert"
 on "public"."companies"

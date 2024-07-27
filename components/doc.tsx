@@ -1,8 +1,6 @@
 "use client"
 
 import React, { useRef, useState } from "react"
-import { Database } from "types/supabase"
-
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { toast } from "./ui/use-toast"
@@ -51,7 +49,6 @@ export default function Doc({ onUpload }: { onUpload: (url: string) => void }) {
 
   return (
     <div>
-      {" "}
       {!complete ? (
         <div>
           <Button
@@ -73,7 +70,6 @@ export default function Doc({ onUpload }: { onUpload: (url: string) => void }) {
         </div>
       ) : (
         <div>
-          {" "}
           <Button
             className="w-full"
             disabled={complete}

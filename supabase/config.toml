@@ -38,16 +38,23 @@ pop3_port = 54326
 file_size_limit = "50MiB"
 
 [auth]
+enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://localhost:3000"
+site_url = "http://127.0.0.1:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://localhost:3000"]
-# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 seconds (one
-# week).
+additional_redirect_urls = ["https://127.0.0.1:3000", "http://127.0.0.1:3000/account", "http://127.0.0.1:3000/**", "https://127.0.0.1:3000/**"]
+# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
+# If disabled, the refresh token will never expire.
+enable_refresh_token_rotation = true
+# Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.
+# Requires enable_refresh_token_rotation = true.
+refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
 enable_signup = true
+# Allow/disallow testing manual linking of accounts
+enable_manual_linking = false
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
@@ -57,20 +64,6 @@ enable_signup = true
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = false
-
-# Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
-# `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin`, `notion`, `twitch`,
-# `twitter`, `slack`, `spotify`, `workos`, `zoom`.
-[auth.external.google]
-enabled = true
-client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
-# DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
-secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
-# Overrides the default auth redirectUrl.
-redirect_uri = ""
-# Overrides the default auth provider URL. Used to support self-hosted gitlab, single-tenant Azure,
-# or any other third-party OIDC providers.
-url = ""
 
 [analytics]
 enabled = false

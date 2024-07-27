@@ -1,12 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { LogOut, PlusCircle, Settings, User } from "lucide-react"
+import { LogOut, PlusCircle, User } from "lucide-react"
 
 import { Database } from "@/types/supabase"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,

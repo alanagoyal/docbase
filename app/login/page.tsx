@@ -18,7 +18,7 @@ export default async function Login() {
               <TabsTrigger value="email">Email</TabsTrigger>
             </TabsList>
             <TabsContent value="magic-link">
-              <MagicLink redirect="/events" />
+              <MagicLink redirect="/links" />
             </TabsContent>
             <TabsContent value="email">
               <LoginForm login={login} />

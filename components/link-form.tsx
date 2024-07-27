@@ -108,7 +108,7 @@ export default function LinkForm({ link, account }: { link: any; account: User }
       const signedUrl = await createUrl({ filePath, data })
 
       const updates = {
-        user_id: account.id,
+        created_by: account.auth_id,
         url: signedUrl,
         password: data.password ? passwordHash : null,
         expires: data.expires.toISOString(),

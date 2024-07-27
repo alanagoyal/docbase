@@ -2,6 +2,7 @@
 import LinkForm from "@/components/link-form"
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
+
 export default async function Link({ params }: { params: { id: string } }) {
   const id = params.id
   const supabase = createClient()
@@ -21,7 +22,7 @@ export default async function Link({ params }: { params: { id: string } }) {
     .select()
     .eq("auth_id", user?.id)
     .single()
-    
+
   return (
     <div className="flex flex-col items-center min-h-screen pt-20 py-2">
       <h1 className="text-4xl font-bold mb-4">New Link</h1>
