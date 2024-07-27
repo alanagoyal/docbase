@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as bcrypt from "bcryptjs"
 import { format } from "date-fns"
@@ -9,6 +11,7 @@ import { CalendarIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 
+import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -22,13 +25,12 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+
 import Doc from "./doc"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Switch } from "./ui/switch"
 import { ToastAction } from "./ui/toast"
 import { toast } from "./ui/use-toast"
-import { createClient } from "@/utils/supabase/client"
-import { Database } from "@/types/supabase"
 
 const linkFormSchema = z.object({
   protectWithPassword: z.boolean(),
@@ -40,8 +42,15 @@ const linkFormSchema = z.object({
 type LinkFormValues = z.infer<typeof linkFormSchema>
 type User = Database["public"]["Tables"]["users"]["Row"]
 
-export default function LinkForm({ link, account }: { link: any; account: User }) {
+export default function LinkForm({
+  link,
+  account,
+}: {
+  link: any
+  account: User
+}) {
   const supabase = createClient()
+  const router = useRouter()
   const [filePath, setFilePath] = useState<string>("")
   const [protectWithPassword, setProtectWithPassword] = useState<boolean>(false)
   const [protectWithExpiration, setProtectWithExpiration] =
@@ -89,7 +98,7 @@ export default function LinkForm({ link, account }: { link: any; account: User }
 
     // create url
     const { data: signedUrlData } = await supabase.storage
-      .from("docs")
+      .from("documents")
       .createSignedUrl(filePath, secondsUntilExpiration)
 
     return signedUrlData?.signedUrl
@@ -121,14 +130,12 @@ export default function LinkForm({ link, account }: { link: any; account: User }
         .single()
       if (error) throw error
 
-      toast({
-        description: "Your link has been created successfully",
-        action: (
-          <Link href={`/view/${link?.id}`}>
-            <ToastAction altText="Visit">Visit</ToastAction>
-          </Link>
-        ),
-      })
+      if (link) {
+        toast({
+          description: "Your link has been created successfully",
+        })
+        router.push(`/view/${link.id}`)
+      }
     } catch (error) {
       console.error(error)
     }

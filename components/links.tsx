@@ -11,12 +11,21 @@ import {
 import { toast } from "./ui/use-toast"
 import { createClient } from "@/utils/supabase/client"
 
+import { Database } from "@/types/supabase"
+import { useRouter } from "next/navigation"
+
+type User = Database["public"]["Tables"]["users"]["Row"]
+type Link = Database["public"]["Tables"]["links"]["Row"]
+
 export function Links({
   links,
-}: {
-  links: any
+    account,
+  }: {
+  links: Link[]
+  account: User
 }) {
   const supabase = createClient()
+  const router = useRouter()
   const handleCopyLink = (linkId: string) => {
     const link = `${process.env.NEXT_PUBLIC_SITE_URL}/view/${linkId}`
     navigator.clipboard
@@ -34,8 +43,14 @@ export function Links({
   }
 
   const deleteLink = async (linkId: string) => {
-    const { error } = await supabase.from("links").delete().eq("id", linkId)
+    await supabase.rpc('delete_link', {
+      link_id: linkId,
+      auth_id: account.auth_id,
+    })
+
+    router.refresh()
   }
+
   return (
     <div>
       {links &&

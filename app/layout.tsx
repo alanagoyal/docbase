@@ -69,7 +69,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         >
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <div className="relative flex min-h-screen flex-col">
-              {account ? <SiteHeader account={account} /> : <></>}
+              <SiteHeader account={account} />
               <Toaster />
               {children}
               <div className="flex-1"></div>

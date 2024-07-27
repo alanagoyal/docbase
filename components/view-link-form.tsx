@@ -81,7 +81,7 @@ export default function ViewLinkForm({ link }: { link: any }) {
                   </FormDescription>
                 </div>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} autoComplete="off" />
                 </FormControl>
               </FormItem>
             )}
@@ -99,7 +99,7 @@ export default function ViewLinkForm({ link }: { link: any }) {
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input type="password" {...field} autoComplete="off" />
                   </FormControl>
                 </FormItem>
               )}

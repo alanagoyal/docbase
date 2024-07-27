@@ -49,13 +49,15 @@ alter table "public"."investments" enable row level security;
 create table "public"."links" (
     "id" uuid not null default gen_random_uuid(),
     "created_at" timestamp with time zone default now(),
-    "user_id" uuid,
+    "created_by" uuid,
     "url" text,
     "password" text,
     "expires" timestamp with time zone,
     "filename" text
 );
 
+
+alter table "public"."links" enable row level security;
 
 create table "public"."side_letters" (
     "id" uuid not null default gen_random_uuid(),
@@ -93,11 +95,15 @@ create table "public"."viewers" (
 );
 
 
+alter table "public"."viewers" enable row level security;
+
 CREATE UNIQUE INDEX companies_pkey ON public.companies USING btree (id);
 
 CREATE UNIQUE INDEX funds_pkey ON public.funds USING btree (id);
 
 CREATE UNIQUE INDEX investments_pkey ON public.investments USING btree (id);
+
+CREATE UNIQUE INDEX links_pkey ON public.links USING btree (id);
 
 CREATE UNIQUE INDEX side_letters_pkey ON public.side_letters USING btree (id);
 
@@ -107,15 +113,21 @@ CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email);
 
 CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id);
 
+CREATE UNIQUE INDEX viewers_pkey ON public.viewers USING btree (id);
+
 alter table "public"."companies" add constraint "companies_pkey" PRIMARY KEY using index "companies_pkey";
 
 alter table "public"."funds" add constraint "funds_pkey" PRIMARY KEY using index "funds_pkey";
 
 alter table "public"."investments" add constraint "investments_pkey" PRIMARY KEY using index "investments_pkey";
 
+alter table "public"."links" add constraint "links_pkey" PRIMARY KEY using index "links_pkey";
+
 alter table "public"."side_letters" add constraint "side_letters_pkey" PRIMARY KEY using index "side_letters_pkey";
 
 alter table "public"."users" add constraint "users_pkey" PRIMARY KEY using index "users_pkey";
+
+alter table "public"."viewers" add constraint "viewers_pkey" PRIMARY KEY using index "viewers_pkey";
 
 alter table "public"."companies" add constraint "companies_founder_id_fkey" FOREIGN KEY (founder_id) REFERENCES users(id) not valid;
 
@@ -149,6 +161,10 @@ alter table "public"."investments" add constraint "public_investments_fund_id_fk
 
 alter table "public"."investments" validate constraint "public_investments_fund_id_fkey";
 
+alter table "public"."links" add constraint "links_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(auth_id) not valid;
+
+alter table "public"."links" validate constraint "links_created_by_fkey";
+
 alter table "public"."users" add constraint "users_auth_id_fkey" FOREIGN KEY (auth_id) REFERENCES auth.users(id) not valid;
 
 alter table "public"."users" validate constraint "users_auth_id_fkey";
@@ -156,6 +172,10 @@ alter table "public"."users" validate constraint "users_auth_id_fkey";
 alter table "public"."users" add constraint "users_auth_id_key" UNIQUE using index "users_auth_id_key";
 
 alter table "public"."users" add constraint "users_email_key" UNIQUE using index "users_email_key";
+
+alter table "public"."viewers" add constraint "viewers_link_id_fkey" FOREIGN KEY (link_id) REFERENCES links(id) ON UPDATE CASCADE ON DELETE SET NULL not valid;
+
+alter table "public"."viewers" validate constraint "viewers_link_id_fkey";
 
 set check_function_bodies = off;
 
@@ -166,6 +186,18 @@ CREATE OR REPLACE FUNCTION public."checkIfUser"(given_mail text)
 AS $function$BEGIN
   RETURN (EXISTS (SELECT 1 FROM auth.users a WHERE a.email = given_mail));
 END;$function$
+;
+
+CREATE OR REPLACE FUNCTION public.delete_link(link_id uuid, auth_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    DELETE FROM public.links
+    WHERE id = link_id AND created_by = auth_id;
+END;
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -190,6 +222,16 @@ BEGIN
   RETURN new;
 END;
 $function$
+;
+
+CREATE OR REPLACE FUNCTION public.select_link(link_id uuid)
+ RETURNS SETOF links
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+AS $function$
+    SELECT *
+    FROM links
+    WHERE id = link_id LIMIT 1;$function$
 ;
 
 grant delete on table "public"."companies" to "anon";
@@ -614,6 +656,38 @@ using (((auth.uid() = ( SELECT users.auth_id
           WHERE (companies.id = investments.company_id)))))));
 
 
+create policy "Anyone can view"
+on "public"."links"
+as permissive
+for select
+to public
+using (true);
+
+
+create policy "Authenticated users can delete their own"
+on "public"."links"
+as permissive
+for delete
+to authenticated
+using ((auth.uid() = created_by));
+
+
+create policy "Authenticated users can insert"
+on "public"."links"
+as permissive
+for insert
+to authenticated
+with check (true);
+
+
+create policy "Authenticated users can update their own"
+on "public"."links"
+as permissive
+for update
+to authenticated
+using ((auth.uid() = created_by));
+
+
 create policy "Authenticated can do all"
 on "public"."side_letters"
 as permissive
@@ -654,7 +728,72 @@ to authenticated
 using (true);
 
 
+create policy "Anyone can insert"
+on "public"."viewers"
+as permissive
+for insert
+to public
+with check (true);
+
+
+create policy "Anyone can update"
+on "public"."viewers"
+as permissive
+for update
+to public
+using (true);
+
+
+create policy "Authenticated users can delete"
+on "public"."viewers"
+as permissive
+for delete
+to authenticated
+using (true);
+
+
+create policy "Authenticated users can select"
+on "public"."viewers"
+as permissive
+for select
+to authenticated
+using (true);
+
+
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+
+create policy "Authenticated users can do all flreew_0"
+on "storage"."objects"
+as permissive
+for select
+to public
+using ((bucket_id = 'documents'::text));
+
+
+create policy "Authenticated users can do all flreew_1"
+on "storage"."objects"
+as permissive
+for insert
+to public
+with check ((bucket_id = 'documents'::text));
+
+
+create policy "Authenticated users can do all flreew_2"
+on "storage"."objects"
+as permissive
+for update
+to public
+using ((bucket_id = 'documents'::text));
+
+
+create policy "Authenticated users can do all flreew_3"
+on "storage"."objects"
+as permissive
+for delete
+to public
+using ((bucket_id = 'documents'::text));
+
 
 

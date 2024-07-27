@@ -26,7 +26,7 @@ export default function Doc({ onUpload }: { onUpload: (url: string) => void }) {
 
       // upload file to storage bucket
       let { error: uploadError } = await supabase.storage
-        .from("docs")
+        .from("documents")
         .upload(filePath, file, { upsert: true })
 
       if (uploadError) {
