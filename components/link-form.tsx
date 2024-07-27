@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -10,6 +9,7 @@ import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import { useDropzone } from "react-dropzone";
 
 import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
@@ -25,11 +25,8 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-
-import Doc from "./doc"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Switch } from "./ui/switch"
-import { ToastAction } from "./ui/toast"
 import { toast } from "./ui/use-toast"
 
 const linkFormSchema = z.object({
@@ -55,6 +52,7 @@ export default function LinkForm({
   const [protectWithPassword, setProtectWithPassword] = useState<boolean>(false)
   const [protectWithExpiration, setProtectWithExpiration] =
     useState<boolean>(true)
+  const [uploading, setUploading] = useState(false)
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
 
@@ -140,6 +138,39 @@ export default function LinkForm({
       console.error(error)
     }
   }
+
+  const onDrop = async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0];
+      try {
+        setUploading(true)
+        const filePath = `${file.name}`
+
+        // Upload file to storage bucket
+        let { error: uploadError } = await supabase.storage
+          .from("documents")
+          .upload(filePath, file, { upsert: true })
+
+        if (uploadError) {
+          throw uploadError
+        }
+
+        setFilePath(filePath)
+        toast({
+          description: "File uploaded successfully",
+        })
+      } catch (error) {
+        toast({
+          description: "Error uploading file",
+        })
+        console.error(error)
+      } finally {
+        setUploading(false)
+      }
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, disabled: uploading });
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -245,15 +276,30 @@ export default function LinkForm({
               </FormItem>
             )}
           />
-          <div className="space-y-2">
-            <Doc
-              onUpload={(filePath) => {
-                setFilePath(filePath)
-              }}
-            />
+          <div className="space-y-4">
+            <div 
+              {...getRootProps()} 
+              className={cn(
+                "border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer",
+                uploading && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <input {...getInputProps()} />
+              <p className="text-sm text-muted-foreground">
+                {uploading ? (
+                  "Uploading..."
+                ) : isDragActive ? (
+                  "Drop the file here ..."
+                ) : (
+                  "Drag & drop or click to upload a file"
+                )}
+              </p>
+            </div>
+            {filePath && <p className="text-sm text-muted-foreground">Selected file: {filePath}</p>}
             <Button
               className="bg-[#9FACE6] text-white font-bold px-4 rounded w-full"
               type="submit"
+              disabled={uploading || !filePath}
             >
               Create Link
             </Button>
