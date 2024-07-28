@@ -10,7 +10,6 @@ import { CalendarIcon } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-
 import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -49,23 +48,26 @@ export default function LinkForm({
 }) {
   const supabase = createClient()
   const router = useRouter()
-  const [filePath, setFilePath] = useState<string>("")
-  const [protectWithPassword, setProtectWithPassword] = useState<boolean>(false)
-  const [protectWithExpiration, setProtectWithExpiration] =
-    useState<boolean>(true)
+  const [filePath, setFilePath] = useState<string>(link?.filename || "")
+  const [protectWithPassword, setProtectWithPassword] = useState<boolean>(
+    !!link?.password
+  )
+  const [protectWithExpiration, setProtectWithExpiration] = useState<boolean>(
+    !!link?.expires
+  )
   const [uploading, setUploading] = useState(false)
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
-
     defaultValues: {
-      protectWithPassword: link?.password || false,
-      protectWithExpiration: link?.expires || false,
-      password: link?.password || "",
-      expires:
-        (link?.expires && new Date(link?.expires)) ||
-        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      protectWithPassword: !!link?.password,
+      protectWithExpiration: !!link?.expires,
+      password: link?.password ? "********" : "",
+      expires: link?.expires
+        ? new Date(link.expires)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
   })
+  const [expiresCalendarOpen, setExpiresCalendarOpen] = useState(false)
 
   function onSubmit(data: LinkFormValues) {
     if (data && filePath) {
@@ -111,32 +113,51 @@ export default function LinkForm({
     data: LinkFormValues
   }) {
     try {
-      const passwordHash = bcrypt.hashSync(data.password!, 10)
+      let passwordHash = link?.password;
+
+      if (data.password && data.password !== "********") {
+        passwordHash = bcrypt.hashSync(data.password, 10);
+      }
 
       const signedUrl = await createUrl({ filePath, data })
 
       const updates = {
         created_by: account.auth_id,
         url: signedUrl,
-        password: data.password ? passwordHash : null,
+        password: passwordHash,
         expires: data.expires.toISOString(),
         filename: filePath,
       }
-      let { data: link, error } = await supabase
-        .from("links")
-        .upsert(updates)
-        .select("id")
-        .single()
+
+      let result;
+      if (link) {
+        result = await supabase.rpc("update_link", {
+          link_id: link.id,
+          auth_id: account.auth_id,
+          url_arg: signedUrl,
+          password_arg: passwordHash,
+          expires_arg: data.expires.toISOString(),
+          filename_arg: filePath,
+        });
+      } else {
+        result = await supabase.from("links").insert(updates).select().single()
+      }
+
+      const { data: updatedLink, error } = result
       if (error) throw error
 
-      if (link) {
-        toast({
-          description: "Your link has been created successfully",
-        })
-        router.push("/links")
-      }
+      toast({
+        description: link
+          ? "Your link has been updated successfully"
+          : "Your link has been created successfully",
+      })
+      router.push("/links")
     } catch (error) {
       console.error(error)
+      toast({
+        description: "An error occurred while saving the link",
+        variant: "destructive",
+      })
     }
   }
 
@@ -247,55 +268,76 @@ export default function LinkForm({
             control={form.control}
             name="expires"
             render={({ field }) => (
-              <FormItem
-                className={cn(
-                  "flex flex-row items-center justify-between rounded-lg border p-4",
-                  !protectWithExpiration && "hidden"
-                )}
-              >
-                <div className="space-y-0.5 flex-grow">
-                  <FormLabel htmlFor="expires" className="text-base pr-2">
-                    Expires
-                  </FormLabel>
-                  <FormDescription className="pr-4">
-                    Viewers will no longer be able to access your link after
-                    this date
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Popover>
-                    <PopoverTrigger asChild>
+              <FormItem>
+                <FormLabel htmlFor="expires">Expires</FormLabel>
+                <Popover
+                  open={expiresCalendarOpen}
+                  onOpenChange={(open) => setExpiresCalendarOpen(open)}
+                >
+                  <PopoverTrigger asChild>
+                    <FormControl>
                       <Button
-                        variant={"outline"}
+                        id="expires"
+                        variant="outline"
                         className={cn(
-                          "w-[200px] pl-3 text-left font-normal",
+                          "w-full pl-3 text-left font-normal",
                           !field.value && "text-muted-foreground"
                         )}
                         disabled={!protectWithExpiration}
                       >
                         {field.value ? (
-                          format(field.value, "PPP")
+                          `${field.value.toLocaleString([], {
+                            year: "numeric",
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}`
                         ) : (
-                          <span>Pick a date</span>
+                          <span>Select Date</span>
                         )}
                         <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        id="expires"
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date("2900-01-01") ||
-                          date < new Date("1900-01-01")
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      onSelect={(newDate) => {
+                        if (newDate) {
+                          const updatedDate = new Date(newDate);
+                          updatedDate.setHours(field.value.getHours());
+                          updatedDate.setMinutes(field.value.getMinutes());
+                          updatedDate.setSeconds(field.value.getSeconds());
+                          field.onChange(updatedDate);
                         }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </FormControl>
+                      }}
+                      disabled={(date) =>
+                        date < new Date() || date > new Date("2900-01-01")
+                      }
+                      initialFocus
+                    />
+                    <Input
+                      type="time"
+                      className="mt-2"
+                      value={field.value.toLocaleTimeString([], {
+                        hourCycle: "h23",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                      onChange={(selectedTime) => {
+                        const currentTime = field.value;
+                        currentTime.setHours(
+                          parseInt(selectedTime.target.value.split(":")[0]),
+                          parseInt(selectedTime.target.value.split(":")[1]),
+                          0
+                        );
+                        field.onChange(currentTime);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -317,17 +359,22 @@ export default function LinkForm({
                   : "Drag & drop or click to upload a file"}
               </p>
             </div>
-            {filePath && (
-              <p className="text-sm text-muted-foreground">
-                Selected file: {filePath}
+            {link && link.filename && (
+              <p className="text-sm text-muted-foreground text-center">
+                Current file: {link.filename}
+              </p>
+            )}
+            {filePath && filePath !== link?.filename && (
+              <p className="text-sm text-muted-foreground text-center">
+                New file selected: {filePath}
               </p>
             )}
             <Button
               type="submit"
               className="w-full"
-              disabled={uploading || !filePath}
+              disabled={uploading || (!filePath && !link)}
             >
-              Create Link
+              {link ? "Update Link" : "Create Link"}
             </Button>
           </div>
         </form>
