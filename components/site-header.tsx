@@ -1,7 +1,8 @@
 import Link from "next/link"
+
 import { Database } from "@/types/supabase"
 import { siteConfig } from "@/config/site"
-import { buttonVariants } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Icons } from "@/components/icons"
 import { ThemeToggle } from "@/components/theme-toggle"
 
@@ -45,7 +46,13 @@ export function SiteHeader({ account }: { account: User }) {
               </div>
             </Link>
             <ThemeToggle />
-            {account && <UserNav account={account} />}
+            {account ? (
+              <UserNav account={account} />
+            ) : (
+              <Link href="/signup">
+                <Button variant="ghost">Sign In</Button>
+              </Link>
+            )}
           </nav>
         </div>
       </div>
