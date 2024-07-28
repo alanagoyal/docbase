@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
+
 import { Button } from "@/components/ui/button"
 import { Links } from "@/components/links"
 
@@ -20,10 +21,9 @@ export default async function LinksPage() {
     .eq("auth_id", user.id)
     .single()
 
-  const { data: links } = await supabase
-    .from("links")
-    .select("*")
-    .eq("created_by", account.auth_id)
+  const { data: links } = await supabase.rpc("get_user_links", {
+    auth_id: account.auth_id,
+  })
 
   return links && links.length > 0 ? (
     <div className="container mx-auto px-4 py-8">

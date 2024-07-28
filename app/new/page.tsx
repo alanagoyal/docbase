@@ -12,11 +12,10 @@ export default async function Link({ params }: { params: { id: string } }) {
   if (!user) {
     redirect("/login")
   }
-  const {
-    data: link,
-  } = await supabase.from("links").select("*").eq("id", id).single()
 
-  const { data: account, error } = await supabase
+  const { data: link } = await supabase.rpc('get_link_by_id', { link_id: id })
+ 
+  const { data: account } = await supabase
     .from("users")
     .select()
     .eq("auth_id", user?.id)
