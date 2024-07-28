@@ -27,6 +27,7 @@ export function UserNav({ account }: { account: User }) {
   async function signOut() {
     await supabase.auth.signOut()
     router.push("/")
+    router.refresh()
   }
 
   return (

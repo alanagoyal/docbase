@@ -11,8 +11,6 @@ export async function signup(formData: SignupFormData) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
   let redirectTo = siteUrl + "/account"
 
-  console.log(redirectTo)
-
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
