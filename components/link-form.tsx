@@ -321,6 +321,7 @@ export default function LinkForm({
                             field.onChange(updatedDate)
                           }
                         }}
+                        defaultMonth={field.value}
                         disabled={(date) =>
                           date < new Date() || date > new Date("2900-01-01")
                         }
