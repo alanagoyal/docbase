@@ -49,7 +49,7 @@ export function SiteHeader({ account }: { account: User }) {
             {account ? (
               <UserNav account={account} />
             ) : (
-              <Link href="/signup">
+              <Link href="/login">
                 <Button variant="ghost">Sign In</Button>
               </Link>
             )}
