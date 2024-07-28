@@ -10,6 +10,7 @@ import { CalendarIcon } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+
 import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -65,10 +66,10 @@ export default function LinkForm({
       expires: link?.expires
         ? new Date(link.expires)
         : (() => {
-          const date = new Date();
-          date.setDate(date.getDate() + 30);
-          date.setHours(date.getHours() + 1, 0, 0, 0);
-          return date;
+            const date = new Date()
+            date.setDate(date.getDate() + 30)
+            date.setHours(date.getHours() + 1, 0, 0, 0)
+            return date
           })(),
     },
   })
@@ -118,10 +119,10 @@ export default function LinkForm({
     data: LinkFormValues
   }) {
     try {
-      let passwordHash = link?.password;
+      let passwordHash = link?.password
 
       if (data.password && data.password !== "********") {
-        passwordHash = bcrypt.hashSync(data.password, 10);
+        passwordHash = bcrypt.hashSync(data.password, 10)
       }
 
       const signedUrl = await createUrl({ filePath, data })
@@ -134,7 +135,7 @@ export default function LinkForm({
         filename: filePath,
       }
 
-      let result;
+      let result
       if (link) {
         result = await supabase.rpc("update_link", {
           link_id: link.id,
@@ -143,7 +144,7 @@ export default function LinkForm({
           password_arg: passwordHash,
           expires_arg: data.expires.toISOString(),
           filename_arg: filePath,
-        });
+        })
       } else {
         result = await supabase.from("links").insert(updates).select().single()
       }
@@ -157,6 +158,7 @@ export default function LinkForm({
           : "Your link has been created successfully",
       })
       router.push("/links")
+      router.refresh()
     } catch (error) {
       console.error(error)
       toast({
@@ -276,7 +278,9 @@ export default function LinkForm({
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5 flex-grow">
-                    <FormLabel htmlFor="expires" className="text-base pr-2">Expires</FormLabel>
+                    <FormLabel htmlFor="expires" className="text-base pr-2">
+                      Expires
+                    </FormLabel>
                     <FormDescription className="pr-4">
                       Select the expiration date and time for this link
                     </FormDescription>
@@ -310,11 +314,11 @@ export default function LinkForm({
                         selected={field.value}
                         onSelect={(newDate) => {
                           if (newDate) {
-                            const updatedDate = new Date(newDate);
-                            updatedDate.setHours(field.value.getHours());
-                            updatedDate.setMinutes(field.value.getMinutes());
-                            updatedDate.setSeconds(field.value.getSeconds());
-                            field.onChange(updatedDate);
+                            const updatedDate = new Date(newDate)
+                            updatedDate.setHours(field.value.getHours())
+                            updatedDate.setMinutes(field.value.getMinutes())
+                            updatedDate.setSeconds(field.value.getSeconds())
+                            field.onChange(updatedDate)
                           }
                         }}
                         disabled={(date) =>
@@ -327,10 +331,10 @@ export default function LinkForm({
                           type="time"
                           value={format(field.value, "HH:mm")}
                           onChange={(e) => {
-                            const [hours, minutes] = e.target.value.split(':');
-                            const newDate = new Date(field.value);
-                            newDate.setHours(parseInt(hours), parseInt(minutes));
-                            field.onChange(newDate);
+                            const [hours, minutes] = e.target.value.split(":")
+                            const newDate = new Date(field.value)
+                            newDate.setHours(parseInt(hours), parseInt(minutes))
+                            field.onChange(newDate)
                           }}
                         />
                       </div>
@@ -357,14 +361,9 @@ export default function LinkForm({
                   : "Drag & drop or click to upload a file"}
               </p>
             </div>
-            {link && link.filename && (
+            {filePath && (
               <p className="text-sm text-muted-foreground text-center">
-                Current file: {link.filename}
-              </p>
-            )}
-            {filePath && filePath !== link?.filename && (
-              <p className="text-sm text-muted-foreground text-center">
-                New file selected: {filePath}
+                {filePath}
               </p>
             )}
             <Button
