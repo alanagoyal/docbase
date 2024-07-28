@@ -26,18 +26,18 @@ export default async function LinksPage() {
     .eq("created_by", account.auth_id)
 
   return links && links.length > 0 ? (
-    <div className="flex flex-col items-center pt-20 py-2">
-      <h1 className="text-4xl font-bold mb-4">Your Links</h1>
-      <div className="w-half">
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6 text-center">Your Links</h1>
+      <div className="max-w-2xl mx-auto">
         <Links links={links} account={account} />
       </div>
     </div>
   ) : (
-    <div className="w-full px-4 flex justify-center items-center flex-col min-h-screen">
-      <h1 className="text-2xl text-center font-bold mb-4">
+    <div className="container mx-auto px-4 py-8 flex justify-center items-center flex-col min-h-screen">
+      <h1 className="text-2xl text-center font-bold mb-6">
         You haven&apos;t created <br /> any links yet
       </h1>
-      <Link className="flex justify-center pt-2" href="/new">
+      <Link href="/new">
         <Button variant="outline">Get Started</Button>
       </Link>
     </div>

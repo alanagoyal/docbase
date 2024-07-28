@@ -17,8 +17,8 @@ export default async function Doc({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen pt-20 py-2">
-      <h1 className="text-4xl font-bold mb-4">
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6 text-center">
         {link.filename}
       </h1>
       <ViewLinkForm link={link} />

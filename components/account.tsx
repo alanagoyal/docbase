@@ -10,8 +10,8 @@ type User = Database["public"]["Tables"]["users"]["Row"];
 export default function Account({ account }: { account: User }) {
 
   return (
-    <div className="flex flex-col items-center min-h-dvh w-full">
-      <Tabs defaultValue="profile" className="w-full md:w-1/2">
+    <div className="w-full max-w-2xl mx-auto">
+      <Tabs defaultValue="profile" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="password">Password</TabsTrigger>

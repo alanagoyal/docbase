@@ -7,9 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as bcrypt from "bcryptjs"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
+import { useDropzone } from "react-dropzone"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { useDropzone } from "react-dropzone";
 
 import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Switch } from "./ui/switch"
 import { toast } from "./ui/use-toast"
@@ -141,7 +142,7 @@ export default function LinkForm({
 
   const onDrop = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0];
+      const file = acceptedFiles[0]
       try {
         setUploading(true)
         const filePath = `${file.name}`
@@ -168,9 +169,12 @@ export default function LinkForm({
         setUploading(false)
       }
     }
-  };
+  }
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, disabled: uploading });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    disabled: uploading,
+  })
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -196,15 +200,28 @@ export default function LinkForm({
             control={form.control}
             name="password"
             render={({ field }) => (
-              <FormItem className={cn("flex flex-row items-center justify-between rounded-lg border p-4", !protectWithPassword && "hidden")}>
+              <FormItem
+                className={cn(
+                  "flex flex-row items-center justify-between rounded-lg border p-4",
+                  !protectWithPassword && "hidden"
+                )}
+              >
                 <div className="space-y-0.5 flex-grow">
-                  <FormLabel htmlFor="password" className="text-base pr-2">Password</FormLabel>
+                  <FormLabel htmlFor="password" className="text-base pr-2">
+                    Password
+                  </FormLabel>
                   <FormDescription className="pr-4">
                     Enter a password to protect your document
                   </FormDescription>
                 </div>
                 <FormControl>
-                  <Input id="password" type="password" className="w-[200px]" {...field} disabled={!protectWithPassword} />
+                  <Input
+                    id="password"
+                    type="password"
+                    className="w-[200px]"
+                    {...field}
+                    disabled={!protectWithPassword}
+                  />
                 </FormControl>
               </FormItem>
             )}
@@ -230,9 +247,16 @@ export default function LinkForm({
             control={form.control}
             name="expires"
             render={({ field }) => (
-              <FormItem className={cn("flex flex-row items-center justify-between rounded-lg border p-4", !protectWithExpiration && "hidden")}>
+              <FormItem
+                className={cn(
+                  "flex flex-row items-center justify-between rounded-lg border p-4",
+                  !protectWithExpiration && "hidden"
+                )}
+              >
                 <div className="space-y-0.5 flex-grow">
-                  <FormLabel htmlFor="expires" className="text-base pr-2">Expires</FormLabel>
+                  <FormLabel htmlFor="expires" className="text-base pr-2">
+                    Expires
+                  </FormLabel>
                   <FormDescription className="pr-4">
                     Viewers will no longer be able to access your link after
                     this date
@@ -277,8 +301,8 @@ export default function LinkForm({
             )}
           />
           <div className="space-y-4">
-            <div 
-              {...getRootProps()} 
+            <div
+              {...getRootProps()}
               className={cn(
                 "border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer",
                 uploading && "opacity-50 cursor-not-allowed"
@@ -286,19 +310,21 @@ export default function LinkForm({
             >
               <input {...getInputProps()} />
               <p className="text-sm text-muted-foreground">
-                {uploading ? (
-                  "Uploading..."
-                ) : isDragActive ? (
-                  "Drop the file here ..."
-                ) : (
-                  "Drag & drop or click to upload a file"
-                )}
+                {uploading
+                  ? "Uploading..."
+                  : isDragActive
+                  ? "Drop the file here ..."
+                  : "Drag & drop or click to upload a file"}
               </p>
             </div>
-            {filePath && <p className="text-sm text-muted-foreground">Selected file: {filePath}</p>}
+            {filePath && (
+              <p className="text-sm text-muted-foreground">
+                Selected file: {filePath}
+              </p>
+            )}
             <Button
-              className="bg-[#9FACE6] text-white font-bold px-4 rounded w-full"
               type="submit"
+              className="w-full"
               disabled={uploading || !filePath}
             >
               Create Link

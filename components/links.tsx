@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Activity, Copy, Trash } from "lucide-react"
+import { Activity, Copy, Trash, Edit } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -74,6 +74,18 @@ export function Links({
                       <Activity className="h-4 w-4 ml-4 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent>View Analytics</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Link>
+            </div>
+            <div>
+              <Link href={`/edit/${link.id}`}>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Edit className="h-4 w-4 ml-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>Edit Link</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </Link>

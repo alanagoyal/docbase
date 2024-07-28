@@ -1,4 +1,3 @@
-
 import LinkForm from "@/components/link-form"
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
@@ -24,8 +23,8 @@ export default async function Link({ params }: { params: { id: string } }) {
     .single()
 
   return (
-    <div className="flex flex-col items-center min-h-screen pt-20 py-2">
-      <h1 className="text-4xl font-bold mb-4">New Link</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6 text-center">New Link</h1>
       <LinkForm link={link} account={account} />
     </div>
   )
