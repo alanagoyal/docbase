@@ -1,11 +1,9 @@
 import Link from "next/link"
-
 import { Database } from "@/types/supabase"
 import { siteConfig } from "@/config/site"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Icons } from "@/components/icons"
 import { ThemeToggle } from "@/components/theme-toggle"
-
 import { UserNav } from "./user-nav"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
