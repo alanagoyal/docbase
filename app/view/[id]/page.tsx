@@ -1,24 +1,25 @@
-import { cookies, headers } from "next/headers"
-import { createServerComponentSupabaseClient } from "@supabase/auth-helpers-nextjs"
-
+import { createClient } from "@/utils/supabase/server"
 import ViewLinkForm from "@/components/view-link-form"
+import { Database } from "@/types/supabase"
+
+type Link = Database["public"]["Tables"]["links"]["Row"]
 
 export default async function Doc({ params }: { params: { id: string } }) {
-  const supabase = createServerComponentSupabaseClient({ cookies, headers })
+  const supabase = createClient()
   const id = params.id
 
-  const { data: link, error } = await supabase
-    .from("links")
-    .select("id, password, url, user_id (full_name)")
-    .eq("id", id)
-    .single()
+  const { data: link } = await supabase.rpc("select_link", {
+    link_id: id,
+  }).single() as { data: Link | null };
 
-  const fullName = (link as any).user_id.full_name
+  if (!link) {
+    return <div>Link not found</div>
+  }
 
   return (
-    <div className="flex flex-col items-center min-h-screen pt-20 py-2">
-      <h1 className="text-4xl font-bold mb-4">
-        {fullName && `${fullName} is sharing a document with you`}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        {link.filename}
       </h1>
       <ViewLinkForm link={link} />
     </div>

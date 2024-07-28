@@ -1,6 +1,7 @@
-import Link from "next/link"
-import { Activity, Copy, Eye, Trash } from "lucide-react"
+"use client"
 
+import Link from "next/link"
+import { Activity, Copy, Trash, Edit } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -8,16 +9,25 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip"
 import { toast } from "./ui/use-toast"
+import { createClient } from "@/utils/supabase/client"
+
+import { Database } from "@/types/supabase"
+import { useRouter } from "next/navigation"
+
+type User = Database["public"]["Tables"]["users"]["Row"]
+type Link = Database["public"]["Tables"]["links"]["Row"]
 
 export function Links({
-  allLinks,
-  onDeleteLink,
-}: {
-  allLinks: any
-  onDeleteLink: (linkId: string) => void
+  links,
+    account,
+  }: {
+  links: Link[]
+  account: User
 }) {
+  const supabase = createClient()
+  const router = useRouter()
   const handleCopyLink = (linkId: string) => {
-    const link = `https://getdocbase.com/view/${linkId}`
+    const link = `${process.env.NEXT_PUBLIC_SITE_URL}/view/${linkId}`
     navigator.clipboard
       .writeText(link)
       .then(() => {
@@ -31,10 +41,22 @@ export function Links({
         })
       })
   }
+
+  const deleteLink = async (linkId: string) => {
+    await supabase.rpc('delete_link', {
+      link_id: linkId,
+      auth_id: account.auth_id,
+    })
+    toast({
+      description: "Your link has been deleted",
+    })
+    router.refresh()
+  }
+
   return (
     <div>
-      {allLinks &&
-        allLinks.map((link: any) => (
+      {links &&
+        links.map((link: any) => (
           <div className="flex items-center py-2" key={link.id}>
             <div className="flex-1 ml-4 space-y-1">
               <p className="text-sm font-medium leading-none">
@@ -46,7 +68,6 @@ export function Links({
             </div>
             <div>
               <Link href={`/analytics/${link.id}`}>
-                {" "}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>
@@ -58,7 +79,18 @@ export function Links({
               </Link>
             </div>
             <div>
-              {" "}
+              <Link href={`/edit/${link.id}`}>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Edit className="h-4 w-4 ml-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>Edit Link</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </Link>
+            </div>
+            <div>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger>
@@ -66,7 +98,7 @@ export function Links({
                       className="h-4 w-4 ml-4 text-muted-foreground"
                       onClick={() => handleCopyLink(link.id)}
                       style={{ cursor: "pointer" }}
-                    />{" "}
+                    />
                   </TooltipTrigger>
                   <TooltipContent>Copy Link</TooltipContent>
                 </Tooltip>
@@ -78,7 +110,7 @@ export function Links({
                   <TooltipTrigger>
                     <Trash
                       className="h-4 w-4 ml-4 text-muted-foreground"
-                      onClick={() => onDeleteLink(link.id)}
+                      onClick={() => deleteLink(link.id)}
                       style={{ cursor: "pointer" }}
                     />
                   </TooltipTrigger>

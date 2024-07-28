@@ -1,9 +1,6 @@
 import "@/styles/globals.css"
-import { Metadata } from "next"
-import { cookies, headers } from "next/headers"
-import { redirect, useRouter } from "next/navigation"
-import { createServerComponentSupabaseClient } from "@supabase/auth-helpers-nextjs"
-
+import { Metadata, Viewport } from "next"
+import { createClient } from "@/utils/supabase/server"
 import { siteConfig } from "@/config/site"
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
@@ -12,18 +9,12 @@ import { SiteHeader } from "@/components/site-header"
 import { TailwindIndicator } from "@/components/tailwind-indicator"
 import { ThemeProvider } from "@/components/theme-provider"
 
-import SupabaseProvider from "./supabase-provider"
-
 export const metadata: Metadata = {
   title: {
-    default: "DocBase",
-    template: `%s - DocBase`,
+    default: "Docbase",
+    template: `%s - Docbase`,
   },
-  description: "Open-Source Alternative to DocSend",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
-  ],
+  description: "Open-source alternative to Docsend",
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -46,18 +37,28 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "black" },
+  ],
+}
+
 interface RootLayoutProps {
   children: React.ReactNode
 }
 
 export default async function RootLayout({ children }: RootLayoutProps) {
-  const supabase = createServerComponentSupabaseClient({
-    headers,
-    cookies,
-  })
+  const supabase = createClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data: account } = await supabase
+    .from("users")
+    .select("*")
+    .eq("auth_id", user?.id)
+    .single()
 
   return (
     <>
@@ -65,21 +66,19 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <head />
         <body
           className={cn(
-            "min-h-screen bg-background font-sans antialiased",
+            "min-h-dvh bg-background font-sans antialiased",
             fontSans.variable
           )}
         >
-          <SupabaseProvider session={session}>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-              <div className="relative flex min-h-screen flex-col">
-                {session ? <SiteHeader /> : <></>}
-                <Toaster />
-                {children}
-                <div className="flex-1"></div>
-              </div>
-              <TailwindIndicator />
-            </ThemeProvider>
-          </SupabaseProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <div className="relative flex min-h-dvh flex-col">
+              <SiteHeader account={account} />
+              <Toaster />
+              {children}
+              <div className="flex-1"></div>
+            </div>
+            <TailwindIndicator />
+          </ThemeProvider>
         </body>
       </html>
     </>

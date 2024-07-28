@@ -10,56 +10,7 @@ I started with @shadcn's template and UI components: https://github.com/shadcn/n
 
 ### Set up the database
 
-Create a new [Supabase](https://app.supabase.com/) project, enter your project details, and wait for the database to launch. Navigate to the SQL editor in the dashboard, paste the SQL below, and run it. These instructions don't include RLS or access controls for storage. Make sure to add those if you want them. I'll make this a migration at some point, but you get the gist :)
-
-```
--- Create table for user profiles
-create table profiles (
-  id uuid references auth.users on delete cascade not null primary key,
-  updated_at timestamp with time zone,
-  email text unique,
-  full_name text
-  );
-
--- This trigger automatically creates a new profile when a new user signs up via Supabase Auth
-create function public.handle_new_user()
-returns trigger as $$
-begin
-  insert into public.profiles (id, email)
-  values (new.id, new.email);
-  return new;
-end;
-$$ language plpgsql security definer;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
-
--- Set up table for links
-create table links (
-  id uuid not null primary key,
-  created_at timestamp with time zone,
-  user_id uuid references public.profiles,
-  url text,
-  password text,
-  expires timestamp with time zone,
-  filename text
-);
-
--- Set up table for viewers
-create table viewers (
-  id uuid not null primary key,
-  created_at timestamp with time zone,
-  link_id uuid references public.links on delete cascade,
-  email text,
-  viewed_at timestamp with time zone
-);
-
--- Set up Storage
-insert into storage.buckets (id, name)
-  values ('docs', 'docs');
-```
-
-Grab the project URL and anon key from the API settings and put them in a new .env.local file in the root directory as shown:
+Create a new [Supabase](https://app.supabase.com/) project, enter your project details, and wait for the database to launch. Run the migration in the repo. Grab the project URL and anon key from the API settings and put them in a new .env.local file in the root directory as shown:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL = "https://<project>.supabase.co"

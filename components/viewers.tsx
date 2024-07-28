@@ -7,7 +7,6 @@ export function Viewers({ allViews }: { allViews: any }) {
         allViews.map((view: any) => (
           <div className="flex items-center py-2" key={view.email}>
             <Avatar className="h-9 w-9">
-              <AvatarImage src="/avatars/01.png" alt="Avatar" />
               <AvatarFallback>{view.email[0].toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="ml-4 space-y-1">
