@@ -35,7 +35,9 @@ export default function Analytics({ allViewers, uniqueViewers, allViews }: { all
         <CardHeader>
           <CardTitle>Recent Views</CardTitle>
           <CardDescription>
-            More information about your {allViewers} views
+            {allViewers > 0
+              ? `More information about your views`
+              : "No views yet"}
           </CardDescription>
         </CardHeader>
         <CardContent>
