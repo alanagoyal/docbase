@@ -64,7 +64,12 @@ export default function LinkForm({
       password: link?.password ? "********" : "",
       expires: link?.expires
         ? new Date(link.expires)
-        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        : (() => {
+          const date = new Date();
+          date.setDate(date.getDate() + 30);
+          date.setHours(date.getHours() + 1, 0, 0, 0);
+          return date;
+          })(),
     },
   })
   const [expiresCalendarOpen, setExpiresCalendarOpen] = useState(false)
@@ -264,84 +269,77 @@ export default function LinkForm({
               />
             </FormControl>
           </FormItem>
-          <FormField
-            control={form.control}
-            name="expires"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel htmlFor="expires">Expires</FormLabel>
-                <Popover
-                  open={expiresCalendarOpen}
-                  onOpenChange={(open) => setExpiresCalendarOpen(open)}
-                >
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        id="expires"
-                        variant="outline"
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                        disabled={!protectWithExpiration}
-                      >
-                        {field.value ? (
-                          `${field.value.toLocaleString([], {
-                            year: "numeric",
-                            month: "numeric",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}`
-                        ) : (
-                          <span>Select Date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={(newDate) => {
-                        if (newDate) {
-                          const updatedDate = new Date(newDate);
-                          updatedDate.setHours(field.value.getHours());
-                          updatedDate.setMinutes(field.value.getMinutes());
-                          updatedDate.setSeconds(field.value.getSeconds());
-                          field.onChange(updatedDate);
+          {protectWithExpiration && (
+            <FormField
+              control={form.control}
+              name="expires"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5 flex-grow">
+                    <FormLabel htmlFor="expires" className="text-base pr-2">Expires</FormLabel>
+                    <FormDescription className="pr-4">
+                      Select the expiration date and time for this link
+                    </FormDescription>
+                  </div>
+                  <Popover
+                    open={expiresCalendarOpen}
+                    onOpenChange={(open) => setExpiresCalendarOpen(open)}
+                  >
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          id="expires"
+                          variant="outline"
+                          className={cn(
+                            "w-[200px] pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Select date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={(newDate) => {
+                          if (newDate) {
+                            const updatedDate = new Date(newDate);
+                            updatedDate.setHours(field.value.getHours());
+                            updatedDate.setMinutes(field.value.getMinutes());
+                            updatedDate.setSeconds(field.value.getSeconds());
+                            field.onChange(updatedDate);
+                          }
+                        }}
+                        disabled={(date) =>
+                          date < new Date() || date > new Date("2900-01-01")
                         }
-                      }}
-                      disabled={(date) =>
-                        date < new Date() || date > new Date("2900-01-01")
-                      }
-                      initialFocus
-                    />
-                    <Input
-                      type="time"
-                      className="mt-2"
-                      value={field.value.toLocaleTimeString([], {
-                        hourCycle: "h23",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                      onChange={(selectedTime) => {
-                        const currentTime = field.value;
-                        currentTime.setHours(
-                          parseInt(selectedTime.target.value.split(":")[0]),
-                          parseInt(selectedTime.target.value.split(":")[1]),
-                          0
-                        );
-                        field.onChange(currentTime);
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                        initialFocus
+                      />
+                      <div className="p-3 border-t border-border">
+                        <Input
+                          type="time"
+                          value={format(field.value, "HH:mm")}
+                          onChange={(e) => {
+                            const [hours, minutes] = e.target.value.split(':');
+                            const newDate = new Date(field.value);
+                            newDate.setHours(parseInt(hours), parseInt(minutes));
+                            field.onChange(newDate);
+                          }}
+                        />
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </FormItem>
+              )}
+            />
+          )}
           <div className="space-y-4">
             <div
               {...getRootProps()}
