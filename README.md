@@ -10,7 +10,9 @@ I started with @shadcn's template and UI components: https://github.com/shadcn/n
 
 ### Set up the database
 
-Create a new [Supabase](https://app.supabase.com/) project, enter your project details, and wait for the database to launch. Run the migration in the repo. Grab the project URL and anon key from the API settings and put them in a new .env.local file in the root directory as shown:
+Create a new [Supabase](https://app.supabase.com/) project, enter your project details, and wait for the database to launch. Follow the [docs](https://supabase.com/docs/guides/cli/local-development) for local development using the [migration](https://github.com/alanagoyal/docbase/blob/main/supabase/migrations/20240729164156_initial.sql) in the repo. Note that you will need to create the storage bucket locally. 
+
+Grab the project URL and anon key from the API settings (or after running `supabase start`) and put them in a new .env.local file in the root directory as shown:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL = "https://<project>.supabase.co"
