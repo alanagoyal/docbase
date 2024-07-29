@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { SiteHeader } from "@/components/site-header"
 import { TailwindIndicator } from "@/components/tailwind-indicator"
 import { ThemeProvider } from "@/components/theme-provider"
+import { CommandMenu } from "@/components/command-menu"
 
 export const metadata: Metadata = {
   title: {
@@ -75,6 +76,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               <SiteHeader account={account} />
               <Toaster />
               {children}
+              <CommandMenu />
               <div className="flex-1"></div>
             </div>
             <TailwindIndicator />
