@@ -26,8 +26,8 @@ export function SiteHeader({ account }: { account: User }) {
           </span>
           base
         </Link>
-        <div className="flex flex-1 items-center justify-end space-x-4">
-          <nav className="flex items-center space-x-1">
+        <div className="flex flex-1 items-center justify-end">
+          <nav className="flex items-center">
             <Link
               href={siteConfig.links.github}
               target="_blank"
@@ -48,7 +48,7 @@ export function SiteHeader({ account }: { account: User }) {
               <UserNav account={account} />
             ) : (
               <Link href="/login">
-                <Button variant="ghost">Sign In</Button>
+                <Button variant="ghost" size="sm">Sign In</Button>
               </Link>
             )}
           </nav>
