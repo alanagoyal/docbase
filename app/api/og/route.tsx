@@ -1,6 +1,5 @@
 import { ImageResponse } from "next/og"
 import { createClient } from "@/utils/supabase/server"
-
 import { Database } from "@/types/supabase"
 
 type Link = Database["public"]["Tables"]["links"]["Row"]
@@ -64,6 +63,8 @@ export async function GET(request: Request) {
     })
     .single()) as { data: Link | null }
 
+  const filename = link?.filename ? link.filename : "Untitled Document"
+
   const { data: creator } = await supabase
     .from("users")
     .select("*")
@@ -71,8 +72,8 @@ export async function GET(request: Request) {
     .single()
 
   console.log(creator)
-  const filename = link?.filename
-  const creatorName = creator?.name || "Someone"
+
+  const creatorName = creator?.name ? creator.name : "Someone"
 
   return new ImageResponse(
     (

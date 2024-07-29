@@ -5,8 +5,11 @@ import { createClient } from "@/utils/supabase/server"
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import ViewLinkForm from "@/components/view-link-form"
+import { revalidatePath } from "next/cache"
 
 type Link = Database["public"]["Tables"]["links"]["Row"]
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -22,17 +25,18 @@ export async function generateMetadata({
     })
     .single()) as { data: Link | null }
 
+  const filename = link?.filename ? link.filename : "Untitled Document"
+
   const { data: creator } = await supabase
     .from("users")
     .select("*")
     .eq("auth_id", link?.created_by)
     .single()
 
-  console.log(creator)
   const creatorName = creator?.name ? creator.name : "Someone"
 
   return {
-    title: `${creatorName} shared ${link?.filename}`,
+    title: `${creatorName} is sharing ${filename}`,
     openGraph: {
       images: [`/api/og/?id=${encodeURIComponent(id)}`],
     },
@@ -42,6 +46,8 @@ export async function generateMetadata({
 export default async function Doc({ params }: { params: { id: string } }) {
   const supabase = createClient()
   const id = params.id
+
+  revalidatePath(`/view/${id}`)
 
   const { data: link } = (await supabase
     .rpc("select_link", {
