@@ -70,6 +70,7 @@ export async function GET(request: Request) {
     .eq("auth_id", link?.created_by)
     .single()
 
+  console.log(creator)
   const filename = link?.filename
   const creatorName = creator?.name || "Someone"
 

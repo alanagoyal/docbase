@@ -27,8 +27,9 @@ export async function generateMetadata({
     .select("*")
     .eq("auth_id", link?.created_by)
     .single()
-    
-  const creatorName = creator?.name
+
+  console.log(creator)
+  const creatorName = creator?.name ? creator.name : "Someone"
 
   return {
     title: `${creatorName} shared ${link?.filename}`,
