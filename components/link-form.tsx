@@ -35,6 +35,7 @@ const linkFormSchema = z.object({
   protectWithExpiration: z.boolean(),
   password: z.string().optional(),
   expires: z.date({ required_error: "Please enter a valid date" }),
+  filename: z.string().min(1, "Filename is required"),
 })
 
 type LinkFormValues = z.infer<typeof linkFormSchema>
@@ -71,6 +72,7 @@ export default function LinkForm({
             date.setHours(date.getHours() + 1, 0, 0, 0)
             return date
           })(),
+      filename: link?.filename || "",
     },
   })
   const [expiresCalendarOpen, setExpiresCalendarOpen] = useState(false)
@@ -132,7 +134,7 @@ export default function LinkForm({
         url: signedUrl,
         password: passwordHash,
         expires: data.expires.toISOString(),
-        filename: filePath,
+        filename: data.filename,
       }
 
       let result
@@ -143,12 +145,12 @@ export default function LinkForm({
           url_arg: signedUrl,
           password_arg: passwordHash,
           expires_arg: data.expires.toISOString(),
-          filename_arg: filePath,
+          filename_arg: data.filename,
         })
       } else {
         result = await supabase.from("links").insert(updates)
       }
-      
+
       toast({
         description: link
           ? "Your link has been updated successfully"
@@ -182,6 +184,7 @@ export default function LinkForm({
         }
 
         setFilePath(filePath)
+        form.setValue("filename", file.name) // Set the filename in the form
         toast({
           description: "File uploaded successfully",
         })
@@ -342,6 +345,31 @@ export default function LinkForm({
               )}
             />
           )}
+          {filePath && (
+            <FormField
+              control={form.control}
+              name="filename"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5 flex-grow">
+                    <FormLabel htmlFor="filename" className="text-base pr-2">
+                      Filename
+                    </FormLabel>
+                    <FormDescription className="pr-4">
+                      Enter a name for your file
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Input
+                      id="filename"
+                      className="w-[calc(60%-1rem)]"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          )}
           <div className="space-y-4">
             <div
               {...getRootProps()}
@@ -359,11 +387,7 @@ export default function LinkForm({
                   : "Drag & drop or click to upload a file"}
               </p>
             </div>
-            {filePath && (
-              <p className="text-sm text-muted-foreground text-center">
-                {filePath}
-              </p>
-            )}
+
             <Button
               type="submit"
               className="w-full"
