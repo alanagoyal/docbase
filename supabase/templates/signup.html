@@ -1,4 +1,4 @@
 <h2>Confirm Your Account</h2>
 
 <p>Follow this link to confirm your account:</p>
-<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup&next={{ .RedirectTo }}">Log In</a></p>
+<p><a href="{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup&next={{ .RedirectTo }}/account">Log In</a></p>
