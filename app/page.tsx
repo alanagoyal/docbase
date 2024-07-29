@@ -1,41 +1,45 @@
-import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { buttonVariants } from "@/components/ui/button"
-import { siteConfig } from "@/config/site"
+import { Github } from "lucide-react"
 
+import { siteConfig } from "@/config/site"
+import { Button } from "@/components/ui/button"
 
 export default function IndexPage() {
   return (
-    <div className="flex flex-col min-h-dvh">
+    <div className="flex flex-col mih-h-dvh">
       <main className="container mx-auto my-48 flex-grow">
-        <section className="container grid items-center gap-6 pb-8 pt-6 md:py-10">
-          <div className="flex max-w-[980px] flex-col items-start gap-2">
-            <h1 className="text-3xl font-extrabold leading-tight tracking-tighter sm:text-3xl md:text-5xl lg:text-6xl">
-              Docbase
-            </h1>
-            <p className="max-w-[700px] text-lg text-muted-foreground sm:text-xl">
-              The open-source alternative to Docsend
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/new" className="w-full sm:w-auto">
+        <section className="text-center">
+          <h1 className="text-5xl font-bold">
+            {siteConfig.tagline}
+          </h1>
+          <p className="text-lg mt-4">
+            {siteConfig.description}
+          </p>
+          <div className="mt-4 flex justify-center gap-4">
+            <Link href="/links">
               <Button
-                className="w-full text-white px-8 py-4 rounded-md text-base whitespace-nowrap"
+                className="transition-opacity hover:opacity-70"
                 style={{
-                  background: "linear-gradient(48deg, #74EBD5 0%, #9FACE6 100%)",
+                  background:
+                    "linear-gradient(48deg, #74EBD5 0%, #9FACE6 100%)",
                 }}
               >
                 Get Started
               </Button>
             </Link>
-
-            <Link href={siteConfig.links.github}
-              className={buttonVariants({variant: "ghost", className: "hidden sm:inline-flex w-full sm:w-auto"})}
+            <Link
+              href={siteConfig.links.github}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              View on Github
+              <Button variant="ghost">
+                <Github className="mr-2 h-4 w-4" />
+                GitHub
+              </Button>
             </Link>
           </div>
         </section>
+        <section className="mt-24 flex justify-center"></section>
       </main>
     </div>
   )
