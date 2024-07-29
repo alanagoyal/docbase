@@ -17,20 +17,20 @@ export default function IndexPage() {
               The open-source alternative to Docsend
             </p>
           </div>
-          <div className="flex gap-4">
-            <Link href="/new">
-            <Button
-              className=" text-white px-8 py-4 rounded-md text-base"
-              style={{
-                background: "linear-gradient(48deg, #74EBD5 0%, #9FACE6 100%)",
-              }}
-            >
-              Get Started
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link href="/new" className="w-full sm:w-auto">
+              <Button
+                className="w-full text-white px-8 py-4 rounded-md text-base whitespace-nowrap"
+                style={{
+                  background: "linear-gradient(48deg, #74EBD5 0%, #9FACE6 100%)",
+                }}
+              >
+                Get Started
+              </Button>
             </Link>
 
             <Link href={siteConfig.links.github}
-              className={buttonVariants({variant: "ghost"})}
+              className={buttonVariants({variant: "ghost", className: "hidden sm:inline-flex w-full sm:w-auto"})}
             >
               View on Github
             </Link>
