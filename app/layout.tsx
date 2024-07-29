@@ -1,5 +1,5 @@
 import "@/styles/globals.css"
-import { Metadata, Viewport } from "next"
+import { Metadata } from "next"
 import { createClient } from "@/utils/supabase/server"
 import { siteConfig } from "@/config/site"
 import { fontSans } from "@/lib/fonts"
@@ -11,39 +11,13 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { CommandMenu } from "@/components/command-menu"
 
 export const metadata: Metadata = {
-  title: {
-    default: "Docbase",
-    template: `%s - Docbase`,
-  },
-  description: "Open-source alternative to Docsend",
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
+  metadataBase: new URL(siteConfig.url),
+  title: siteConfig.name,
+  description: siteConfig.tagline,
   openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: siteConfig.url,
-    title: siteConfig.name,
-    description: siteConfig.description,
-    siteName: siteConfig.name,
+    images: ["/api/og"],
   },
-  twitter: {
-    card: "summary_large_image",
-    site: "@alanaagoyal",
-    creator: "@alanaagoyal",
-    title: siteConfig.name,
-    description: siteConfig.description,
-    images: siteConfig.ogImage,
-  },
-}
-
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
-  ],
-}
+};
 
 interface RootLayoutProps {
   children: React.ReactNode
