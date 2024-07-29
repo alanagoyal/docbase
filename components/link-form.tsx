@@ -146,12 +146,9 @@ export default function LinkForm({
           filename_arg: filePath,
         })
       } else {
-        result = await supabase.from("links").insert(updates).select().single()
+        result = await supabase.from("links").insert(updates)
       }
-
-      const { data: updatedLink, error } = result
-      if (error) throw error
-
+      
       toast({
         description: link
           ? "Your link has been updated successfully"
