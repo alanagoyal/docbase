@@ -1,3 +1,4 @@
+import { Metadata } from "next"
 import Link from "next/link"
 import { createClient } from "@/utils/supabase/server"
 
@@ -6,6 +7,35 @@ import { Button } from "@/components/ui/button"
 import ViewLinkForm from "@/components/view-link-form"
 
 type Link = Database["public"]["Tables"]["links"]["Row"]
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string }
+}): Promise<Metadata> {
+  const supabase = createClient()
+  const id = params.id
+
+  const { data: link } = (await supabase
+    .rpc("select_link", {
+      link_id: id,
+    })
+    .single()) as { data: Link | null }
+
+  const { data: creator } = await supabase
+    .from("users")
+    .select("*")
+    .eq("auth_id", link?.created_by)
+    .single()
+  const creatorName = creator?.full_name
+
+  return {
+    title: `${creatorName} shared ${link?.filename}`,
+    openGraph: {
+      images: [`/api/og/?id=${encodeURIComponent(id)}`],
+    },
+  }
+}
 
 export default async function Doc({ params }: { params: { id: string } }) {
   const supabase = createClient()
