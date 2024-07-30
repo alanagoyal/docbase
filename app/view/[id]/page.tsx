@@ -1,11 +1,12 @@
 import { Metadata } from "next"
 import Link from "next/link"
 import { createClient } from "@/utils/supabase/server"
+
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import ViewLinkForm from "@/components/view-link-form"
 
-type Link = Database["public"]["Tables"]["links"]["Row"]
+type Link = Database["public"]["Tables"]["links"]["Row"] & { creator_name: string | null }
 
 export const dynamic = "force-dynamic"
 
@@ -17,34 +18,24 @@ export async function generateMetadata({
   const supabase = createClient()
   const id = params.id
 
-  const { data: link } = (await supabase
+  const { data: link } = await supabase
     .rpc("select_link", {
       link_id: id,
     })
-    .single()) as { data: Link | null } 
+    .single<Link>()
 
-  const filename = link?.filename ? link.filename : "Untitled Document"
-
-  let creatorName = "Someone";
-
-  if (link?.created_by) {
-    const { data: creator } = await supabase
-      .from("users")
-      .select("name")
-      .eq("auth_id", link.created_by)
-      .single()
-
-    if (creator) {
-      creatorName = creator.name;
-    }
-  }
-
-  console.log(creatorName)
+  console.log(link)
+  const filename = link?.filename ?? "Untitled Document"
+  const creatorName = link?.creator_name ?? "Someone"
 
   return {
     title: `${creatorName} is sharing ${filename}`,
     openGraph: {
-      images: [`/api/og/?filename=${encodeURIComponent(filename)}&creator=${encodeURIComponent(creatorName)}`],
+      images: [
+        `/api/og/?filename=${encodeURIComponent(
+          filename
+        )}&creator=${encodeURIComponent(creatorName)}`,
+      ],
     },
   }
 }
@@ -57,7 +48,7 @@ export default async function Doc({ params }: { params: { id: string } }) {
     .rpc("select_link", {
       link_id: id,
     })
-    .single()) as { data: Link | null }
+    .single<Link>()) as { data: Link | null }
 
   if (!link) {
     return (
