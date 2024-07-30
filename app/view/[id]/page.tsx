@@ -1,8 +1,6 @@
 import { Metadata } from "next"
-import { revalidatePath } from "next/cache"
 import Link from "next/link"
 import { createClient } from "@/utils/supabase/server"
-
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import ViewLinkForm from "@/components/view-link-form"
@@ -25,8 +23,6 @@ export async function generateMetadata({
     })
     .single()) as { data: Link | null } 
 
-  console.log(link)
-
   const filename = link?.filename ? link.filename : "Untitled Document"
 
   let creatorName = "Someone";
@@ -43,10 +39,12 @@ export async function generateMetadata({
     }
   }
 
+  console.log(creatorName)
+
   return {
     title: `${creatorName} is sharing ${filename}`,
     openGraph: {
-      images: [`/api/og/?id=${encodeURIComponent(id)}`],
+      images: [`/api/og/?filename=${encodeURIComponent(filename)}&creator=${encodeURIComponent(creatorName)}`],
     },
   }
 }

@@ -56,44 +56,12 @@ function getFallbackOGImage() {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const id = searchParams.get("id")
+  const filename = searchParams.get("filename")
+  const creatorName = searchParams.get("creator") || "Someone"
 
-  if (!id) {
+  if (!filename) {
     return getFallbackOGImage()
   }
-
-  const supabase = createClient()
-
-  const { data: link } = (await supabase
-    .rpc("select_link", {
-      link_id: id,
-    })
-    .single()) as { data: Link | null }
-
-  if (!link) {
-    return getFallbackOGImage()
-  }
-
-  const filename = link.filename
-
-  console.log("Link data:", link);
-  console.log("Link created_by:", link?.created_by);
-
-  const { data: creator, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("auth_id", link.created_by)
-    .single()
-
-  if (error) {
-    console.error("Error fetching creator:", error);
-  }
-
-  console.log("Creator data:", creator);
-
-  const creatorName = creator?.name || "Someone"
-
-  console.log("Creator name:", creatorName)
 
   return new ImageResponse(
     (
