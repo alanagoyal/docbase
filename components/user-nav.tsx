@@ -68,10 +68,10 @@ export function UserNav({ account }: { account: User }) {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           {menuItems.map((item: MenuItem, index: number) => (
-            <>
+            <div key={item.label}>
               {item.action === "logout" && <DropdownMenuSeparator />}
               {item.href ? (
-                <Link href={item.href} key={item.label}>
+                <Link href={item.href}>
                   <DropdownMenuItem className="cursor-pointer justify-between">
                     <div className="flex items-center">
                       <item.icon className="mr-2 h-4 w-4" />
@@ -84,7 +84,6 @@ export function UserNav({ account }: { account: User }) {
                 </Link>
               ) : (
                 <DropdownMenuItem
-                  key={item.label}
                   className="cursor-pointer justify-between"
                   onClick={
                     item.action === "theme"
@@ -109,7 +108,7 @@ export function UserNav({ account }: { account: User }) {
                   <p className="text-xs text-muted-foreground">{item.shortcut}</p>
                 </DropdownMenuItem>
               )}
-            </>
+            </div>
           ))}
         </DropdownMenuGroup>
       </DropdownMenuContent>

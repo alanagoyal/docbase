@@ -127,7 +127,22 @@ export default function LinkForm({
         passwordHash = bcrypt.hashSync(data.password, 10)
       }
 
-      const signedUrl = await createUrl({ filePath, data })
+      // Check if the filename has changed
+      if (data.filename !== filePath) {
+        // Rename the file in storage
+        const { error: moveError } = await supabase.storage
+          .from("documents")
+          .move(filePath, data.filename)
+
+        if (moveError) {
+          throw moveError
+        }
+
+        // Update filePath with the new filename
+        filePath = data.filename
+      }
+
+      const signedUrl = await createUrl({ filePath: data.filename, data })
 
       const updates = {
         created_by: account.auth_id,
