@@ -1,4 +1,6 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+"use client"
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export function Viewers({ allViews }: { allViews: any }) {
   return (
