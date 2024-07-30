@@ -22,7 +22,6 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 
@@ -315,7 +314,14 @@ export default function LinkForm({
                           )}
                         >
                           {field.value ? (
-                            format(field.value, "PPP")
+                            <>
+                              <span className="hidden sm:inline">
+                                {format(field.value, "PPP")}
+                              </span>
+                              <span className="sm:hidden">
+                                {format(field.value, "MM/dd/yy")}
+                              </span>
+                            </>
                           ) : (
                             <span>Select date</span>
                           )}

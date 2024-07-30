@@ -1,7 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { Activity, Copy, Trash, Edit } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/utils/supabase/client"
+import { Activity, Copy, Edit, Trash } from "lucide-react"
+
+import { Database } from "@/types/supabase"
+
+import { Button } from "./ui/button"
 import {
   Tooltip,
   TooltipContent,
@@ -9,21 +15,11 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip"
 import { toast } from "./ui/use-toast"
-import { createClient } from "@/utils/supabase/client"
-
-import { Database } from "@/types/supabase"
-import { useRouter } from "next/navigation"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 type Link = Database["public"]["Tables"]["links"]["Row"]
 
-export function Links({
-  links,
-    account,
-  }: {
-  links: Link[]
-  account: User
-}) {
+export function Links({ links, account }: { links: Link[]; account: User }) {
   const supabase = createClient()
   const router = useRouter()
   const handleCopyLink = (linkId: string) => {
@@ -43,7 +39,7 @@ export function Links({
   }
 
   const deleteLink = async (linkId: string) => {
-    await supabase.rpc('delete_link', {
+    await supabase.rpc("delete_link", {
       link_id: linkId,
       auth_id: account.auth_id,
     })
@@ -59,60 +55,68 @@ export function Links({
         links.map((link: any) => (
           <div className="flex items-center py-2" key={link.id}>
             <div className="flex-1 ml-4 space-y-1">
-              <p className="text-sm font-medium leading-none">
+              <p className="text-md font-medium leading-none">
                 {link.filename}
               </p>
               <p className="text-sm text-muted-foreground">
                 {new Date(link.created_at).toLocaleString("en-US")}
               </p>
             </div>
-            <div>
+            <div className="flex items-center space-x-2 mr-4">
               <Link href={`/analytics/${link.id}`}>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Activity className="h-4 w-4 ml-4 text-muted-foreground" />
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="p-2 hover:bg-gray-100 rounded"
+                      >
+                        <Activity className="h-4 w-4 text-muted-foreground" />
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>View Analytics</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </Link>
-            </div>
-            <div>
               <Link href={`/edit/${link.id}`}>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Edit className="h-4 w-4 ml-4 text-muted-foreground" />
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="p-2 hover:bg-gray-100 rounded"
+                      >
+                        <Edit className="h-4 w-4 text-muted-foreground" />
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>Edit Link</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </Link>
-            </div>
-            <div>
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger>
-                    <Copy
-                      className="h-4 w-4 ml-4 text-muted-foreground"
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="p-2 hover:bg-gray-100 rounded"
                       onClick={() => handleCopyLink(link.id)}
-                      style={{ cursor: "pointer" }}
-                    />
+                    >
+                      <Copy className="h-4 w-4 text-muted-foreground" />
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>Copy Link</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            </div>
-            <div>
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger>
-                    <Trash
-                      className="h-4 w-4 ml-4 text-muted-foreground"
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="p-2 hover:bg-gray-100 rounded"
                       onClick={() => deleteLink(link.id)}
-                      style={{ cursor: "pointer" }}
-                    />
+                    >
+                      <Trash className="h-4 w-4 text-muted-foreground" />
+                    </Button>
                   </TooltipTrigger>
                   <TooltipContent>Delete Link</TooltipContent>
                 </Tooltip>
