@@ -76,17 +76,24 @@ export async function GET(request: Request) {
 
   const filename = link.filename
 
-  const { data: creator } = await supabase
+  console.log("Link data:", link);
+  console.log("Link created_by:", link?.created_by);
+
+  const { data: creator, error } = await supabase
     .from("users")
     .select("*")
     .eq("auth_id", link?.created_by)
     .single()
 
-  console.log(creator)
+  if (error) {
+    console.error("Error fetching creator:", error);
+  }
 
-  const creatorName = creator.name ? creator.name : "Someone"
+  console.log("Creator data:", creator);
 
-  console.log(creatorName)
+  const creatorName = creator?.name || "Someone"
+
+  console.log("Creator name:", creatorName)
 
   return new ImageResponse(
     (

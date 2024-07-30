@@ -25,6 +25,8 @@ export async function generateMetadata({
     })
     .single()) as { data: Link | null } 
 
+  console.log(link)
+
   const filename = link?.filename ? link.filename : "Untitled Document"
 
   const { data: creator } = await supabase
@@ -33,7 +35,7 @@ export async function generateMetadata({
     .eq("auth_id", link?.created_by)
     .single()
 
-  const creatorName = creator.name ? creator.name : "Someone"
+  const creatorName = creator?.name || "Someone"
 
   return {
     title: `${creatorName} is sharing ${filename}`,
