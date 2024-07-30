@@ -22,6 +22,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 
@@ -33,9 +34,25 @@ const linkFormSchema = z.object({
   protectWithPassword: z.boolean(),
   protectWithExpiration: z.boolean(),
   password: z.string().optional(),
-  expires: z.date({ required_error: "Please enter a valid date" }),
+  expires: z.date().nullable(),
   filename: z.string().min(1, "Filename is required"),
-})
+}).refine((data) => {
+  if (data.protectWithPassword && (!data.password || data.password.length === 0)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Password is required when protection is enabled",
+  path: ["password"],
+}).refine((data) => {
+  if (data.protectWithExpiration && !data.expires) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Expiration date is required when expiration is enabled",
+  path: ["expires"],
+});
 
 type LinkFormValues = z.infer<typeof linkFormSchema>
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -50,27 +67,19 @@ export default function LinkForm({
   const supabase = createClient()
   const router = useRouter()
   const [filePath, setFilePath] = useState<string>(link?.filename || "")
-  const [protectWithPassword, setProtectWithPassword] = useState<boolean>(
-    !!link?.password
-  )
-  const [protectWithExpiration, setProtectWithExpiration] = useState<boolean>(
-    !!link?.expires
-  )
+  const [protectWithPassword, setProtectWithPassword] = useState<boolean>(!!link?.password)
+  const [protectWithExpiration, setProtectWithExpiration] = useState<boolean>(!!link?.expires)
   const [uploading, setUploading] = useState(false)
+  const [passwordPlaceholder, setPasswordPlaceholder] = useState(link?.password ? '********' : '');
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
     defaultValues: {
       protectWithPassword: !!link?.password,
       protectWithExpiration: !!link?.expires,
-      password: link?.password ? "********" : "",
+      password: link?.password ? '********' : '',
       expires: link?.expires
         ? new Date(link.expires)
-        : (() => {
-            const date = new Date()
-            date.setDate(date.getDate() + 30)
-            date.setHours(date.getHours() + 1, 0, 0, 0)
-            return date
-          })(),
+        : null,
       filename: link?.filename || "",
     },
   })
@@ -89,25 +98,14 @@ export default function LinkForm({
 
   async function createUrl({
     filePath,
-    data,
+    expirationSeconds,
   }: {
     filePath: string
-    data: LinkFormValues
+    expirationSeconds: number
   }) {
-    // compute expiration in seconds
-    const selectedDate = new Date(data.expires!)
-    const currentDate = new Date()
-
-    const millisecondsUntilExpiration =
-      selectedDate.getTime() - currentDate.getTime()
-    const secondsUntilExpiration = Math.floor(
-      millisecondsUntilExpiration / 1000
-    )
-
-    // create url
     const { data: signedUrlData } = await supabase.storage
       .from("documents")
-      .createSignedUrl(filePath, secondsUntilExpiration)
+      .createSignedUrl(filePath, expirationSeconds)
 
     return signedUrlData?.signedUrl
   }
@@ -120,10 +118,16 @@ export default function LinkForm({
     data: LinkFormValues
   }) {
     try {
-      let passwordHash = link?.password
+      let passwordHash = null;
 
-      if (data.password && data.password !== "********") {
-        passwordHash = bcrypt.hashSync(data.password, 10)
+      if (data.protectWithPassword) {
+        if (data.password && data.password !== '********') {
+          passwordHash = bcrypt.hashSync(data.password, 10);
+        } else if (link?.password) {
+          passwordHash = link.password;
+        } else {
+          throw new Error("Password is required when protection is enabled");
+        }
       }
 
       // Check if the filename has changed
@@ -141,29 +145,43 @@ export default function LinkForm({
         filePath = data.filename
       }
 
-      const signedUrl = await createUrl({ filePath: data.filename, data })
+      let expirationSeconds: number;
+      if (data.protectWithExpiration && data.expires) {
+        const currentDate = new Date();
+        const expirationDate = new Date(data.expires);
+        expirationSeconds = Math.floor((expirationDate.getTime() - currentDate.getTime()) / 1000);
+      } else {
+        // Set a long expiration time (e.g., 10 years) when expiration is toggled off
+        expirationSeconds = 10 * 365 * 24 * 60 * 60; // 10 years in seconds
+      }
+
+      const signedUrl = await createUrl({ filePath: data.filename, expirationSeconds })
 
       const updates = {
-        created_by: account.auth_id,
         url: signedUrl,
         password: passwordHash,
-        expires: data.expires.toISOString(),
+        expires: data.protectWithExpiration ? data.expires?.toISOString() : null,
         filename: data.filename,
       }
 
       let result
       if (link) {
+        // Use upsert instead of RPC
         result = await supabase.rpc("update_link", {
           link_id: link.id,
           auth_id: account.auth_id,
           url_arg: signedUrl,
           password_arg: passwordHash,
-          expires_arg: data.expires.toISOString(),
+          expires_arg: data.protectWithExpiration ? data.expires?.toISOString() : null,
           filename_arg: data.filename,
         })
       } else {
-        result = await supabase.from("links").insert(updates)
+        result = await supabase
+          .from("links")
+          .insert({ ...updates, created_by: account.auth_id })
       }
+
+      if (result.error) throw result.error;
 
       toast({
         description: link
@@ -173,7 +191,7 @@ export default function LinkForm({
       router.push("/links")
       router.refresh()
     } catch (error) {
-      console.error(error)
+      console.error(error);
       toast({
         description: "An error occurred while saving the link",
         variant: "destructive",
@@ -198,7 +216,7 @@ export default function LinkForm({
         }
 
         setFilePath(filePath)
-        form.setValue("filename", file.name) // Set the filename in the form
+        form.setValue("filename", file.name) 
         toast({
           description: "File uploaded successfully",
         })
@@ -206,7 +224,6 @@ export default function LinkForm({
         toast({
           description: "Error uploading file",
         })
-        console.error(error)
       } finally {
         setUploading(false)
       }
@@ -222,21 +239,31 @@ export default function LinkForm({
     <div className="w-full max-w-2xl mx-auto">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5 flex-grow">
-              <FormLabel className="text-base pr-2">
-                Password Protected
-              </FormLabel>
-              <FormDescription className="pr-4">
-                Viewers must enter this password to view your document
-              </FormDescription>
+          <FormItem className="flex flex-col rounded-lg border p-4">
+            <div className="flex flex-row items-center justify-between">
+              <div className="space-y-0.5 flex-grow">
+                <FormLabel className="text-base pr-2">
+                  Password Protected
+                </FormLabel>
+                <FormDescription className="pr-4">
+                  Viewers must enter this password to view your document
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={protectWithPassword}
+                  onCheckedChange={(checked) => {
+                    setProtectWithPassword(checked);
+                    form.setValue('protectWithPassword', checked);
+                    if (!checked) {
+                      form.setValue('password', '');
+                      setPasswordPlaceholder('');
+                    }
+                  }}
+                />
+              </FormControl>
             </div>
-            <FormControl>
-              <Switch
-                checked={protectWithPassword}
-                onCheckedChange={setProtectWithPassword}
-              />
-            </FormControl>
+            <FormMessage />
           </FormItem>
           <FormField
             control={form.control}
@@ -244,124 +271,144 @@ export default function LinkForm({
             render={({ field }) => (
               <FormItem
                 className={cn(
-                  "flex flex-row items-center justify-between rounded-lg border p-4",
+                  "flex flex-col rounded-lg border p-4",
                   !protectWithPassword && "hidden"
                 )}
               >
-                <div className="space-y-0.5 flex-grow">
-                  <FormLabel htmlFor="password" className="text-base pr-2">
-                    Password
-                  </FormLabel>
-                  <FormDescription className="pr-4">
-                    Enter a password to protect your document
-                  </FormDescription>
+                <div className="flex flex-row items-center justify-between">
+                  <div className="space-y-0.5 flex-grow">
+                    <FormLabel htmlFor="password" className="text-base pr-2">
+                      Password
+                    </FormLabel>
+                    <FormDescription className="pr-4">
+                      {link?.password ? "Enter a new password or leave blank to keep the existing one" : "Enter a password to protect your document"}
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Input
+                      id="password"
+                      type="password"
+                      className="w-[200px]"
+                      {...field}
+                      disabled={!protectWithPassword}
+                    />
+                  </FormControl>
                 </div>
-                <FormControl>
-                  <Input
-                    id="password"
-                    type="password"
-                    className="w-[200px]"
-                    {...field}
-                    disabled={!protectWithPassword}
-                  />
-                </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5 flex-grow">
-              <FormLabel className="text-base pr-2">
-                Set Expiration Date
-              </FormLabel>
-              <FormDescription className="pr-4">
-                Viewers will no longer be able to access your link after this
-                date
-              </FormDescription>
+          <FormItem className="flex flex-col rounded-lg border p-4">
+            <div className="flex flex-row items-center justify-between">
+              <div className="space-y-0.5 flex-grow">
+                <FormLabel className="text-base pr-2">
+                  Set Expiration Date
+                </FormLabel>
+                <FormDescription className="pr-4">
+                  Viewers will no longer be able to access your link after this
+                  date
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={protectWithExpiration}
+                  onCheckedChange={(checked) => {
+                    setProtectWithExpiration(checked);
+                    form.setValue('protectWithExpiration', checked);
+                    if (!checked) {
+                      form.setValue('expires', null);
+                    } else if (!form.getValues('expires')) {
+                      const defaultDate = new Date();
+                      defaultDate.setDate(defaultDate.getDate() + 30);
+                      defaultDate.setHours(defaultDate.getHours() + 1, 0, 0, 0);
+                      form.setValue('expires', defaultDate);
+                    }
+                  }}
+                />
+              </FormControl>
             </div>
-            <FormControl>
-              <Switch
-                checked={protectWithExpiration}
-                onCheckedChange={setProtectWithExpiration}
-              />
-            </FormControl>
+            <FormMessage />
           </FormItem>
           {protectWithExpiration && (
             <FormField
               control={form.control}
               name="expires"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5 flex-grow">
-                    <FormLabel htmlFor="expires" className="text-base pr-2">
-                      Expires
-                    </FormLabel>
-                    <FormDescription className="pr-4">
-                      Select the expiration date and time for this link
-                    </FormDescription>
-                  </div>
-                  <Popover
-                    open={expiresCalendarOpen}
-                    onOpenChange={(open) => setExpiresCalendarOpen(open)}
-                  >
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          id="expires"
-                          variant="outline"
-                          className={cn(
-                            "w-[200px] pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            <>
-                              <span className="hidden sm:inline">
-                                {format(field.value, "PPP")}
-                              </span>
-                              <span className="sm:hidden">
-                                {format(field.value, "MM/dd/yy")}
-                              </span>
-                            </>
-                          ) : (
-                            <span>Select date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={(newDate) => {
-                          if (newDate) {
-                            const updatedDate = new Date(newDate)
-                            updatedDate.setHours(field.value.getHours())
-                            updatedDate.setMinutes(field.value.getMinutes())
-                            updatedDate.setSeconds(field.value.getSeconds())
-                            field.onChange(updatedDate)
-                          }
-                        }}
-                        defaultMonth={field.value}
-                        disabled={(date) =>
-                          date < new Date() || date > new Date("2900-01-01")
-                        }
-                        initialFocus
-                      />
-                      <div className="p-3 border-t border-border">
-                        <Input
-                          type="time"
-                          value={format(field.value, "HH:mm")}
-                          onChange={(e) => {
-                            const [hours, minutes] = e.target.value.split(":")
-                            const newDate = new Date(field.value)
-                            newDate.setHours(parseInt(hours), parseInt(minutes))
-                            field.onChange(newDate)
+                <FormItem className="flex flex-col rounded-lg border p-4">
+                  <div className="flex flex-row items-center justify-between">
+                    <div className="space-y-0.5 flex-grow">
+                      <FormLabel htmlFor="expires" className="text-base pr-2">
+                        Expires
+                      </FormLabel>
+                      <FormDescription className="pr-4">
+                        Select the expiration date and time for this link
+                      </FormDescription>
+                    </div>
+                    <Popover
+                      open={expiresCalendarOpen}
+                      onOpenChange={(open) => setExpiresCalendarOpen(open)}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            id="expires"
+                            variant="outline"
+                            className={cn(
+                              "w-[200px] pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              <>
+                                <span className="hidden sm:inline">
+                                  {format(field.value, "PPP")}
+                                </span>
+                                <span className="sm:hidden">
+                                  {format(field.value, "MM/dd/yy")}
+                                </span>
+                              </>
+                            ) : (
+                              <span>Select date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={field.value || undefined}
+                          onSelect={(newDate) => {
+                            if (newDate) {
+                              const updatedDate = new Date(newDate)
+                              updatedDate.setHours(field.value ? field.value.getHours() : 0)
+                              updatedDate.setMinutes(field.value ? field.value.getMinutes() : 0)
+                              updatedDate.setSeconds(0)
+                              field.onChange(updatedDate)
+                            }
                           }}
+                          defaultMonth={field.value || new Date()}
+                          disabled={(date) =>
+                            date < new Date() || date > new Date("2900-01-01")
+                          }
+                          initialFocus
                         />
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                        <div className="p-3 border-t border-border">
+                          <Input
+                            type="time"
+                            value={field.value ? format(field.value, "HH:mm") : ""}
+                            onChange={(e) => {
+                              const [hours, minutes] = e.target.value.split(":")
+                              const newDate = new Date(field.value || new Date())
+                              newDate.setHours(parseInt(hours), parseInt(minutes))
+                              field.onChange(newDate)
+                            }}
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -371,22 +418,25 @@ export default function LinkForm({
               control={form.control}
               name="filename"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5 flex-grow">
-                    <FormLabel htmlFor="filename" className="text-base pr-2">
-                      Filename
-                    </FormLabel>
-                    <FormDescription className="pr-4">
-                      Enter a name for your file
-                    </FormDescription>
+                <FormItem className="flex flex-col rounded-lg border p-4">
+                  <div className="flex flex-row items-center justify-between">
+                    <div className="space-y-0.5 flex-grow">
+                      <FormLabel htmlFor="filename" className="text-base pr-2">
+                        Filename
+                      </FormLabel>
+                      <FormDescription className="pr-4">
+                        Enter a name for your file
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Input
+                        id="filename"
+                        className="w-[calc(60%-1rem)]"
+                        {...field}
+                      />
+                    </FormControl>
                   </div>
-                  <FormControl>
-                    <Input
-                      id="filename"
-                      className="w-[calc(60%-1rem)]"
-                      {...field}
-                    />
-                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
