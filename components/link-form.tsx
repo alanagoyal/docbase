@@ -9,6 +9,7 @@ import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { useForm } from "react-hook-form"
+import { v4 as uuidv4 } from "uuid"
 import * as z from "zod"
 
 import { Database } from "@/types/supabase"
@@ -30,29 +31,41 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Switch } from "./ui/switch"
 import { toast } from "./ui/use-toast"
 
-const linkFormSchema = z.object({
-  protectWithPassword: z.boolean(),
-  protectWithExpiration: z.boolean(),
-  password: z.string().optional(),
-  expires: z.date().nullable(),
-  filename: z.string().min(1, "Filename is required"),
-}).refine((data) => {
-  if (data.protectWithPassword && (!data.password || data.password.length === 0)) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Password is required when protection is enabled",
-  path: ["password"],
-}).refine((data) => {
-  if (data.protectWithExpiration && !data.expires) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Expiration date is required when expiration is enabled",
-  path: ["expires"],
-});
+const linkFormSchema = z
+  .object({
+    protectWithPassword: z.boolean(),
+    protectWithExpiration: z.boolean(),
+    password: z.string().optional(),
+    expires: z.date().nullable(),
+    filename: z.string().min(1, "Filename is required"),
+  })
+  .refine(
+    (data) => {
+      if (
+        data.protectWithPassword &&
+        (!data.password || data.password.length === 0)
+      ) {
+        return false
+      }
+      return true
+    },
+    {
+      message: "Password is required when protection is enabled",
+      path: ["password"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.protectWithExpiration && !data.expires) {
+        return false
+      }
+      return true
+    },
+    {
+      message: "Expiration date is required when expiration is enabled",
+      path: ["expires"],
+    }
+  )
 
 type LinkFormValues = z.infer<typeof linkFormSchema>
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -66,33 +79,38 @@ export default function LinkForm({
 }) {
   const supabase = createClient()
   const router = useRouter()
+  const [file, setFile] = useState<File | null>(null)
   const [filePath, setFilePath] = useState<string>(link?.filename || "")
-  const [protectWithPassword, setProtectWithPassword] = useState<boolean>(!!link?.password)
-  const [protectWithExpiration, setProtectWithExpiration] = useState<boolean>(!!link?.expires)
+  const [protectWithPassword, setProtectWithPassword] = useState<boolean>(
+    !!link?.password
+  )
+  const [protectWithExpiration, setProtectWithExpiration] = useState<boolean>(
+    !!link?.expires
+  )
   const [uploading, setUploading] = useState(false)
-  const [passwordPlaceholder, setPasswordPlaceholder] = useState(link?.password ? '********' : '');
+  const [passwordPlaceholder, setPasswordPlaceholder] = useState(
+    link?.password ? "********" : ""
+  )
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
     defaultValues: {
       protectWithPassword: !!link?.password,
       protectWithExpiration: !!link?.expires,
-      password: link?.password ? '********' : '',
-      expires: link?.expires
-        ? new Date(link.expires)
-        : null,
+      password: link?.password ? "********" : "",
+      expires: link?.expires ? new Date(link.expires) : null,
       filename: link?.filename || "",
     },
   })
   const [expiresCalendarOpen, setExpiresCalendarOpen] = useState(false)
 
   function onSubmit(data: LinkFormValues) {
-    if (data && filePath) {
+    if (data && (file || link)) {
       createLink({
-        filePath,
         data,
+        file,
       })
     } else {
-      console.error("Error with filename")
+      console.error("Error: No file selected and no existing link")
     }
   }
 
@@ -111,77 +129,95 @@ export default function LinkForm({
   }
 
   async function createLink({
-    filePath,
     data,
+    file,
   }: {
-    filePath: string
     data: LinkFormValues
+    file: File | null
   }) {
     try {
-      let passwordHash = null;
+      let passwordHash = null
 
       if (data.protectWithPassword) {
-        if (data.password && data.password !== '********') {
-          passwordHash = bcrypt.hashSync(data.password, 10);
+        if (data.password && data.password !== "********") {
+          passwordHash = bcrypt.hashSync(data.password, 10)
         } else if (link?.password) {
-          passwordHash = link.password;
+          passwordHash = link.password
         } else {
-          throw new Error("Password is required when protection is enabled");
+          throw new Error("Password is required when protection is enabled")
         }
       }
 
-      // Check if the filename has changed
-      if (data.filename !== filePath) {
-        // Rename the file in storage
+      const linkId = link ? link.id : uuidv4()
+      const storageFilePath = `${linkId}`
+
+      // Upload or move the file in storage
+      if (file) {
+        const { error: uploadError } = await supabase.storage
+          .from("documents")
+          .upload(storageFilePath, file)
+
+        if (uploadError) {
+          throw uploadError
+        }
+      } else if (link && filePath !== storageFilePath) {
+        // Move the existing file if the filename has changed
         const { error: moveError } = await supabase.storage
           .from("documents")
-          .move(filePath, data.filename)
+          .move(filePath, storageFilePath)
 
         if (moveError) {
           throw moveError
         }
-
-        // Update filePath with the new filename
-        filePath = data.filename
       }
 
-      let expirationSeconds: number;
+      let expirationSeconds: number
       if (data.protectWithExpiration && data.expires) {
-        const currentDate = new Date();
-        const expirationDate = new Date(data.expires);
-        expirationSeconds = Math.floor((expirationDate.getTime() - currentDate.getTime()) / 1000);
+        const currentDate = new Date()
+        const expirationDate = new Date(data.expires)
+        expirationSeconds = Math.floor(
+          (expirationDate.getTime() - currentDate.getTime()) / 1000
+        )
       } else {
         // Set a long expiration time (e.g., 10 years) when expiration is toggled off
-        expirationSeconds = 10 * 365 * 24 * 60 * 60; // 10 years in seconds
+        expirationSeconds = 10 * 365 * 24 * 60 * 60 // 10 years in seconds
       }
 
-      const signedUrl = await createUrl({ filePath: data.filename, expirationSeconds })
-
-      const updates = {
-        url: signedUrl,
-        password: passwordHash,
-        expires: data.protectWithExpiration ? data.expires?.toISOString() : null,
-        filename: data.filename,
-      }
+      const signedUrl = await createUrl({
+        filePath: storageFilePath,
+        expirationSeconds,
+      })
 
       let result
       if (link) {
-        // Use upsert instead of RPC
+        // Use RPC for updating
         result = await supabase.rpc("update_link", {
           link_id: link.id,
           auth_id: account.auth_id,
           url_arg: signedUrl,
           password_arg: passwordHash,
-          expires_arg: data.protectWithExpiration ? data.expires?.toISOString() : null,
+          expires_arg: data.protectWithExpiration
+            ? data.expires?.toISOString()
+            : null,
           filename_arg: data.filename,
         })
       } else {
+        // Insert new link
         result = await supabase
           .from("links")
-          .insert({ ...updates, created_by: account.auth_id })
+          .insert({
+            id: linkId,
+            url: signedUrl,
+            password: passwordHash,
+            expires: data.protectWithExpiration
+              ? data.expires?.toISOString()
+              : null,
+            filename: data.filename,
+            created_by: account.auth_id,
+          })
       }
 
-      if (result.error) throw result.error;
+      if (result.error) throw result.error
 
       toast({
         description: link
@@ -191,7 +227,7 @@ export default function LinkForm({
       router.push("/links")
       router.refresh()
     } catch (error) {
-      console.error(error);
+      console.error(error)
       toast({
         description: "An error occurred while saving the link",
         variant: "destructive",
@@ -201,32 +237,12 @@ export default function LinkForm({
 
   const onDrop = async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0]
-      try {
-        setUploading(true)
-        const filePath = `${file.name}`
-
-        // Upload file to storage bucket
-        let { error: uploadError } = await supabase.storage
-          .from("documents")
-          .upload(filePath, file, { upsert: true })
-
-        if (uploadError) {
-          throw uploadError
-        }
-
-        setFilePath(filePath)
-        form.setValue("filename", file.name) 
-        toast({
-          description: "File uploaded successfully",
-        })
-      } catch (error) {
-        toast({
-          description: "Error uploading file",
-        })
-      } finally {
-        setUploading(false)
-      }
+      const droppedFile = acceptedFiles[0]
+      setFile(droppedFile)
+      form.setValue("filename", droppedFile.name)
+      toast({
+        description: "File selected successfully",
+      })
     }
   }
 
@@ -253,11 +269,11 @@ export default function LinkForm({
                 <Switch
                   checked={protectWithPassword}
                   onCheckedChange={(checked) => {
-                    setProtectWithPassword(checked);
-                    form.setValue('protectWithPassword', checked);
+                    setProtectWithPassword(checked)
+                    form.setValue("protectWithPassword", checked)
                     if (!checked) {
-                      form.setValue('password', '');
-                      setPasswordPlaceholder('');
+                      form.setValue("password", "")
+                      setPasswordPlaceholder("")
                     }
                   }}
                 />
@@ -281,7 +297,9 @@ export default function LinkForm({
                       Password
                     </FormLabel>
                     <FormDescription className="pr-4">
-                      {link?.password ? "Enter a new password or leave blank to keep the existing one" : "Enter a password to protect your document"}
+                      {link?.password
+                        ? "Enter a new password or leave blank to keep the existing one"
+                        : "Enter a password to protect your document"}
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -313,15 +331,15 @@ export default function LinkForm({
                 <Switch
                   checked={protectWithExpiration}
                   onCheckedChange={(checked) => {
-                    setProtectWithExpiration(checked);
-                    form.setValue('protectWithExpiration', checked);
+                    setProtectWithExpiration(checked)
+                    form.setValue("protectWithExpiration", checked)
                     if (!checked) {
-                      form.setValue('expires', null);
-                    } else if (!form.getValues('expires')) {
-                      const defaultDate = new Date();
-                      defaultDate.setDate(defaultDate.getDate() + 30);
-                      defaultDate.setHours(defaultDate.getHours() + 1, 0, 0, 0);
-                      form.setValue('expires', defaultDate);
+                      form.setValue("expires", null)
+                    } else if (!form.getValues("expires")) {
+                      const defaultDate = new Date()
+                      defaultDate.setDate(defaultDate.getDate() + 30)
+                      defaultDate.setHours(defaultDate.getHours() + 1, 0, 0, 0)
+                      form.setValue("expires", defaultDate)
                     }
                   }}
                 />
@@ -381,8 +399,12 @@ export default function LinkForm({
                           onSelect={(newDate) => {
                             if (newDate) {
                               const updatedDate = new Date(newDate)
-                              updatedDate.setHours(field.value ? field.value.getHours() : 0)
-                              updatedDate.setMinutes(field.value ? field.value.getMinutes() : 0)
+                              updatedDate.setHours(
+                                field.value ? field.value.getHours() : 0
+                              )
+                              updatedDate.setMinutes(
+                                field.value ? field.value.getMinutes() : 0
+                              )
                               updatedDate.setSeconds(0)
                               field.onChange(updatedDate)
                             }
@@ -396,11 +418,18 @@ export default function LinkForm({
                         <div className="p-3 border-t border-border">
                           <Input
                             type="time"
-                            value={field.value ? format(field.value, "HH:mm") : ""}
+                            value={
+                              field.value ? format(field.value, "HH:mm") : ""
+                            }
                             onChange={(e) => {
                               const [hours, minutes] = e.target.value.split(":")
-                              const newDate = new Date(field.value || new Date())
-                              newDate.setHours(parseInt(hours), parseInt(minutes))
+                              const newDate = new Date(
+                                field.value || new Date()
+                              )
+                              newDate.setHours(
+                                parseInt(hours),
+                                parseInt(minutes)
+                              )
                               field.onChange(newDate)
                             }}
                           />
@@ -413,7 +442,7 @@ export default function LinkForm({
               )}
             />
           )}
-          {filePath && (
+          {(file || link) && (
             <FormField
               control={form.control}
               name="filename"
@@ -455,6 +484,8 @@ export default function LinkForm({
                   ? "Uploading..."
                   : isDragActive
                   ? "Drop the file here ..."
+                  : file
+                  ? `File selected: ${file.name}`
                   : "Drag & drop or click to upload a file"}
               </p>
             </div>
@@ -462,7 +493,7 @@ export default function LinkForm({
             <Button
               type="submit"
               className="w-full"
-              disabled={uploading || (!filePath && !link)}
+              disabled={uploading || (!file && !link)}
             >
               {link ? "Update Link" : "Create Link"}
             </Button>
