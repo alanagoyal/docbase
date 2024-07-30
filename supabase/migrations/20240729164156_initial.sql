@@ -145,13 +145,24 @@ $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.select_link(link_id uuid)
- RETURNS SETOF links
+ RETURNS TABLE(
+    id uuid, 
+    created_at timestamp with time zone, 
+    url text, 
+    password text, 
+    expires timestamp with time zone, 
+    filename text, 
+    created_by uuid,
+    creator_name text
+ )
  LANGUAGE sql
  STABLE SECURITY DEFINER
 AS $function$
-    SELECT *
-    FROM links
-    WHERE id = link_id LIMIT 1;$function$
+    SELECT l.id, l.created_at, l.url, l.password, l.expires, l.filename, l.created_by, u.name as creator_name
+    FROM links l
+    LEFT JOIN users u ON l.created_by = u.auth_id
+    WHERE l.id = link_id LIMIT 1;
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.update_link(link_id uuid, auth_id uuid, url_arg text, password_arg text, expires_arg timestamp without time zone, filename_arg text)
