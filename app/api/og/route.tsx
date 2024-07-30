@@ -82,7 +82,7 @@ export async function GET(request: Request) {
   const { data: creator, error } = await supabase
     .from("users")
     .select("*")
-    .eq("auth_id", link?.created_by)
+    .eq("auth_id", link.created_by)
     .single()
 
   if (error) {

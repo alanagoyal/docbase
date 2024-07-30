@@ -29,13 +29,19 @@ export async function generateMetadata({
 
   const filename = link?.filename ? link.filename : "Untitled Document"
 
-  const { data: creator } = await supabase
-    .from("users")
-    .select("*")
-    .eq("auth_id", link?.created_by)
-    .single()
+  let creatorName = "Someone";
 
-  const creatorName = creator?.name || "Someone"
+  if (link?.created_by) {
+    const { data: creator } = await supabase
+      .from("users")
+      .select("name")
+      .eq("auth_id", link.created_by)
+      .single()
+
+    if (creator) {
+      creatorName = creator.name;
+    }
+  }
 
   return {
     title: `${creatorName} is sharing ${filename}`,
