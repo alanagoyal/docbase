@@ -136,59 +136,48 @@ export default function LinkForm({
     file: File | null
   }) {
     try {
-      let passwordHash = null
+      let passwordHash = null;
 
       if (data.protectWithPassword) {
-        if (data.password && data.password !== "********") {
-          passwordHash = bcrypt.hashSync(data.password, 10)
+        if (data.password && data.password !== '********') {
+          passwordHash = bcrypt.hashSync(data.password, 10);
         } else if (link?.password) {
-          passwordHash = link.password
+          passwordHash = link.password;
         } else {
-          throw new Error("Password is required when protection is enabled")
+          throw new Error("Password is required when protection is enabled");
         }
       }
 
-      const linkId = link ? link.id : uuidv4()
-      const storageFilePath = `${linkId}`
+      const linkId = link ? link.id : uuidv4();
+      const storageFilePath = `${linkId}`;
 
-      // Upload or move the file in storage
+      // Upload new file or use existing file path
+      let filePathToUse = link ? link.id : storageFilePath;
+
       if (file) {
         const { error: uploadError } = await supabase.storage
           .from("documents")
-          .upload(storageFilePath, file)
+          .upload(storageFilePath, file, { upsert: true })
 
         if (uploadError) {
           throw uploadError
         }
-      } else if (link && filePath !== storageFilePath) {
-        // Move the existing file if the filename has changed
-        const { error: moveError } = await supabase.storage
-          .from("documents")
-          .move(filePath, storageFilePath)
-
-        if (moveError) {
-          throw moveError
-        }
+        filePathToUse = storageFilePath;
       }
 
-      let expirationSeconds: number
+      let expirationSeconds: number;
       if (data.protectWithExpiration && data.expires) {
-        const currentDate = new Date()
-        const expirationDate = new Date(data.expires)
-        expirationSeconds = Math.floor(
-          (expirationDate.getTime() - currentDate.getTime()) / 1000
-        )
+        const currentDate = new Date();
+        const expirationDate = new Date(data.expires);
+        expirationSeconds = Math.floor((expirationDate.getTime() - currentDate.getTime()) / 1000);
       } else {
         // Set a long expiration time (e.g., 10 years) when expiration is toggled off
-        expirationSeconds = 10 * 365 * 24 * 60 * 60 // 10 years in seconds
+        expirationSeconds = 10 * 365 * 24 * 60 * 60; // 10 years in seconds
       }
 
-      const signedUrl = await createUrl({
-        filePath: storageFilePath,
-        expirationSeconds,
-      })
+      const signedUrl = await createUrl({ filePath: filePathToUse, expirationSeconds })
 
-      let result
+      let result;
       if (link) {
         // Use RPC for updating
         result = await supabase.rpc("update_link", {
@@ -196,9 +185,7 @@ export default function LinkForm({
           auth_id: account.auth_id,
           url_arg: signedUrl,
           password_arg: passwordHash,
-          expires_arg: data.protectWithExpiration
-            ? data.expires?.toISOString()
-            : null,
+          expires_arg: data.protectWithExpiration ? data.expires?.toISOString() : null,
           filename_arg: data.filename,
         })
       } else {
@@ -209,15 +196,13 @@ export default function LinkForm({
             id: linkId,
             url: signedUrl,
             password: passwordHash,
-            expires: data.protectWithExpiration
-              ? data.expires?.toISOString()
-              : null,
+            expires: data.protectWithExpiration ? data.expires?.toISOString() : null,
             filename: data.filename,
             created_by: account.auth_id,
           })
       }
 
-      if (result.error) throw result.error
+      if (result.error) throw result.error;
 
       toast({
         description: link
@@ -227,7 +212,7 @@ export default function LinkForm({
       router.push("/links")
       router.refresh()
     } catch (error) {
-      console.error(error)
+      console.error(error);
       toast({
         description: "An error occurred while saving the link",
         variant: "destructive",
