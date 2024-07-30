@@ -1,15 +1,15 @@
 import { Metadata } from "next"
+import { revalidatePath } from "next/cache"
 import Link from "next/link"
 import { createClient } from "@/utils/supabase/server"
 
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import ViewLinkForm from "@/components/view-link-form"
-import { revalidatePath } from "next/cache"
 
 type Link = Database["public"]["Tables"]["links"]["Row"]
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata({
   params,
@@ -23,7 +23,7 @@ export async function generateMetadata({
     .rpc("select_link", {
       link_id: id,
     })
-    .single()) as { data: Link | null }
+    .single()) as { data: Link | null } 
 
   const filename = link?.filename ? link.filename : "Untitled Document"
 
@@ -33,7 +33,7 @@ export async function generateMetadata({
     .eq("auth_id", link?.created_by)
     .single()
 
-  const creatorName = creator?.name ? creator.name : "Someone"
+  const creatorName = creator.name ? creator.name : "Someone"
 
   return {
     title: `${creatorName} is sharing ${filename}`,
@@ -46,8 +46,6 @@ export async function generateMetadata({
 export default async function Doc({ params }: { params: { id: string } }) {
   const supabase = createClient()
   const id = params.id
-
-  revalidatePath(`/view/${id}`)
 
   const { data: link } = (await supabase
     .rpc("select_link", {
