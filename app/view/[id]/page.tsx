@@ -6,7 +6,9 @@ import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import ViewLinkForm from "@/components/view-link-form"
 
-type Link = Database["public"]["Tables"]["links"]["Row"] & { creator_name: string | null }
+type Link = Database["public"]["Tables"]["links"]["Row"] & {
+  creator_name: string | null
+}
 
 export const dynamic = "force-dynamic"
 
@@ -24,18 +26,13 @@ export async function generateMetadata({
     })
     .single<Link>()
 
-  console.log(link)
-  const filename = link?.filename ?? "Untitled Document"
+  const filename = link?.filename ?? "a document"
   const creatorName = link?.creator_name ?? "Someone"
 
   return {
-    title: `${creatorName} is sharing ${filename}`,
+    title: `${creatorName} is sharing ${filename} with you`,
     openGraph: {
-      images: [
-        `/api/og/?filename=${encodeURIComponent(
-          filename
-        )}&creator=${encodeURIComponent(creatorName)}`,
-      ],
+      images: [`/api/og/?id=${encodeURIComponent(id)}`],
     },
   }
 }

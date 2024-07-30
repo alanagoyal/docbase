@@ -2,9 +2,9 @@ import { ImageResponse } from "next/og"
 import { createClient } from "@/utils/supabase/server"
 import { Database } from "@/types/supabase"
 
-type Link = Database["public"]["Tables"]["links"]["Row"]
-
-export const dynamic = "force-dynamic";
+type Link = Database["public"]["Tables"]["links"]["Row"] & {
+  creator_name: string | null
+}
 
 function getFallbackOGImage() {
   return new ImageResponse(
@@ -56,8 +56,17 @@ function getFallbackOGImage() {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const filename = searchParams.get("filename")
-  const creatorName = searchParams.get("creator") || "Someone"
+  const id = searchParams.get("id")
+  const supabase = createClient()
+
+  const { data: link } = await supabase
+    .rpc("select_link", {
+      link_id: id,
+    })
+    .single<Link>()
+
+  const filename = link?.filename
+  const creatorName = link?.creator_name || "Someone"
 
   if (!filename) {
     return getFallbackOGImage()
