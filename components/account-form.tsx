@@ -460,9 +460,6 @@ export default function AccountForm({ user, account }: { user: any, account: Use
       <CardContent className="space-y-2">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 w-full">
-          <div className="pt-4">
-            <Label className="text-md font-bold">Personal Information</Label>
-          </div>
           <FormField
             control={form.control}
             name="email"
@@ -513,9 +510,6 @@ export default function AccountForm({ user, account }: { user: any, account: Use
           />
           <div className="space-y-4 w-full">
             <div className="space-y-2 w-full">
-              <div className="pt-4 pb-2">
-                <Label className="text-md font-bold">Entity Information</Label>
-              </div>
               <FormLabel>Signature Blocks</FormLabel>
               <EntitySelector
                 entities={entities}
