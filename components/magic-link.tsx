@@ -25,7 +25,9 @@ export default function MagicLink({ redirect }: { redirect: string }) {
     const redirectUrl =
       redirect === "sharing"
         ? window.location.href
-        : window.location.origin + "/account"
+        : window.location.origin + redirect
+
+    console.log(redirectUrl)
     const { data, error } = await supabase.auth.signInWithOtp({
       email: email,
       options: {

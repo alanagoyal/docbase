@@ -1,4 +1,7 @@
+"use client"
+
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { mainNavItems } from "@/config/main-nav"
 import { Database } from "@/types/supabase"
@@ -10,6 +13,8 @@ export function MainNav({
   account,
   ...props
 }: React.HTMLAttributes<HTMLElement> & { account: User }) {
+  const pathname = usePathname()
+
   return (
     <nav
       className={cn("flex items-center space-x-6 pt-1", className)}
@@ -21,7 +26,7 @@ export function MainNav({
           href={item.href}
           className={cn(
             "text-sm font-medium transition-colors hover:text-primary",
-            index === 0 ? "" : "text-muted-foreground"
+            pathname === item.href ? "text-black" : "text-muted-foreground"
           )}
         >
           {item.label}
