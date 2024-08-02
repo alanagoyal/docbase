@@ -10,13 +10,13 @@ import {
   CommandShortcut,
   CommandSeparator,
 } from "./ui/command";
-import { menuItems } from "@/config/menu";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { DialogTitle, DialogDescription } from "./ui/dialog";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import { VisuallyHidden } from "./ui/visually-hidden";
+import { menuItems } from "@/config/user-nav";
 
 const isTyping = () => {
   const activeElement = document.activeElement;

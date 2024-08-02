@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { createClient } from "@/utils/supabase/client"
+
 import AuthRefresh from "./auth-refresh"
 import { Button } from "./ui/button"
 import {
@@ -14,16 +15,18 @@ import {
 import { Input } from "./ui/input"
 import { toast } from "./ui/use-toast"
 
-export default function MagicLink() {
+export default function MagicLink({ redirect }: { redirect: string }) {
   const supabase = createClient()
   const [email, setEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function signInWithEmail(email: string) {
     setIsSubmitting(true)
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-    const redirectUrl = siteUrl
-    const { error } = await supabase.auth.signInWithOtp({
+    const redirectUrl =
+      redirect === "sharing"
+        ? window.location.href
+        : window.location.origin + "/account"
+    const { data, error } = await supabase.auth.signInWithOtp({
       email: email,
       options: {
         shouldCreateUser: true,
@@ -33,7 +36,6 @@ export default function MagicLink() {
     setIsSubmitting(false)
     setEmail("")
     if (error) {
-      console.error(error)
       toast({
         title: "Failed to send magic link",
         description: error.message,

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
+import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Links } from "@/components/links"
@@ -27,8 +28,19 @@ export default async function LinksPage() {
 
   return links && links.length > 0 ? (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-center">Your Links</h1>
-      <div className="max-w-2xl mx-auto">
+      <div className="flex justify-between items-center w-full py-4 relative">
+        <div className="w-[150px]" />
+        <h1 className="text-2xl font-bold absolute left-1/2 transform -translate-x-1/2">
+          Links
+        </h1>
+        <Link href="/links/new">
+          <Button variant="ghost" className="w-[150px]">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline-block ml-2">New</span>
+          </Button>
+        </Link>
+      </div>
+      <div className="max-w-5xl mx-auto">
         <Links links={links} account={account} />
       </div>
     </div>
@@ -37,7 +49,7 @@ export default async function LinksPage() {
       <h1 className="text-2xl text-center font-bold mb-6">
         You haven&apos;t created <br /> any links yet
       </h1>
-      <Link href="/new">
+      <Link href="/links/new">
         <Button variant="outline">Get Started</Button>
       </Link>
     </div>
