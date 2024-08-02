@@ -57,7 +57,7 @@ export default async function InvestmentsPage() {
 
   return investments && investments.length > 0 ? (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center w-full py-4 relative">
+      <div className="flex justify-between items-center max-w-5xl mx-auto py-4 relative">
         <div className="w-[150px]" />
         <h1 className="text-2xl font-bold absolute left-1/2 transform -translate-x-1/2">
           Investments

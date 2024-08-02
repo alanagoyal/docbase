@@ -657,7 +657,7 @@ export default function Investments({
               </TableCell>
               <TableCell>
                 <div className="flex justify-between items-center">
-                  {new Date(investment.date).toLocaleDateString()}{" "}
+                  {new Date(investment.date).toLocaleDateString()}
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center">
                       <MenuIcon className="h-4 w-4 ml-2" />
