@@ -118,6 +118,7 @@ export default function InvestmentForm({ account }: { account: User }) {
   const [isOwner, setIsOwner] = useState(true)
   const [isLoadingSave, setIsLoadingSave] = useState(false)
   const [isLoadingNext, setIsLoadingNext] = useState(false)
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
 
   const handleStepChange = (newStep: number) => {
     setStep(newStep)
@@ -919,10 +920,13 @@ export default function InvestmentForm({ account }: { account: User }) {
               <div className="pt-4 flex justify-between items-center h-10">
                 <Label className="text-md font-bold">Company Details</Label>
                 {!isFormLocked && investmentId && (
-                  <Share
-                    investmentId={investmentId}
-                    onEmailSent={() => handleStepChange(3)}
-                  />
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsShareDialogOpen(true)}
+                  >
+                    <span className="text-sm">Share</span>
+                    <Icons.share className="ml-2 h-4 w-4" />
+                  </Button>
                 )}
               </div>
               {showCompanySelector &&
@@ -1359,6 +1363,12 @@ export default function InvestmentForm({ account }: { account: User }) {
           )}
         </form>
       </Form>
+      <Share
+        investmentId={investmentId || ""}
+        onEmailSent={() => handleStepChange(3)}
+        isOpen={isShareDialogOpen}
+        onOpenChange={setIsShareDialogOpen}
+      />
     </div>
   )
 }

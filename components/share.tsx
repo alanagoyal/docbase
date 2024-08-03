@@ -11,22 +11,30 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "./ui/dialog"
-import { FormItem, FormLabel } from "./ui/form"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./ui/dialog"
+import { Form, FormField, FormItem, FormLabel, FormControl } from "./ui/form"
 import { Input } from "./ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { toast } from "./ui/use-toast"
+import { useForm } from "react-hook-form"
 
 export function Share({
   investmentId,
   onEmailSent,
+  isOpen,
+  onOpenChange,
 }: {
   investmentId: string
   onEmailSent: () => void
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
 }) {
-  const [email, setEmail] = useState("")
-  const [name, setName] = useState("")
-  const [isOpen, setIsOpen] = useState(false)
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      email: "",
+    },
+  })
   const [isSending, setIsSending] = useState(false)
   const idString =
     typeof window !== "undefined"
@@ -51,7 +59,7 @@ export function Share({
       })
   }
 
-  async function sendEmail() {
+  async function onSubmit(values: { name: string; email: string }) {
     setIsSending(true)
     const { data: investmentData, error: investmentError } = await supabase
       .from("investments")
@@ -78,7 +86,7 @@ export function Share({
     // Upsert founder information
     const { data: founderData, error: founderError } = await supabase
       .from("users")
-      .upsert({ name, email }, { onConflict: "email" })
+      .upsert({ name: values.name, email: values.email }, { onConflict: "email" })
       .select("id")
       .single()
 
@@ -91,8 +99,8 @@ export function Share({
       .eq("id", investmentId)
 
     const body = {
-      name,
-      email,
+      name: values.name,
+      email: values.email,
       url: idString,
       investor: investmentData?.investor_id,
       fund: investmentData?.fund_id,
@@ -105,9 +113,9 @@ export function Share({
       })
       toast({
         title: "Email sent",
-        description: `The email has been sent to ${email}`,
+        description: `The email has been sent to ${values.email}`,
       })
-      setIsOpen(false)
+      onOpenChange(false)
       onEmailSent()
     } catch (error) {
       console.error(error)
@@ -117,13 +125,7 @@ export function Share({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost">
-          <span className="text-sm">Share</span>
-          <Icons.share className="ml-2 h-4 w-4" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogTitle className="sr-only">Request Founder Information</DialogTitle>
         <DialogDescription className="sr-only">
@@ -149,32 +151,42 @@ export function Share({
                   Enter the name and email of the founder to send them this form
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col space-y-2">
-                <FormItem>
-                  <FormLabel>Founder Name</FormLabel>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    type="text"
-                  />
-                </FormItem>
-                <FormItem>
-                  <FormLabel>Founder Email</FormLabel>
-                  <Input
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    type="email"
-                  />
-                </FormItem>
-                <Button
-                  className="w-full"
-                  onClick={sendEmail}
-                  disabled={isSending}
-                >
-                  {isSending ? <Icons.spinner /> : "Send Email"}
-                </Button>
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Founder Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Founder Email</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={isSending}
+                    >
+                      {isSending ? <Icons.spinner /> : "Send Email"}
+                    </Button>
+                  </form>
+                </Form>
               </CardContent>
             </Card>
           </TabsContent>

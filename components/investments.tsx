@@ -6,11 +6,11 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 
 import { Icons } from "./icons"
+import { Share } from "./share"
 import { Button } from "./ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -32,11 +32,12 @@ import {
 import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
 import Docxtemplater from "docxtemplater"
-import { Link, MenuIcon, Plus } from "lucide-react"
+import { AlertCircle, Link, MenuIcon, Plus } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
 
 import { Database } from "@/types/supabase"
+import { VisuallyHidden } from "./ui/visually-hidden"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -67,6 +68,15 @@ export default function Investments({
   const [generatingSideLetter, setGeneratingSideLetter] = useState<
     string | null
   >(null)
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
+  const [selectedInvestmentId, setSelectedInvestmentId] = useState<
+    string | null
+  >(null)
+
+  const handleShareClick = (investmentId: string) => {
+    setSelectedInvestmentId(investmentId)
+    setIsShareDialogOpen(true)
+  }
 
   const formatCurrency = (amountStr: string): string => {
     const amount = parseFloat(amountStr.replace(/,/g, ""))
@@ -111,7 +121,7 @@ export default function Investments({
   }
   const MissingInfoTooltip = ({ message }: { message: string }) => (
     <span className="text-red-500">
-      <Icons.info className="inline-block mr-2" />
+      <AlertCircle className="inline-block mr-2 h-4 w-4" />
       {message}
     </span>
   )
@@ -213,22 +223,28 @@ export default function Investments({
     let sideLetterDocNodeBuffer = null
 
     try {
+      console.log("Investment data:", investment)
+
       if (investment.safe_url) {
         const { data: safeDoc, error: safeDocError } = await supabase.storage
           .from("documents")
           .download(safeFilepath)
 
-        if (!safeDocError && safeDoc) {
+        if (safeDocError) {
+          console.error("Error downloading SAFE document:", safeDocError)
+        } else if (safeDoc) {
           const safeDocBuffer = await safeDoc.arrayBuffer()
           safeDocNodeBuffer = Buffer.from(safeDocBuffer)
         }
       }
 
-      if (investment.side_letter_id && investment.side_letter.side_letter_url) {
+      if (investment.side_letter_id && investment.side_letter?.side_letter_url) {
         const { data: sideLetterDoc, error: sideLetterDocError } =
           await supabase.storage.from("documents").download(sideLetterFilepath)
 
-        if (!sideLetterDocError && sideLetterDoc) {
+        if (sideLetterDocError) {
+          console.error("Error downloading side letter:", sideLetterDocError)
+        } else if (sideLetterDoc) {
           const sideLetterDocBuffer = await sideLetterDoc.arrayBuffer()
           sideLetterDocNodeBuffer = Buffer.from(sideLetterDocBuffer)
         }
@@ -246,6 +262,8 @@ export default function Investments({
         emailContent: emailContentToSend,
       }
 
+      console.log("Request body:", JSON.stringify(body, null, 2))
+
       const response = await fetch("/api/send-investment-email", {
         method: "POST",
         headers: {
@@ -255,7 +273,8 @@ export default function Investments({
       })
 
       if (!response.ok) {
-        throw new Error("Failed to send email")
+        const errorText = await response.text()
+        throw new Error(`Failed to send email: ${errorText}`)
       }
 
       toast({
@@ -263,7 +282,7 @@ export default function Investments({
         description: `The email has been sent to ${investment.founder.email}`,
       })
     } catch (error) {
-      console.error(error)
+      console.error("Error in sendEmail function:", error)
       toast({
         title: "Error",
         description: "Failed to send email. Please try again.",
@@ -626,77 +645,148 @@ export default function Investments({
     }
   }
 
+  const getNextStep = (investment: any) => {
+    if (!investment.company || !investment.founder) {
+      return {
+        text: "Share",
+        action: () => {
+          // This will be handled by the Share component
+        },
+      }
+    } else if (!investment.safe_url) {
+      return {
+        text: "Generate SAFE",
+        action: () => processSafe(investment),
+      }
+    } else {
+      return {
+        text: "Send",
+        action: () => {
+          setSelectedInvestmentAndEmailContent(investment)
+          setDialogOpen(true)
+        },
+      }
+    }
+  }
+
+  const handleEmailSent = () => {
+    // Refresh the investments data or update the UI as needed
+    router.refresh()
+  }
+
   return (
     <div>
       <Table className="w-full mt-10">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-1/6">Company</TableHead>
-            <TableHead className="w-1/6">Founder</TableHead>
-            <TableHead className="w-1/6">Fund</TableHead>
-            <TableHead className="w-1/6">Type</TableHead>
-            <TableHead className="w-1/6">Amount</TableHead>
-            <TableHead className="w-1/6">Date</TableHead>
+            <TableHead className="w-1/8">Company</TableHead>
+            <TableHead className="w-1/8">Founder</TableHead>
+            <TableHead className="w-1/8">Fund</TableHead>
+            <TableHead className="w-1/8">Type</TableHead>
+            <TableHead className="w-1/8">Amount</TableHead>
+            <TableHead className="w-1/8">Date</TableHead>
+            <TableHead className="w-1/8">Next Steps</TableHead>
+            <TableHead className="w-1/8"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {investments.map((investment: any) => (
-            <TableRow key={investment.id}>
-              <TableCell>
-                {investment.company ? (
-                  investment.company.name
-                ) : (
-                  <MissingInfoTooltip message="Company name missing" />
-                )}
-              </TableCell>
-              <TableCell>
-                {investment.founder ? (
-                  `${investment.founder.name} (${investment.founder.email})`
-                ) : (
-                  <MissingInfoTooltip message="Founder information missing" />
-                )}
-              </TableCell>
-              <TableCell>
-                {investment.fund ? (
-                  `${investment.fund.name}`
-                ) : (
-                  <MissingInfoTooltip message="Fund name missing" />
-                )}
-              </TableCell>
-              <TableCell>
-                {formatInvestmentType(investment.investment_type)}
-                {investment.investment_type === "valuation-cap" &&
-                  ` (${formatCurrency(investment.valuation_cap)})`}
-                {investment.investment_type === "discount" &&
-                  ` (${investment.discount}%)`}
-              </TableCell>
-              <TableCell>
-                {investment.purchase_amount ? (
-                  `${formatCurrency(investment.purchase_amount)}`
-                ) : (
-                  <MissingInfoTooltip message="Purchase amount not set" />
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex justify-between items-center">
-                  {new Date(investment.date).toLocaleDateString()}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="flex items-center">
-                      {generatingSafe === investment.id ||
-                      generatingSideLetter === investment.id ? (
-                        <Icons.spinner className="h-4 w-4 ml-2 animate-spin" />
+          {investments.map((investment: any) => {
+            const nextStep = getNextStep(investment)
+            return (
+              <TableRow key={investment.id}>
+                <TableCell>
+                  {investment.company ? (
+                    investment.company.name
+                  ) : (
+                    <MissingInfoTooltip message="Company name missing" />
+                  )}
+                </TableCell>
+                <TableCell>
+                  {investment.founder ? (
+                    `${investment.founder.name} (${investment.founder.email})`
+                  ) : (
+                    <MissingInfoTooltip message="Founder information missing" />
+                  )}
+                </TableCell>
+                <TableCell>
+                  {investment.fund ? (
+                    `${investment.fund.name}`
+                  ) : (
+                    <MissingInfoTooltip message="Fund name missing" />
+                  )}
+                </TableCell>
+                <TableCell>
+                  {formatInvestmentType(investment.investment_type)}
+                  {investment.investment_type === "valuation-cap" &&
+                    ` (${formatCurrency(investment.valuation_cap)})`}
+                  {investment.investment_type === "discount" &&
+                    ` (${investment.discount}%)`}
+                </TableCell>
+                <TableCell>
+                  {investment.purchase_amount ? (
+                    formatCurrency(investment.purchase_amount)
+                  ) : (
+                    <MissingInfoTooltip message="Purchase amount not set" />
+                  )}
+                </TableCell>
+                <TableCell>
+                  {new Date(investment.date).toLocaleDateString("en-US", {
+                    month: "2-digit",
+                    day: "2-digit",
+                    year: "2-digit",
+                  })}
+                </TableCell>
+                <TableCell>
+                  {nextStep.text === "Share" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleShareClick(investment.id)}
+                      className="w-28"
+                    >
+                      Share
+                    </Button>
+                  ) : nextStep.text === "Send" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={nextStep.action}
+                      className="w-28"
+                    >
+                      Send
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={nextStep.action}
+                      disabled={
+                        !isOwner(investment) || generatingSafe === investment.id
+                      }
+                      className="w-28"
+                    >
+                      {generatingSafe === investment.id ? (
+                        <Icons.spinner className="h-4 w-4 animate-spin" />
                       ) : (
-                        <MenuIcon className="h-4 w-4" />
+                        nextStep.text
                       )}
+                    </Button>
+                  )}
+                </TableCell>
+                <TableCell className="text-right whitespace-nowrap">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost">
+                        {generatingSideLetter === investment.id ? (
+                          <Icons.spinner className="h-4 w-4 ml-2 animate-spin" />
+                        ) : (
+                          <MenuIcon className="h-4 w-4" />
+                        )}
+                      </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
+                    <DropdownMenuContent align="end">
                       {isOwner(investment) && (
                         <>
-                          <DropdownMenuItem
-                            onClick={() => processSafe(investment)}
-                          >
-                            Generate SAFE Document
-                          </DropdownMenuItem>
                           {investment.safe_url && (
                             <DropdownMenuItem
                               onClick={() =>
@@ -725,16 +815,6 @@ export default function Investments({
                                 Download Side Letter
                               </DropdownMenuItem>
                             )}
-                          {investment.safe_url && investment.summary && (
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedInvestmentAndEmailContent(investment)
-                                setDialogOpen(true)
-                              }}
-                            >
-                              Send
-                            </DropdownMenuItem>
-                          )}
                         </>
                       )}
                       <DropdownMenuItem
@@ -751,43 +831,47 @@ export default function Investments({
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                </TableCell>
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogTrigger className="hidden" />
-        <DialogContent>
+        <DialogContent className="flex flex-col">
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
-            <DialogDescription>
-              Send an email to your founder with the investment details
-            </DialogDescription>
           </DialogHeader>
-          {selectedInvestment && (
-            <div className="flex flex-col items-center space-y-2">
-              <div>
-                <ReactQuill
-                  theme="snow"
-                  value={editableEmailContent}
-                  onChange={setEditableEmailContent}
-                  placeholder={emailContent(selectedInvestment)}
-                />
-              </div>
-              <div className="w-full">
-                <Button
-                  className="w-full"
-                  onClick={() => sendEmail(selectedInvestment)}
-                >
-                  {isSendingEmail ? <Icons.spinner /> : "Send"}
-                </Button>
-              </div>
+          <div className="flex flex-col gap-4 flex-grow">
+            <div className="flex flex-col gap-2 flex-grow">
+              <ReactQuill
+                value={editableEmailContent}
+                onChange={setEditableEmailContent}
+                className="flex-grow"
+              />
             </div>
-          )}
+            <div>
+              <Button
+                onClick={() => sendEmail(selectedInvestment)}
+                disabled={isSendingEmail}
+                className="w-full"
+              >
+                {isSendingEmail ? (
+                  <Icons.spinner className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Send Email"
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
+      <Share
+        investmentId={selectedInvestmentId || ""}
+        onEmailSent={handleEmailSent}
+        isOpen={isShareDialogOpen}
+        onOpenChange={setIsShareDialogOpen}
+      />
     </div>
   )
 }

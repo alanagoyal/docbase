@@ -22,9 +22,11 @@ export default async function LinksPage() {
     .eq("auth_id", user.id)
     .single()
 
-  const { data: links } = await supabase.rpc("get_user_links", {
-    auth_id: account.auth_id,
+  const { data: links } = await supabase.rpc("get_user_links_with_views", {
+    auth_id: user.id,
   })
+
+  console.log(links)
 
   return links && links.length > 0 ? (
     <div className="container mx-auto px-4 py-8">

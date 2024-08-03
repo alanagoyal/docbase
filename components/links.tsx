@@ -1,19 +1,19 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
-import { Activity, Copy, Edit, MenuIcon, Trash } from "lucide-react"
+import { MenuIcon } from "lucide-react"
 
 import { Database } from "@/types/supabase"
-
-import { Button } from "./ui/button"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 import {
   Table,
   TableBody,
@@ -21,21 +21,28 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./ui/table"
+} from "@/components/ui/table"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "./ui/tooltip"
+} from "@/components/ui/tooltip"
+
 import { toast } from "./ui/use-toast"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
-type Link = Database["public"]["Tables"]["links"]["Row"]
+type Link = Database["public"]["Tables"]["links"]["Row"] & { view_count: number }
 
 export function Links({ links, account }: { links: Link[]; account: User }) {
+  const [searchTerm, setSearchTerm] = useState("")
   const supabase = createClient()
   const router = useRouter()
+
+  const filteredLinks = links.filter((link) =>
+    link.filename?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   const handleCopyLink = (linkId: string) => {
     const link = `${process.env.NEXT_PUBLIC_SITE_URL}/view/${linkId}`
     navigator.clipboard
@@ -63,51 +70,88 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
     router.refresh()
   }
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "n/a"
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-GB", { 
+      day: "2-digit", 
+      month: "2-digit", 
+      year: "2-digit" 
+    })
+  }
+
   return (
-    <div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-1/6">Filename</TableHead>
-            <TableHead className="w-1/6">Created</TableHead>
-            <TableHead className="w-1/6">Expires</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {links &&
-            links.map((link: any) => (
+    <TooltipProvider>
+      <div className="container mx-auto py-10">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-1/6">Filename</TableHead>
+              <TableHead className="w-1/6">Link</TableHead>
+              <TableHead className="w-1/6">Created</TableHead>
+              <TableHead className="w-1/6">Expires</TableHead>
+              <TableHead className="w-1/6">Views</TableHead>
+              <TableHead className="w-1/6"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredLinks.map((link) => (
               <TableRow key={link.id}>
-                <TableCell>{link.filename}</TableCell>
+                <TableCell className="font-medium">{link.filename}</TableCell>
                 <TableCell>
-                  {new Date(link.created_at).toLocaleString("en-US")}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="cursor-pointer hover:text-blue-500"
+                        onClick={() => handleCopyLink(link.id)}
+                      >
+                        {`${process.env.NEXT_PUBLIC_SITE_URL}/view/${link.id.substring(
+                          0,
+                          6
+                        )}...`}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy link</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </TableCell>
+                <TableCell>{formatDate(link.created_at)}</TableCell>
+                <TableCell>{link.expires ? formatDate(link.expires) : "Never"}</TableCell>
                 <TableCell>
-                  <div className="flex justify-between items-center">
-                    {link.expirres
-                      ? new Date(link.expires).toLocaleString("en-US")
-                      : "n/a"}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="flex items-center">
-                        <MenuIcon className="h-4 w-4 ml-2" />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuItem>
-                          <Link href={`/analytics/${link.id}`}>Analytics</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Link href={`/edit/${link.id}`}>Edit</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => deleteLink(link.id)}>
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link href={`/analytics/${link.id}`} className="hover:text-blue-500">
+                        {link.view_count}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>View analytics</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell className="text-right whitespace-nowrap">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MenuIcon className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Link href={`/edit/${link.id}`}>Edit</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => deleteLink(link.id)}>
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableBody>
+        </Table>
+      </div>
+    </TooltipProvider>
   )
 }
