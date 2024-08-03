@@ -64,7 +64,9 @@ export default function Investments({
   const [editableEmailContent, setEditableEmailContent] = useState("")
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [generatingSafe, setGeneratingSafe] = useState<string | null>(null)
-  const [generatingSideLetter, setGeneratingSideLetter] = useState<string | null>(null)
+  const [generatingSideLetter, setGeneratingSideLetter] = useState<
+    string | null
+  >(null)
 
   const formatCurrency = (amountStr: string): string => {
     const amount = parseFloat(amountStr.replace(/,/g, ""))
@@ -398,7 +400,8 @@ export default function Investments({
             if (updateError) {
               console.error("Error updating investment:", updateError)
               toast({
-                description: "There was an error updating the investment details",
+                description:
+                  "There was an error updating the investment details",
                 variant: "destructive",
               })
             }
@@ -679,7 +682,8 @@ export default function Investments({
                   {new Date(investment.date).toLocaleDateString()}
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center">
-                      {generatingSafe === investment.id || generatingSideLetter === investment.id ? (
+                      {generatingSafe === investment.id ||
+                      generatingSideLetter === investment.id ? (
                         <Icons.spinner className="h-4 w-4 ml-2 animate-spin" />
                       ) : (
                         <MenuIcon className="h-4 w-4" />
@@ -738,11 +742,13 @@ export default function Investments({
                       >
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => deleteInvestment(investment)}
-                      >
-                        Delete
-                      </DropdownMenuItem>
+                      {isOwner(investment) && (
+                        <DropdownMenuItem
+                          onClick={() => deleteInvestment(investment)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
