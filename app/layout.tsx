@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/site-header"
 import { TailwindIndicator } from "@/components/tailwind-indicator"
 import { ThemeProvider } from "@/components/theme-provider"
 import { CommandMenu } from "@/components/command-menu"
+import Script from 'next/script'
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -38,7 +39,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   return (
     <>
       <html lang="en" suppressHydrationWarning>
-        <head />
+        <head>
+          <Script
+            src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+            strategy="beforeInteractive"
+          />
+        </head>
         <body
           className={cn(
             "min-h-dvh bg-background font-sans antialiased",

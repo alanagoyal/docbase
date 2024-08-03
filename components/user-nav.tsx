@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MenuItem, menuItems } from "@/config/menu"
+import { MenuItem, menuItems } from "@/config/user-nav"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 

@@ -15,7 +15,7 @@ export async function signup(formData: SignupFormData) {
     email,
     password,
     options: {
-      emailRedirectTo: siteUrl,
+      emailRedirectTo: redirectTo,
     },
   })
 

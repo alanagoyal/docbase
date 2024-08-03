@@ -18,7 +18,7 @@ export default async function Link({ params }: { params: { id: string } }) {
   const { data: account } = await supabase
     .from("users")
     .select()
-    .eq("auth_id", user?.id)
+    .eq("auth_id", user.id)
     .single()
 
   return (
