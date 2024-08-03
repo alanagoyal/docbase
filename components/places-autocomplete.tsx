@@ -37,6 +37,7 @@ export function PlacesAutocomplete({
   const [cityStateZip, setCityStateZip] = useState(initialCityStateZip || "")
   const [showSuggestions, setShowSuggestions] = useState(false)
 
+  console.log("disabled", disabled)
   const {
     value,
     suggestions: { status, data },

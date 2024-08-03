@@ -63,6 +63,8 @@ export default function Investments({
   const [selectedInvestment, setSelectedInvestment] = useState(null)
   const [editableEmailContent, setEditableEmailContent] = useState("")
   const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [generatingSafe, setGeneratingSafe] = useState<string | null>(null)
+  const [generatingSideLetter, setGeneratingSideLetter] = useState<string | null>(null)
 
   const formatCurrency = (amountStr: string): string => {
     const amount = parseFloat(amountStr.replace(/,/g, ""))
@@ -167,7 +169,7 @@ export default function Investments({
         arrayBuffer,
       })
 
-      const response = await fetch("/generate-summary", {
+      const response = await fetch("/api/generate-summary", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -242,7 +244,7 @@ export default function Investments({
         emailContent: emailContentToSend,
       }
 
-      const response = await fetch("/send-investment-email", {
+      const response = await fetch("/api/send-investment-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -373,24 +375,34 @@ export default function Investments({
   }
 
   async function processSafe(investment: any) {
+    setGeneratingSafe(investment.id)
     try {
       const safeDoc = await generateSafe(investment)
       const safeUrl = await createSafeUrl(investment, safeDoc)
-      const investmentSummary = await summarizeInvestment(safeDoc)
 
       if (safeUrl) {
-        // Update the investment in the database with the new safe_url
-        const { error: updateError } = await supabase
-          .from("investments")
-          .update({ safe_url: safeUrl, summary: investmentSummary })
-          .eq("id", investment.id)
-
-        if (updateError) throw updateError
-
         // Download the generated SAFE document
         downloadDocument(safeUrl)
         toast({
           description: "The SAFE document has been generated and downloaded",
+        })
+
+        // Generate summary and update database in the background
+        summarizeInvestment(safeDoc).then(async (investmentSummary) => {
+          if (investmentSummary) {
+            const { error: updateError } = await supabase
+              .from("investments")
+              .update({ safe_url: safeUrl, summary: investmentSummary })
+              .eq("id", investment.id)
+
+            if (updateError) {
+              console.error("Error updating investment:", updateError)
+              toast({
+                description: "There was an error updating the investment details",
+                variant: "destructive",
+              })
+            }
+          }
         })
       } else {
         toast({
@@ -404,10 +416,14 @@ export default function Investments({
         description: "There was an error generating the SAFE document",
         variant: "destructive",
       })
+    } finally {
+      setGeneratingSafe(null)
+      router.refresh()
     }
   }
 
   async function processSideLetter(investment: any) {
+    setGeneratingSideLetter(investment.id)
     // Only process if the side letter is not empty
     if (!investment.side_letter) {
       toast({
@@ -426,6 +442,7 @@ export default function Investments({
           </Button>
         ),
       })
+      setGeneratingSideLetter(null)
       return null
     }
     try {
@@ -465,6 +482,8 @@ export default function Investments({
         description: "There was an error generating the side letter",
         variant: "destructive",
       })
+    } finally {
+      setGeneratingSideLetter(null)
     }
   }
 
@@ -660,7 +679,11 @@ export default function Investments({
                   {new Date(investment.date).toLocaleDateString()}
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center">
-                      <MenuIcon className="h-4 w-4 ml-2" />
+                      {generatingSafe === investment.id || generatingSideLetter === investment.id ? (
+                        <Icons.spinner className="h-4 w-4 ml-2 animate-spin" />
+                      ) : (
+                        <MenuIcon className="h-4 w-4" />
+                      )}
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
                       {isOwner(investment) && (

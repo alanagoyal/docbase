@@ -969,7 +969,7 @@ export default function InvestmentForm({ account }: { account: User }) {
                 form={form}
                 streetName="companyStreet"
                 cityStateZipName="companyCityStateZip"
-                disabled={!isOwner}
+                disabled={false}
                 onAddressChange={(street, cityStateZip) => {
                   form.setValue("companyStreet", street)
                   form.setValue("companyCityStateZip", cityStateZip)

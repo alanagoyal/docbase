@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-import MagicLink from "@/components/magic-link"
+
 import InvestmentForm from "@/components/investment-form"
+import MagicLink from "@/components/magic-link"
 
 export default async function Safe({
   searchParams,
@@ -17,8 +18,10 @@ export default async function Safe({
   if (!user) {
     if (sharing) {
       return (
-        <div className="w-full min-h-screen max-w-md flex flex-col pt-4">
-          <MagicLink redirect="sharing" />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center min-h-[80vh]">
+            <MagicLink redirect="sharing" />
+          </div>
         </div>
       )
     } else {
@@ -31,11 +34,11 @@ export default async function Safe({
     .select()
     .eq("auth_id", user?.id)
     .single()
-    
+
   return (
     <div className="container mx-auto px-4 py-8">
-    <h1 className="text-3xl font-bold mb-6 text-center">New Link</h1>
-    <InvestmentForm  account={account} />
-  </div>
+      <h1 className="text-3xl font-bold mb-6 text-center">New Link</h1>
+      <InvestmentForm account={account} />
+    </div>
   )
 }

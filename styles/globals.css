@@ -31,6 +31,19 @@
     --chart-5: 27 87% 67%;
   }
 
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }  
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;

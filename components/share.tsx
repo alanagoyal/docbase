@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card"
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "./ui/dialog"
 import { FormItem, FormLabel } from "./ui/form"
 import { Input } from "./ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
@@ -99,7 +99,7 @@ export function Share({
     }
 
     try {
-      const response = await fetch("/send-form-email", {
+      const response = await fetch("/api/send-form-email", {
         method: "POST",
         body: JSON.stringify(body),
       })
@@ -125,6 +125,10 @@ export function Share({
         </Button>
       </DialogTrigger>
       <DialogContent>
+        <DialogTitle className="sr-only">Request Founder Information</DialogTitle>
+        <DialogDescription className="sr-only">
+          Share investment details with a founder via email or link
+        </DialogDescription>
         <div className="flex flex-col space-y-2 text-center sm:text-left">
           <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
             Request Founder Information
