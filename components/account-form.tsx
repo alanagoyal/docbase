@@ -48,8 +48,6 @@ const accountFormSchema = z.object({
   state_of_incorporation: z.string().optional(),
 })
 
-const libraries: Libraries = ["places"];
-
 type User = Database["public"]["Tables"]["users"]["Row"]
 type AccountFormValues = z.infer<typeof accountFormSchema>
 
@@ -61,11 +59,6 @@ export default function AccountForm({ user, account }: { user: any, account: Use
     undefined
   )
   const [showAdditionalFields, setShowAdditionalFields] = useState(false)
-
-  useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries,
-  });
   
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),

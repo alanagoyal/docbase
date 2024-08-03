@@ -43,8 +43,6 @@ import { formDescriptions } from "@/utils/form-descriptions"
 import { CalendarIcon } from "lucide-react"
 import { Database } from "@/types/supabase"
 
-const libraries: Libraries = ["places"]
-
 const InvestmentFormSchema = z.object({
   companyName: z.string().optional(),
   fundName: z.string().optional(),
@@ -120,11 +118,6 @@ export default function InvestmentForm({ account }: { account: User }) {
   const [isOwner, setIsOwner] = useState(true)
   const [isLoadingSave, setIsLoadingSave] = useState(false)
   const [isLoadingNext, setIsLoadingNext] = useState(false)
-
-  useLoadScript({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
-    libraries,
-  })
 
   const handleStepChange = (newStep: number) => {
     setStep(newStep)

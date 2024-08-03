@@ -11,6 +11,7 @@ import {
 import usePlacesAutocomplete from "use-places-autocomplete"
 import { UseFormReturn } from "react-hook-form"
 import { formDescriptions } from "@/utils/form-descriptions"
+import { useGoogleMapsApi } from '@/hooks/use-google-maps'
 
 interface PlacesAutocompleteProps {
   form: UseFormReturn<any>
@@ -31,13 +32,13 @@ export function PlacesAutocomplete({
   initialStreet,
   initialCityStateZip,
 }: PlacesAutocompleteProps) {
+  const isGoogleMapsLoaded = useGoogleMapsApi()
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const streetInputRef = useRef<HTMLInputElement>(null)
   const [street, setStreet] = useState(initialStreet || "")
   const [cityStateZip, setCityStateZip] = useState(initialCityStateZip || "")
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  console.log("disabled", disabled)
   const {
     value,
     suggestions: { status, data },
@@ -46,6 +47,10 @@ export function PlacesAutocomplete({
   } = usePlacesAutocomplete({
     debounce: 300,
     defaultValue: `${initialStreet || ''}, ${initialCityStateZip || ''}`,
+    requestOptions: {
+      componentRestrictions: { country: 'us' },
+    },
+    initOnMount: isGoogleMapsLoaded,
   })
 
   useEffect(() => {
@@ -134,7 +139,7 @@ export function PlacesAutocomplete({
                 ref={streetInputRef}
                 id={`${streetName}-input`}
                 className="w-full text-sm mb-2"
-                disabled={disabled}
+                disabled={disabled || !isGoogleMapsLoaded}
                 value={street}
                 onChange={(e) => handleInputChange(e.target.value, true)}
                 onKeyDown={handleKeyDown}
@@ -158,7 +163,7 @@ export function PlacesAutocomplete({
                 {...field}
                 id={`${cityStateZipName}-input`}
                 className="w-full text-sm"
-                disabled={disabled}
+                disabled={disabled || !isGoogleMapsLoaded}
                 value={cityStateZip}
                 onChange={(e) => handleInputChange(e.target.value, false)}
                 onFocus={handleInputFocus}
