@@ -32,12 +32,14 @@ import {
 import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
 import Docxtemplater from "docxtemplater"
-import { AlertCircle, Link, MenuIcon, Plus } from "lucide-react"
+import { AlertCircle, Download, Link, MenuIcon, Plus } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
 
 import { Database } from "@/types/supabase"
+
 import { VisuallyHidden } from "./ui/visually-hidden"
+import { cn } from "@/lib/utils"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -223,8 +225,6 @@ export default function Investments({
     let sideLetterDocNodeBuffer = null
 
     try {
-      console.log("Investment data:", investment)
-
       if (investment.safe_url) {
         const { data: safeDoc, error: safeDocError } = await supabase.storage
           .from("documents")
@@ -238,7 +238,10 @@ export default function Investments({
         }
       }
 
-      if (investment.side_letter_id && investment.side_letter?.side_letter_url) {
+      if (
+        investment.side_letter_id &&
+        investment.side_letter?.side_letter_url
+      ) {
         const { data: sideLetterDoc, error: sideLetterDocError } =
           await supabase.storage.from("documents").download(sideLetterFilepath)
 
@@ -261,8 +264,6 @@ export default function Investments({
         sideLetterAttachment: sideLetterDocNodeBuffer,
         emailContent: emailContentToSend,
       }
-
-      console.log("Request body:", JSON.stringify(body, null, 2))
 
       const response = await fetch("/api/send-investment-email", {
         method: "POST",
@@ -652,11 +653,13 @@ export default function Investments({
         action: () => {
           // This will be handled by the Share component
         },
+        className: "bg-[#74EBD5] text-white hover:bg-[#5ED1BB]",
       }
     } else if (!investment.safe_url) {
       return {
-        text: "Generate SAFE",
+        text: "Generate",
         action: () => processSafe(investment),
+        className: "bg-[#9FACE6] text-white hover:bg-[#8A9BD1]",
       }
     } else {
       return {
@@ -665,6 +668,7 @@ export default function Investments({
           setSelectedInvestmentAndEmailContent(investment)
           setDialogOpen(true)
         },
+        className: "bg-[#87C4DB] text-white hover:bg-[#72AFD6]",
       }
     }
   }
@@ -686,7 +690,7 @@ export default function Investments({
             <TableHead className="w-1/8">Amount</TableHead>
             <TableHead className="w-1/8">Date</TableHead>
             <TableHead className="w-1/8">Next Steps</TableHead>
-            <TableHead className="w-1/8"></TableHead>
+            <TableHead className="w-1/8">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -739,31 +743,30 @@ export default function Investments({
                 <TableCell>
                   {nextStep.text === "Share" ? (
                     <Button
-                      variant="outline"
                       size="sm"
                       onClick={() => handleShareClick(investment.id)}
-                      className="w-28"
+                      className={cn("w-28", nextStep.className)}
                     >
                       Share
                     </Button>
                   ) : nextStep.text === "Send" ? (
                     <Button
-                      variant="outline"
                       size="sm"
                       onClick={nextStep.action}
-                      className="w-28"
+                      className={cn("w-28", nextStep.className)}
                     >
                       Send
                     </Button>
                   ) : (
                     <Button
-                      variant="outline"
                       size="sm"
                       onClick={nextStep.action}
                       disabled={
                         !isOwner(investment) || generatingSafe === investment.id
                       }
-                      className="w-28"
+                      className={cn("w-28", nextStep.className, {
+                        "opacity-50 cursor-not-allowed": !isOwner(investment) || generatingSafe === investment.id
+                      })}
                     >
                       {generatingSafe === investment.id ? (
                         <Icons.spinner className="h-4 w-4 animate-spin" />
@@ -773,64 +776,94 @@ export default function Investments({
                     </Button>
                   )}
                 </TableCell>
-                <TableCell className="text-right whitespace-nowrap">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost">
-                        {generatingSideLetter === investment.id ? (
-                          <Icons.spinner className="h-4 w-4 ml-2 animate-spin" />
-                        ) : (
-                          <MenuIcon className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {isOwner(investment) && (
-                        <>
-                          {investment.safe_url && (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                downloadDocument(investment.safe_url)
-                              }
-                            >
-                              Download SAFE Agreement
-                            </DropdownMenuItem>
+                <TableCell className="whitespace-nowrap">
+                  <div className="flex justify-end items-center space-x-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost">
+                          {generatingSafe === investment.id ||
+                          generatingSideLetter === investment.id ? (
+                            <Icons.spinner className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4" />
                           )}
-                          {investment.side_letter_id && (
-                            <DropdownMenuItem
-                              onClick={() => processSideLetter(investment)}
-                            >
-                              Generate Side Letter
-                            </DropdownMenuItem>
-                          )}
-                          {investment.side_letter_id &&
-                            investment.side_letter.side_letter_url && (
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {isOwner(investment) && (
+                          <>
+                            {investment.safe_url ? (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    downloadDocument(investment.safe_url)
+                                  }
+                                >
+                                  Download SAFE Agreement
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => processSafe(investment)}
+                                >
+                                  Regenerate SAFE Agreement
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
                               <DropdownMenuItem
-                                onClick={() =>
-                                  downloadDocument(
-                                    investment.side_letter.side_letter_url
-                                  )
-                                }
+                                onClick={() => processSafe(investment)}
                               >
-                                Download Side Letter
+                                Generate SAFE Agreement
                               </DropdownMenuItem>
                             )}
-                        </>
-                      )}
-                      <DropdownMenuItem
-                        onClick={() => editInvestment(investment)}
-                      >
-                        Edit
-                      </DropdownMenuItem>
-                      {isOwner(investment) && (
+                            {investment.side_letter_id && investment.side_letter?.side_letter_url ? (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    downloadDocument(
+                                      investment.side_letter.side_letter_url
+                                    )
+                                  }
+                                >
+                                  Download Side Letter
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => processSideLetter(investment)}
+                                >
+                                  Regenerate Side Letter
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => processSideLetter(investment)}
+                              >
+                                Generate Side Letter
+                              </DropdownMenuItem>
+                            )}
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost">
+                          <MenuIcon className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => deleteInvestment(investment)}
+                          onClick={() => editInvestment(investment)}
                         >
-                          Delete
+                          Edit
                         </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        {isOwner(investment) && (
+                          <DropdownMenuItem
+                            onClick={() => deleteInvestment(investment)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </TableCell>
               </TableRow>
             )

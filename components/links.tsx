@@ -91,7 +91,7 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
               <TableHead className="w-1/6">Created</TableHead>
               <TableHead className="w-1/6">Expires</TableHead>
               <TableHead className="w-1/6">Views</TableHead>
-              <TableHead className="w-1/6"></TableHead>
+              <TableHead className="w-1/6">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -130,7 +130,7 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
-                <TableCell className="text-right whitespace-nowrap">
+                <TableCell className="whitespace-nowrap">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">
