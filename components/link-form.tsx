@@ -84,12 +84,6 @@ export default function LinkForm({
   const [protectWithExpiration, setProtectWithExpiration] = useState<boolean>(
     !!link?.expires
   )
-  const [uploading, setUploading] = useState(false)
-  const [passwordPlaceholder, setPasswordPlaceholder] = useState(
-    link?.password ? "********" : ""
-  )
-
-  console.log(link)
 
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
@@ -151,8 +145,6 @@ export default function LinkForm({
       const linkId = link ? link.id : uuidv4();
       const storageFilePath = `${linkId}`;
 
-      console.log(`storageFilePath: ${storageFilePath}`)
-
       // Upload new file or use existing file path
       let filePathToUse = link ? link.id : storageFilePath;
 
@@ -181,13 +173,6 @@ export default function LinkForm({
 
       let result;
       if (link) {
-        console.log(`linkid: ${link.id}`)
-        console.log(`auth_id: ${account.auth_id}`)
-        console.log(`url: ${signedUrl}`)
-        console.log(`password: ${passwordHash}`)
-        console.log(`expires: ${data.protectWithExpiration ? data.expires?.toISOString() : null}`)
-        console.log(`filename: ${data.filename}`)
-
         // Use RPC for updating
         result = await supabase.rpc("update_link", {
           link_id: link.id,
@@ -243,7 +228,6 @@ export default function LinkForm({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    disabled: uploading,
   })
 
   return (
@@ -268,7 +252,6 @@ export default function LinkForm({
                     form.setValue("protectWithPassword", checked)
                     if (!checked) {
                       form.setValue("password", "")
-                      setPasswordPlaceholder("")
                     }
                   }}
                 />
@@ -469,15 +452,12 @@ export default function LinkForm({
             <div
               {...getRootProps()}
               className={cn(
-                "border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer",
-                uploading && "opacity-50 cursor-not-allowed"
+                "border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer"
               )}
             >
               <input {...getInputProps()} />
               <p className="text-sm text-muted-foreground">
-                {uploading
-                  ? "Uploading..."
-                  : isDragActive
+                {isDragActive
                   ? "Drop the file here ..."
                   : file
                   ? `File selected: ${file.name}`
@@ -488,7 +468,7 @@ export default function LinkForm({
             <Button
               type="submit"
               className="w-full"
-              disabled={uploading || (!file && !link)}
+              disabled={!file && !link}
             >
               {link ? "Update Link" : "Create Link"}
             </Button>
