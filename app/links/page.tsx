@@ -26,7 +26,6 @@ export default async function LinksPage() {
     auth_id: user.id,
   })
 
-  console.log(links)
 
   return links && links.length > 0 ? (
     <div className="container mx-auto px-4 py-8">
