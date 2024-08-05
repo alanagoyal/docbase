@@ -32,7 +32,9 @@ import {
 import { toast } from "./ui/use-toast"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
-type Link = Database["public"]["Tables"]["links"]["Row"] & { view_count: number }
+type Link = Database["public"]["Tables"]["links"]["Row"] & {
+  view_count: number
+}
 
 export function Links({ links, account }: { links: Link[]; account: User }) {
   const [searchTerm, setSearchTerm] = useState("")
@@ -73,11 +75,16 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "n/a"
     const date = new Date(dateString)
-    return date.toLocaleDateString("en-GB", { 
-      day: "2-digit", 
-      month: "2-digit", 
-      year: "2-digit" 
+    return date.toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "2-digit",
+      timeZone: "UTC"
     })
+  }
+
+  const linkUrl = (link: Link) => {
+    return `${process.env.NEXT_PUBLIC_SITE_URL}/view/${link.id}`
   }
 
   return (
@@ -88,9 +95,9 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
             <TableRow>
               <TableHead className="w-1/6">Filename</TableHead>
               <TableHead className="w-1/6">Link</TableHead>
-              <TableHead className="w-1/6">Created</TableHead>
-              <TableHead className="w-1/6">Expires</TableHead>
               <TableHead className="w-1/6">Views</TableHead>
+              <TableHead className="w-1/6">Expires</TableHead>
+              <TableHead className="w-1/6">Created</TableHead>
               <TableHead className="w-1/6">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -105,10 +112,7 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
                         className="cursor-pointer hover:text-blue-500"
                         onClick={() => handleCopyLink(link.id)}
                       >
-                        {`${process.env.NEXT_PUBLIC_SITE_URL}/view/${link.id.substring(
-                          0,
-                          6
-                        )}...`}
+                        {`${linkUrl(link).substring(0, 18)}...`}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -116,12 +120,13 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
-                <TableCell>{formatDate(link.created_at)}</TableCell>
-                <TableCell>{link.expires ? formatDate(link.expires) : "Never"}</TableCell>
                 <TableCell>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Link href={`/analytics/${link.id}`} className="hover:text-blue-500">
+                      <Link
+                        href={`/analytics/${link.id}`}
+                        className="hover:text-blue-500"
+                      >
                         {link.view_count}
                       </Link>
                     </TooltipTrigger>
@@ -130,6 +135,10 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
+                <TableCell>
+                  {link.expires ? formatDate(link.expires) : "Never"}
+                </TableCell>
+                <TableCell>{formatDate(link.created_at)}</TableCell>
                 <TableCell className="whitespace-nowrap">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

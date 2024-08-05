@@ -37,9 +37,9 @@ import mammoth from "mammoth"
 import PizZip from "pizzip"
 
 import { Database } from "@/types/supabase"
+import { cn } from "@/lib/utils"
 
 import { VisuallyHidden } from "./ui/visually-hidden"
-import { cn } from "@/lib/utils"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -218,8 +218,8 @@ export default function Investments({
 
   async function sendEmail(investment: any) {
     setIsSendingEmail(true)
-    const safeFilepath = `${investment.id}.docx`
-    const sideLetterFilepath = `${investment.id}-side-letter.docx`
+    const safeFilepath = `${investment.id}`
+    const sideLetterFilepath = `${investment.sideletter_id}`
 
     let safeDocNodeBuffer = null
     let sideLetterDocNodeBuffer = null
@@ -299,7 +299,7 @@ export default function Investments({
     investment: any,
     doc: Docxtemplater
   ): Promise<string | null> {
-    const filepath = `${investment.id}.docx`
+    const filepath = `${investment.id}`
 
     try {
       const file = doc.getZip().generate({ type: "nodebuffer" })
@@ -325,6 +325,21 @@ export default function Investments({
           newSignedUrlError
         )
         return null
+      }
+
+      const { error: linkError } = await supabase.rpc('upsert_link_data', {
+        id_arg: investment.id,
+        filename_arg: `${investment.company.name} <> ${investment.fund.name} SAFE.docx`,
+        url_arg: newSignedUrlData?.signedUrl,
+        created_by_arg: account.auth_id,
+        created_at_arg: investment.date,
+        password_arg: null,
+        expires_arg: null,
+        auth_id_arg: account.auth_id
+      });
+
+      if (linkError) {
+        console.error(linkError)
       }
 
       return newSignedUrlData?.signedUrl || null
@@ -403,30 +418,43 @@ export default function Investments({
       const safeUrl = await createSafeUrl(investment, safeDoc)
 
       if (safeUrl) {
-        // Download the generated SAFE document
-        downloadDocument(safeUrl)
-        toast({
-          description: "The SAFE document has been generated and downloaded",
-        })
+        // Update the database with the safe_url immediately
+        const { error: updateError } = await supabase
+          .from("investments")
+          .update({ safe_url: safeUrl })
+          .eq("id", investment.id)
 
-        // Generate summary and update database in the background
-        summarizeInvestment(safeDoc).then(async (investmentSummary) => {
-          if (investmentSummary) {
-            const { error: updateError } = await supabase
-              .from("investments")
-              .update({ safe_url: safeUrl, summary: investmentSummary })
-              .eq("id", investment.id)
+        if (updateError) {
+          console.error("Error updating investment with safe_url:", updateError)
+          toast({
+            description: "There was an error updating the investment details",
+            variant: "destructive",
+          })
+        } else {
+          // Download the generated SAFE document
+          downloadDocument(safeUrl)
+          toast({
+            description: "The SAFE document has been generated and downloaded",
+          })
 
-            if (updateError) {
-              console.error("Error updating investment:", updateError)
-              toast({
-                description:
-                  "There was an error updating the investment details",
-                variant: "destructive",
-              })
+          // Generate summary and update database in the background
+          summarizeInvestment(safeDoc).then(async (investmentSummary) => {
+            if (investmentSummary) {
+              const { error: summaryUpdateError } = await supabase
+                .from("investments")
+                .update({ summary: investmentSummary })
+                .eq("id", investment.id)
+
+              if (summaryUpdateError) {
+                console.error(
+                  "Error updating investment summary:",
+                  summaryUpdateError
+                )
+                // You might want to handle this error silently or show a less prominent notification
+              }
             }
-          }
-        })
+          })
+        }
       } else {
         toast({
           description: "There was an error generating the SAFE document",
@@ -456,9 +484,7 @@ export default function Investments({
           <Button
             variant="outline"
             onClick={() =>
-              router.push(
-                `/investments/edit/${investment.id}?step=3`
-              )
+              router.push(`/investments/edit/${investment.id}?step=3`)
             }
           >
             Edit Investment
@@ -611,7 +637,7 @@ export default function Investments({
     investment: any,
     doc: Docxtemplater
   ): Promise<string | null> {
-    const filepath = `${investment.id}-side-letter.docx`
+    const filepath = `${investment.side_letter_id}`
 
     try {
       const file = doc.getZip().generate({ type: "nodebuffer" })
@@ -637,6 +663,21 @@ export default function Investments({
           newSignedUrlError
         )
         return null
+      }
+
+      const { error: linkError } = await supabase.rpc('upsert_link_data', {
+        id_arg: investment.side_letter_id,
+        filename_arg: `${investment.company.name} <> ${investment.fund.name} Side Letter.docx`,
+        url_arg: newSignedUrlData?.signedUrl,
+        created_by_arg: account.auth_id,
+        created_at_arg: investment.date,
+        password_arg: null,
+        expires_arg: null,
+        auth_id_arg: account.auth_id
+      });
+
+      if (linkError) {
+        console.error(linkError)
       }
 
       return newSignedUrlData?.signedUrl || null
@@ -679,18 +720,16 @@ export default function Investments({
   }
 
   return (
-    <div>
-      <Table className="w-full mt-10">
+    <div className="container mx-auto py-10">
+      <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-1/8">Company</TableHead>
-            <TableHead className="w-1/8">Founder</TableHead>
-            <TableHead className="w-1/8">Fund</TableHead>
-            <TableHead className="w-1/8">Type</TableHead>
-            <TableHead className="w-1/8">Amount</TableHead>
-            <TableHead className="w-1/8">Date</TableHead>
-            <TableHead className="w-1/8">Next Steps</TableHead>
-            <TableHead className="w-1/8">Actions</TableHead>
+            <TableHead className="w-1/6">Investment</TableHead>
+            <TableHead className="w-1/6">Type</TableHead>
+            <TableHead className="w-1/6">Amount</TableHead>
+            <TableHead className="w-1/6">Date</TableHead>
+            <TableHead className="w-1/6">Next Steps</TableHead>
+            <TableHead className="w-1/6">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -698,21 +737,13 @@ export default function Investments({
             const nextStep = getNextStep(investment)
             return (
               <TableRow key={investment.id}>
-                <TableCell>
+                <TableCell className="font-medium">
                   {investment.company ? (
                     investment.company.name
                   ) : (
                     <MissingInfoTooltip message="Company name missing" />
                   )}
-                </TableCell>
-                <TableCell>
-                  {investment.founder ? (
-                    `${investment.founder.name} (${investment.founder.email})`
-                  ) : (
-                    <MissingInfoTooltip message="Founder information missing" />
-                  )}
-                </TableCell>
-                <TableCell>
+                  {" <> "}
                   {investment.fund ? (
                     `${investment.fund.name}`
                   ) : (
@@ -765,7 +796,9 @@ export default function Investments({
                         !isOwner(investment) || generatingSafe === investment.id
                       }
                       className={cn("w-28", nextStep.className, {
-                        "opacity-50 cursor-not-allowed": !isOwner(investment) || generatingSafe === investment.id
+                        "opacity-50 cursor-not-allowed":
+                          !isOwner(investment) ||
+                          generatingSafe === investment.id,
                       })}
                     >
                       {generatingSafe === investment.id ? (
@@ -777,7 +810,7 @@ export default function Investments({
                   )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
-                  <div className="flex justify-end items-center space-x-2">
+                  <div className="flex items-center space-x-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost">
@@ -814,7 +847,8 @@ export default function Investments({
                                 Generate SAFE Agreement
                               </DropdownMenuItem>
                             )}
-                            {investment.side_letter_id && investment.side_letter?.side_letter_url ? (
+                            {investment.side_letter_id &&
+                            investment.side_letter?.side_letter_url ? (
                               <>
                                 <DropdownMenuItem
                                   onClick={() =>

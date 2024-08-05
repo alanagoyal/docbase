@@ -109,7 +109,7 @@ export default function InvestmentForm({
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [step, setStep] = useState(parseInt(searchParams.get("step") || "1"))
+  const [step, setStep] = useState(parseInt(searchParams.get("step") || "0"))
   const [investmentId, setInvestmentId] = useState<string | null>(
     searchParams.get("id") || null
   )
@@ -522,6 +522,52 @@ export default function InvestmentForm({
     }
   }
 
+  async function processDealInfo(values: InvestmentFormValues) {
+    if (
+      values.purchaseAmount === "" &&
+      values.type === undefined &&
+      values.date === undefined
+    )
+      return null
+
+    try {
+      const dealData: InvestmentData = {
+        purchase_amount: values.purchaseAmount,
+        investment_type: values.type,
+        valuation_cap: values.valuationCap,
+        discount: values.discount,
+        date: values.date,
+      }
+
+      let investmentIdResult: string | null = null
+
+      if (!investmentId) {
+        dealData.created_by = account.auth_id!
+
+        // Insert investment
+        const { data: investmentInsertData, error: investmentInsertError } =
+          await supabase.from("investments").insert(dealData).select("id")
+        if (investmentInsertError) throw investmentInsertError
+        investmentIdResult = investmentInsertData[0].id
+      } else {
+        // Update investment
+        const { data: investmentUpdateData, error: investmentUpdateError } =
+          await supabase
+            .from("investments")
+            .update(dealData)
+            .eq("id", investmentId)
+            .select("id")
+        if (investmentUpdateError) throw investmentUpdateError
+        investmentIdResult = investmentUpdateData[0].id
+      }
+      setInvestmentId(investmentIdResult)
+      return investmentIdResult
+    } catch (error) {
+      console.error("Error processing investment details:", error)
+      return null
+    }
+  }
+
   async function processInvestment(
     values: InvestmentFormValues,
     investorId?: string | null,
@@ -701,6 +747,33 @@ export default function InvestmentForm({
     }
   }
 
+  async function processStepZero(type: "save" | "next") {
+    setIsLoadingNext(type === "next")
+    setIsLoadingSave(type === "save")
+    const values = form.getValues()
+    await processDealInfo(values)
+    setIsLoadingNext(false)
+    setIsLoadingSave(false)
+    if (type === "next") {
+      setStep(1)
+    }
+  }
+
+  async function saveStepZero() {
+    if (isEditMode) {
+      toast({
+        description: "Investment updated",
+      })
+      router.push("/investments")
+    }
+    await processStepZero("save")
+    router.refresh()
+  }
+
+  async function advanceStepZero() {
+    await processStepZero("next")
+  }
+
   async function processStepOne(type: "save" | "next") {
     setIsLoadingNext(type === "next")
     setIsLoadingSave(type === "save")
@@ -782,314 +855,15 @@ export default function InvestmentForm({
     <div className="w-full max-w-2xl mx-auto">
       <AuthRefresh />
       {showConfetti && <Confetti />}
-      <h1 className="text-2xl font-bold">Get Started</h1>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-4 w-full"
         >
-          {step === 1 && (
+          {step === 0 && (
             <>
               <div className="pt-4 flex justify-between items-center h-10">
-                <Label className="text-md font-bold">Investor Details</Label>
-              </div>
-              {showFundSelector &&
-                entities.some((entity) => entity.type === "fund") && (
-                  <FormItem>
-                    <FormLabel>Select Entity</FormLabel>
-                    <EntitySelector
-                      entities={entities}
-                      selectedEntity={selectedEntity}
-                      onSelectChange={handleSelectChange}
-                      entityType="fund"
-                      disabled={!isOwner}
-                    />
-                    <FormDescription>
-                      Choose an existing fund to be used in your signature block
-                      or add one below
-                    </FormDescription>
-                  </FormItem>
-                )}
-              <FormField
-                control={form.control}
-                name="fundName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Entity Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled={!isOwner} />
-                    </FormControl>
-                    <FormDescription>
-                      {formDescriptions.fundName}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="fundByline"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Byline (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} disabled={!isOwner} />
-                    </FormControl>
-                    <FormDescription>
-                      {formDescriptions.fundByline}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <PlacesAutocomplete
-                form={form}
-                streetName="fundStreet"
-                cityStateZipName="fundCityStateZip"
-                disabled={!isOwner}
-                onAddressChange={(street, cityStateZip) => {
-                  form.setValue("fundStreet", street)
-                  form.setValue("fundCityStateZip", cityStateZip)
-                }}
-                initialStreet={form.watch("fundStreet")}
-                initialCityStateZip={form.watch("fundCityStateZip")}
-              />
-              <div className="pt-4">
-                <Label className="text-md font-bold">Signatory Details</Label>
-              </div>
-              <FormField
-                control={form.control}
-                name="investorName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Investor Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled={!isOwner} />
-                    </FormControl>
-                    <FormDescription>
-                      {formDescriptions.investorName}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="investorTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Investor Title</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled={!isOwner} />
-                    </FormControl>
-                    <FormDescription>
-                      {formDescriptions.investorTitle}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="investorEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Investor Email</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled={!isOwner} />
-                    </FormControl>
-                    <FormDescription>
-                      {formDescriptions.investorEmail}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex flex-col gap-2">
-                {(isEditMode || isFormLocked) && (
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={saveStepOne}
-                  >
-                    {isLoadingSave ? <Icons.spinner /> : "Save"}
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  className="w-full"
-                  onClick={advanceStepOne}
-                  variant={isEditMode || isFormLocked ? "secondary" : "default"}
-                >
-                  {isLoadingNext ? <Icons.spinner /> : "Next"}
-                </Button>
-              </div>
-            </>
-          )}
-          {step === 2 && (
-            <>
-              <div className="pt-4 flex justify-between items-center h-10">
-                <Label className="text-md font-bold">Company Details</Label>
-                {!isFormLocked && investmentId && (
-                  <Button
-                    variant="ghost"
-                    onClick={() => setIsShareDialogOpen(true)}
-                  >
-                    <span className="text-sm">Share</span>
-                    <Icons.share className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              {showCompanySelector &&
-                entities.some((entity) => entity.type === "company") && (
-                  <FormItem>
-                    <FormLabel>Select Entity</FormLabel>
-                    <EntitySelector
-                      entities={entities}
-                      selectedEntity={selectedEntity}
-                      onSelectChange={handleSelectChange}
-                      entityType="company"
-                      disabled={false}
-                    />
-                    <FormDescription>
-                      Choose an existing company to be used in your signature
-                      block or add one below
-                    </FormDescription>
-                  </FormItem>
-                )}
-              <FormField
-                control={form.control}
-                name="companyName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      {formDescriptions.companyName}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <PlacesAutocomplete
-                form={form}
-                streetName="companyStreet"
-                cityStateZipName="companyCityStateZip"
-                disabled={false}
-                onAddressChange={(street, cityStateZip) => {
-                  form.setValue("companyStreet", street)
-                  form.setValue("companyCityStateZip", cityStateZip)
-                }}
-                initialStreet={form.watch("companyStreet")}
-                initialCityStateZip={form.watch("companyCityStateZip")}
-              />
-              <FormField
-                control={form.control}
-                name="stateOfIncorporation"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State of Incorporation</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      {formDescriptions.stateOfIncorporation}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="pt-4">
-                <Label className="text-md font-bold">Signatory Details</Label>
-              </div>
-              <FormField
-                control={form.control}
-                name="founderName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Founder Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      {formDescriptions.founderName}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="founderTitle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Founder Title</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      {formDescriptions.founderTitle}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="founderEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Founder Email</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      {formDescriptions.founderEmail}
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex flex-col gap-2">
-                {(isEditMode || isFormLocked) && (
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={saveStepTwo}
-                  >
-                    {isLoadingSave ? <Icons.spinner /> : "Save"}
-                  </Button>
-                )}
-                <div className="flex w-full gap-2">
-                  <Button
-                    variant="secondary"
-                    className="w-1/2"
-                    onClick={() => {
-                      setStep(1)
-                    }}
-                  >
-                    Back{" "}
-                  </Button>
-                  <Button
-                    type="button"
-                    className="w-1/2"
-                    variant={
-                      isEditMode || isFormLocked ? "secondary" : "default"
-                    }
-                    onClick={advanceStepTwo}
-                  >
-                    {isLoadingNext ? <Icons.spinner /> : "Next"}
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-          {step === 3 && (
-            <>
-              <div className="pt-4 flex justify-between items-center h-10">
-                <Label className="text-md font-bold">Deal Terms</Label>
+                <Label className="text-xl font-bold">Deal Terms</Label>
               </div>
               <FormField
                 control={form.control}
@@ -1239,11 +1013,345 @@ export default function InvestmentForm({
                   </FormItem>
                 )}
               />
+               <div className="flex flex-col gap-2">
+                {(isEditMode || isFormLocked) && (
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={saveStepZero}
+                  >
+                    {isLoadingSave ? <Icons.spinner /> : "Save"}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={advanceStepZero}
+                  variant={isEditMode || isFormLocked ? "secondary" : "default"}
+                >
+                  {isLoadingNext ? <Icons.spinner /> : "Next"}
+                </Button>
+              </div>
+            </>
+          )}
+          {step === 1 && (
+            <>
+              <div className="pt-4 flex justify-between items-center h-10">
+                <Label className="text-xl font-bold">Investor Details</Label>
+              </div>
+              {showFundSelector &&
+                entities.some((entity) => entity.type === "fund") && (
+                  <FormItem>
+                    <FormLabel>Select Entity</FormLabel>
+                    <EntitySelector
+                      entities={entities}
+                      selectedEntity={selectedEntity}
+                      onSelectChange={handleSelectChange}
+                      entityType="fund"
+                      disabled={!isOwner}
+                    />
+                    <FormDescription>
+                      Choose an existing fund to be used in your signature block
+                      or add one below
+                    </FormDescription>
+                  </FormItem>
+                )}
+              <FormField
+                control={form.control}
+                name="fundName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Entity Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled={!isOwner} />
+                    </FormControl>
+                    <FormDescription>
+                      {formDescriptions.fundName}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="fundByline"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Byline (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} disabled={!isOwner} />
+                    </FormControl>
+                    <FormDescription>
+                      {formDescriptions.fundByline}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <PlacesAutocomplete
+                form={form}
+                streetName="fundStreet"
+                cityStateZipName="fundCityStateZip"
+                disabled={!isOwner}
+                onAddressChange={(street, cityStateZip) => {
+                  form.setValue("fundStreet", street)
+                  form.setValue("fundCityStateZip", cityStateZip)
+                }}
+                initialStreet={form.watch("fundStreet")}
+                initialCityStateZip={form.watch("fundCityStateZip")}
+              />
+              <div className="pt-4">
+                <Label className="text-xl font-bold">Signatory Details</Label>
+              </div>
+              <FormField
+                control={form.control}
+                name="investorName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Investor Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled={!isOwner} />
+                    </FormControl>
+                    <FormDescription>
+                      {formDescriptions.investorName}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="investorTitle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Investor Title</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled={!isOwner} />
+                    </FormControl>
+                    <FormDescription>
+                      {formDescriptions.investorTitle}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="investorEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Investor Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} disabled={!isOwner} />
+                    </FormControl>
+                    <FormDescription>
+                      {formDescriptions.investorEmail}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+                <div className="flex flex-col gap-2">
+                {(isEditMode || isFormLocked) && (
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={saveStepOne}
+                  >
+                    {isLoadingSave ? <Icons.spinner /> : "Save"}
+                  </Button>
+                )}
+                <div className="flex w-full gap-2">
+                  <Button
+                    variant="secondary"
+                    className="w-1/2"
+                    onClick={() => {
+                      setStep(0)
+                    }}
+                  >
+                    Back{" "}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="w-1/2"
+                    variant={
+                      isEditMode || isFormLocked ? "secondary" : "default"
+                    }
+                    onClick={advanceStepOne}
+                  >
+                    {isLoadingNext ? <Icons.spinner /> : "Next"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <div className="pt-4 flex justify-between items-center h-10">
+                <Label className="text-xl font-bold">Company Details</Label>
+                {!isFormLocked && investmentId && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsShareDialogOpen(true)}
+                  >
+                    <span className="text-sm">Share</span>
+                    <Icons.share className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {showCompanySelector &&
+                entities.some((entity) => entity.type === "company") && (
+                  <FormItem>
+                    <FormLabel>Select Entity</FormLabel>
+                    <EntitySelector
+                      entities={entities}
+                      selectedEntity={selectedEntity}
+                      onSelectChange={handleSelectChange}
+                      entityType="company"
+                      disabled={false}
+                    />
+                    <FormDescription>
+                      Choose an existing company to be used in your signature
+                      block or add one below
+                    </FormDescription>
+                  </FormItem>
+                )}
+              <FormField
+                control={form.control}
+                name="companyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      {formDescriptions.companyName}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <PlacesAutocomplete
+                form={form}
+                streetName="companyStreet"
+                cityStateZipName="companyCityStateZip"
+                disabled={false}
+                onAddressChange={(street, cityStateZip) => {
+                  form.setValue("companyStreet", street)
+                  form.setValue("companyCityStateZip", cityStateZip)
+                }}
+                initialStreet={form.watch("companyStreet")}
+                initialCityStateZip={form.watch("companyCityStateZip")}
+              />
+              <FormField
+                control={form.control}
+                name="stateOfIncorporation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State of Incorporation</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      {formDescriptions.stateOfIncorporation}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="pt-4">
+                <Label className="text-xl font-bold">Signatory Details</Label>
+              </div>
+              <FormField
+                control={form.control}
+                name="founderName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Founder Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      {formDescriptions.founderName}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="founderTitle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Founder Title</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      {formDescriptions.founderTitle}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="founderEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Founder Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      {formDescriptions.founderEmail}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex flex-col gap-2">
+                {(isEditMode || isFormLocked) && (
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={saveStepTwo}
+                  >
+                    {isLoadingSave ? <Icons.spinner /> : "Save"}
+                  </Button>
+                )}
+                <div className="flex w-full gap-2">
+                  <Button
+                    variant="secondary"
+                    className="w-1/2"
+                    onClick={() => {
+                      setStep(1)
+                    }}
+                  >
+                    Back{" "}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="w-1/2"
+                    variant={
+                      isEditMode || isFormLocked ? "secondary" : "default"
+                    }
+                    onClick={advanceStepTwo}
+                  >
+                    {isLoadingNext ? <Icons.spinner /> : "Next"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+          {step === 3 && (
+            <>
               {isOwner && (
                 <>
                   <div className="pt-4 flex justify-between items-center h-10">
-                    <Label className="text-md font-bold">
-                      Side Letter (Optional)
+                    <Label className="text-xl font-bold">
+                      Side Letter
                     </Label>
                   </div>
                   <FormField

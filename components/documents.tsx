@@ -102,10 +102,10 @@ export function Documents({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-1/5">Document Name</TableHead>
-              <TableHead className="w-1/5">Document Type</TableHead>
-              <TableHead className="w-1/5">Document URL</TableHead>
-              <TableHead className="w-1/5">Created At</TableHead>
+              <TableHead className="w-1/5">Document</TableHead>
+              <TableHead className="w-1/5">Type</TableHead>
+              <TableHead className="w-1/5">Link</TableHead>
+              <TableHead className="w-1/5">Created</TableHead>
               <TableHead className="w-1/5">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -125,7 +125,7 @@ export function Documents({
                         rel="noopener noreferrer"
                         className="cursor-pointer hover:text-blue-500"
                       >
-                        {document.document_url.substring(0, 20)}...
+                        {document.document_url.substring(0, 18)}...
                       </a>
                     </TooltipTrigger>
                     <TooltipContent>

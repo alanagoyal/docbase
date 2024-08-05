@@ -11,7 +11,6 @@ import { useDropzone } from "react-dropzone"
 import { useForm } from "react-hook-form"
 import { v4 as uuidv4 } from "uuid"
 import * as z from "zod"
-
 import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -26,7 +25,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Switch } from "./ui/switch"
 import { toast } from "./ui/use-toast"
@@ -80,7 +78,6 @@ export default function LinkForm({
   const supabase = createClient()
   const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
-  const [filePath, setFilePath] = useState<string>(link?.filename || "")
   const [protectWithPassword, setProtectWithPassword] = useState<boolean>(
     !!link?.password
   )
@@ -91,6 +88,9 @@ export default function LinkForm({
   const [passwordPlaceholder, setPasswordPlaceholder] = useState(
     link?.password ? "********" : ""
   )
+
+  console.log(link)
+
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
     defaultValues: {
@@ -151,6 +151,8 @@ export default function LinkForm({
       const linkId = link ? link.id : uuidv4();
       const storageFilePath = `${linkId}`;
 
+      console.log(`storageFilePath: ${storageFilePath}`)
+
       // Upload new file or use existing file path
       let filePathToUse = link ? link.id : storageFilePath;
 
@@ -179,6 +181,13 @@ export default function LinkForm({
 
       let result;
       if (link) {
+        console.log(`linkid: ${link.id}`)
+        console.log(`auth_id: ${account.auth_id}`)
+        console.log(`url: ${signedUrl}`)
+        console.log(`password: ${passwordHash}`)
+        console.log(`expires: ${data.protectWithExpiration ? data.expires?.toISOString() : null}`)
+        console.log(`filename: ${data.filename}`)
+
         // Use RPC for updating
         result = await supabase.rpc("update_link", {
           link_id: link.id,
@@ -188,6 +197,7 @@ export default function LinkForm({
           expires_arg: data.protectWithExpiration ? data.expires?.toISOString() : null,
           filename_arg: data.filename,
         })
+
       } else {
         // Insert new link
         result = await supabase
