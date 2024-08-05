@@ -47,10 +47,6 @@ const ReactQuill = dynamic(() => import("react-quill"), { ssr: false })
 
 const downloadDocument = (url: string) => {
   window.open(url, "_blank")
-  toast({
-    title: "Downloaded",
-    description: "The file has been downloaded",
-  })
 }
 
 export default function Investments({
@@ -327,7 +323,7 @@ export default function Investments({
         return null
       }
 
-      const { error: linkError } = await supabase.rpc('upsert_link_data', {
+      const { error: linkError } = await supabase.rpc("upsert_link_data", {
         id_arg: investment.id,
         filename_arg: `${investment.company.name} <> ${investment.fund.name} SAFE.docx`,
         url_arg: newSignedUrlData?.signedUrl,
@@ -335,8 +331,8 @@ export default function Investments({
         created_at_arg: investment.date,
         password_arg: null,
         expires_arg: null,
-        auth_id_arg: account.auth_id
-      });
+        auth_id_arg: account.auth_id,
+      })
 
       if (linkError) {
         console.error(linkError)
@@ -431,10 +427,9 @@ export default function Investments({
             variant: "destructive",
           })
         } else {
-          // Download the generated SAFE document
-          downloadDocument(safeUrl)
           toast({
-            description: "The SAFE document has been generated and downloaded",
+            description:
+              "The SAFE document has been generated and a shareable link has been created",
           })
 
           // Generate summary and update database in the background
@@ -515,9 +510,9 @@ export default function Investments({
 
       // Download the generated side letter
       if (sideLetterUrl) {
-        downloadDocument(sideLetterUrl)
         toast({
-          description: "The side letter has been generated and downloaded",
+          description:
+            "The side letter has been generated and a shareable link has been created",
         })
       } else {
         toast({
@@ -665,7 +660,7 @@ export default function Investments({
         return null
       }
 
-      const { error: linkError } = await supabase.rpc('upsert_link_data', {
+      const { error: linkError } = await supabase.rpc("upsert_link_data", {
         id_arg: investment.side_letter_id,
         filename_arg: `${investment.company.name} <> ${investment.fund.name} Side Letter.docx`,
         url_arg: newSignedUrlData?.signedUrl,
@@ -673,8 +668,8 @@ export default function Investments({
         created_at_arg: investment.date,
         password_arg: null,
         expires_arg: null,
-        auth_id_arg: account.auth_id
-      });
+        auth_id_arg: account.auth_id,
+      })
 
       if (linkError) {
         console.error(linkError)
@@ -717,6 +712,17 @@ export default function Investments({
   const handleEmailSent = () => {
     // Refresh the investments data or update the UI as needed
     router.refresh()
+  }
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "n/a"
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "2-digit",
+      timeZone: "UTC",
+    })
   }
 
   return (
@@ -764,13 +770,7 @@ export default function Investments({
                     <MissingInfoTooltip message="Purchase amount not set" />
                   )}
                 </TableCell>
-                <TableCell>
-                  {new Date(investment.date).toLocaleDateString("en-US", {
-                    month: "2-digit",
-                    day: "2-digit",
-                    year: "2-digit",
-                  })}
-                </TableCell>
+                <TableCell>{formatDate(investment.date)}</TableCell>
                 <TableCell>
                   {nextStep.text === "Share" ? (
                     <Button
@@ -837,7 +837,7 @@ export default function Investments({
                                 <DropdownMenuItem
                                   onClick={() => processSafe(investment)}
                                 >
-                                  Regenerate SAFE Agreement
+                                  Update SAFE Agreement
                                 </DropdownMenuItem>
                               </>
                             ) : (
@@ -862,7 +862,7 @@ export default function Investments({
                                 <DropdownMenuItem
                                   onClick={() => processSideLetter(investment)}
                                 >
-                                  Regenerate Side Letter
+                                  Update Side Letter
                                 </DropdownMenuItem>
                               </>
                             ) : (

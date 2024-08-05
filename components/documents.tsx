@@ -62,16 +62,6 @@ export function Documents({
     router.refresh()
   }
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "n/a"
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "2-digit",
-    })
-  }
-
   const getEditLink = (document: Document) => {
     switch (document.document_type.toLowerCase()) {
       case 'link':
@@ -94,6 +84,17 @@ export function Documents({
       default:
         return '#'
     }
+  }
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "n/a"
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "2-digit",
+      timeZone: "UTC"
+    })
   }
 
   return (
