@@ -130,9 +130,9 @@ export default function Investments({
 
   const editInvestment = (investment: any) => {
     if (isOwner(investment)) {
-      router.push(`/investments/new?id=${investment.id}&edit=true`)
+      router.push(`/investments/edit/${investment.id}`)
     } else if (isFounder(investment)) {
-      router.push(`/investments/new?id=${investment.id}&edit=true&step=2`)
+      router.push(`/investments/edit/${investment.id}?step=2`)
     }
   }
 
@@ -457,7 +457,7 @@ export default function Investments({
             variant="outline"
             onClick={() =>
               router.push(
-                `/investments/new?id=${investment.id}&edit=true&step=3`
+                `/investments/edit/${investment.id}?step=3`
               )
             }
           >

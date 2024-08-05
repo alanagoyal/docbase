@@ -2,14 +2,19 @@
 
 import React, { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { formDescriptions } from "@/utils/form-descriptions"
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useLoadScript, type Libraries } from "@react-google-maps/api"
 import { format } from "date-fns"
+import { CalendarIcon } from "lucide-react"
 import Confetti from "react-confetti"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+
+import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
+
 import AuthRefresh from "./auth-refresh"
 import { EntitySelector } from "./entity-selector"
 import { Icons } from "./icons"
@@ -39,9 +44,6 @@ import {
 import { Switch } from "./ui/switch"
 import { Textarea } from "./ui/textarea"
 import { toast } from "./ui/use-toast"
-import { formDescriptions } from "@/utils/form-descriptions"
-import { CalendarIcon } from "lucide-react"
-import { Database } from "@/types/supabase"
 
 const InvestmentFormSchema = z.object({
   companyName: z.string().optional(),
@@ -97,7 +99,13 @@ type InvestmentData = {
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
-export default function InvestmentForm({ account }: { account: User }) {
+export default function InvestmentForm({
+  investment,
+  account,
+}: {
+  investment?: any
+  account: User
+}) {
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -155,6 +163,13 @@ export default function InvestmentForm({ account }: { account: User }) {
   })
 
   useEffect(() => {
+    if (investment) {
+      setInvestmentId(investment.id)
+      fetchInvestmentDetails(investment.id)
+    }
+  }, [investment])
+
+  useEffect(() => {
     if (account) {
       fetchEntities()
       if (isFormLocked) {
@@ -172,13 +187,9 @@ export default function InvestmentForm({ account }: { account: User }) {
     newSearchParams.set("step", step.toString())
     if (investmentId) {
       newSearchParams.set("id", investmentId)
-      fetchInvestmentDetails(investmentId)
-    }
-    if (isFormLocked) {
-      newSearchParams.set("sharing", "true")
     }
     router.push(`?${newSearchParams.toString()}`)
-  }, [step, router, investmentId, isFormLocked])
+  }, [step, router, investmentId, searchParams])
 
   async function fetchInvestmentDetails(investmentId: string) {
     const { data: dataIncorrectlyTyped, error } = await supabase
@@ -545,7 +556,7 @@ export default function InvestmentForm({ account }: { account: User }) {
       const hasSideLetterContent = Object.values(sideLetter).some(Boolean)
 
       if (!investmentId) {
-        investmentData.created_by = account.auth_id! 
+        investmentData.created_by = account.auth_id!
 
         if (hasSideLetterContent) {
           // Insert side letter

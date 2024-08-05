@@ -75,10 +75,10 @@ export function Documents({
   const getEditLink = (document: Document) => {
     switch (document.document_type.toLowerCase()) {
       case 'link':
-        return `/links/${document.id}`
+        return `/links/edit/${document.id}`
       case 'safe':
       case 'side letter':
-        return `/investments/new?id=${document.id}&edit=true${document.document_type.toLowerCase() === 'side letter' ? '&step=3' : ''}`
+        return `/investments/edit/${document.id}${document.document_type.toLowerCase() === 'side letter' ? '?step=3' : ''}`
       default:
         return '#'
     }

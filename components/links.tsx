@@ -139,7 +139,7 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem>
-                        <Link href={`/edit/${link.id}`}>Edit</Link>
+                        <Link href={`/links/edit/${link.id}`}>Edit</Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => deleteLink(link.id)}>
                         Delete
