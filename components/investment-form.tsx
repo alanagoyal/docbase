@@ -129,11 +129,6 @@ export default function InvestmentForm({
   const [isLoadingNext, setIsLoadingNext] = useState(false)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
 
-  const handleStepChange = (newStep: number) => {
-    console.log("setting step change")
-    setStep(newStep)
-  }
-
   const form = useForm<InvestmentFormValues>({
     resolver: zodResolver(InvestmentFormSchema),
     defaultValues: {
@@ -196,8 +191,6 @@ export default function InvestmentForm({
   }, [step, investmentId, isFormLocked])
 
   async function fetchInvestmentDetails(investmentId: string) {
-    console.log("fetching investment details")
-    console.log(investmentId)
     const { data: dataIncorrectlyTyped, error } = await supabase
       .from("investments")
       .select(
@@ -254,9 +247,6 @@ export default function InvestmentForm({
       })
 
       // Ensure the correct entity selector is shown based on the step
-      console.log("Step:", step)
-      console.log("Fund:", data.fund)
-      console.log("Company:", data.company)
       if (step === 1) {
         setShowFundSelector(true)
         if (data.fund && data.fund.investor_id === account.auth_id) {
@@ -311,7 +301,6 @@ export default function InvestmentForm({
       setEntities([...typedFundData, ...typedCompanyData])
 
       // Ensure the correct entity selector is shown based on the step
-      console.log("Entities:", [...typedFundData, ...typedCompanyData])
       if (step === 1 && typedFundData.length > 0) {
         setShowFundSelector(true)
       } else if (step === 2 && typedCompanyData.length > 0) {
@@ -698,7 +687,6 @@ export default function InvestmentForm({
   async function handleSelectChange(value: string) {
     setSelectedEntity(value)
     const selectedEntityDetails = entities.find((entity) => entity.id === value)
-    console.log("Selected Entity Details:", selectedEntityDetails)
   
     if (selectedEntityDetails) {
       if (showFundSelector && selectedEntityDetails.type === "fund") {
@@ -1217,8 +1205,11 @@ export default function InvestmentForm({
                 <Label className="text-xl font-bold">Company Details</Label>
                 {!isFormLocked && investmentId && (
                   <Button
+                    type="button"
                     variant="ghost"
-                    onClick={() => setIsShareDialogOpen(true)}
+                    onClick={() => {
+                      setIsShareDialogOpen(true)
+                    }}
                   >
                     <span className="text-sm">Share</span>
                     <Icons.share className="ml-2 h-4 w-4" />
@@ -1515,7 +1506,7 @@ export default function InvestmentForm({
       </Form>
       <Share
         investmentId={investmentId || ""}
-        onEmailSent={() => handleStepChange(3)}
+        onEmailSent={() => setStep(3)}
         isOpen={isShareDialogOpen}
         onOpenChange={setIsShareDialogOpen}
       />

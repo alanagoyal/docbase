@@ -13,7 +13,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "./ui/dialog"
 import {
   DropdownMenu,
@@ -32,14 +31,11 @@ import {
 import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
 import Docxtemplater from "docxtemplater"
-import { AlertCircle, Download, Link, MenuIcon, Plus } from "lucide-react"
+import { AlertCircle, Download, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
-
 import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
-
-import { VisuallyHidden } from "./ui/visually-hidden"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -72,7 +68,8 @@ export default function Investments({
   >(null)
 
   const handleShareClick = (investmentId: string) => {
-    router.push(`/investments/${investmentId}?step=2&sharing=true`)
+    setSelectedInvestmentId(investmentId)
+    setIsShareDialogOpen(true)
   }
 
   const formatCurrency = (amountStr: string): string => {
@@ -709,11 +706,6 @@ export default function Investments({
     }
   }
 
-  const handleEmailSent = () => {
-    // Refresh the investments data or update the UI as needed
-    router.refresh()
-  }
-
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "n/a"
     const date = new Date(dateString)
@@ -935,7 +927,7 @@ export default function Investments({
       </Dialog>
       <Share
         investmentId={selectedInvestmentId || ""}
-        onEmailSent={handleEmailSent}
+        onEmailSent={() => router.refresh()}
         isOpen={isShareDialogOpen}
         onOpenChange={setIsShareDialogOpen}
       />
