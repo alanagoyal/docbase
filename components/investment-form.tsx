@@ -245,22 +245,16 @@ export default function InvestmentForm({
         termination: data.side_letter?.termination || false,
         miscellaneous: data.side_letter?.miscellaneous || false,
       })
-
-      // Ensure the correct entity selector is shown based on the step
-      if (step === 1) {
+      if (step === 1 && data.fund && data.fund.investor_id === account.id) {
+        setSelectedEntity(data.fund.id)
         setShowFundSelector(true)
-        if (data.fund && data.fund.investor_id === account.auth_id) {
-          setSelectedEntity(data.fund.id)
-        } else {
-          setSelectedEntity(undefined)
-        }
-      } else if (step === 2) {
+      } else if (
+        step === 2 &&
+        data.company &&
+        data.company.founder_id === account.id
+      ) {
+        setSelectedEntity(data.company.id)
         setShowCompanySelector(true)
-        if (data.company && data.company.founder_id === account.auth_id) {
-          setSelectedEntity(data.company.id)
-        } else {
-          setSelectedEntity(undefined)
-        }
       } else {
         setSelectedEntity(undefined)
         if (step === 1) {
@@ -270,7 +264,6 @@ export default function InvestmentForm({
           setShowCompanySelector(false)
         }
       }
-
       // If the user is editing an investment that is not theirs, lock the form
       if (account.auth_id !== data.created_by) {
         setIsOwner(false)
@@ -299,13 +292,6 @@ export default function InvestmentForm({
         type: "company",
       }))
       setEntities([...typedFundData, ...typedCompanyData])
-
-      // Ensure the correct entity selector is shown based on the step
-      if (step === 1 && typedFundData.length > 0) {
-        setShowFundSelector(true)
-      } else if (step === 2 && typedCompanyData.length > 0) {
-        setShowCompanySelector(true)
-      }
     }
   }
 
@@ -804,14 +790,6 @@ export default function InvestmentForm({
   }
 
   async function advanceStepZero() {
-    const values = form.getValues()
-    const isValid = await form.trigger(["purchaseAmount", "type", "date"])
-    if (!isValid) {
-      toast({
-        description: "Please fill out all required fields",
-      })
-      return
-    }
     await processStepZero("next")
   }
 
@@ -1330,7 +1308,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Founder Title</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.founderTitle}
@@ -1346,7 +1324,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Founder Email</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.founderEmail}
@@ -1415,6 +1393,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1437,7 +1416,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={!isOwner}
+                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1460,7 +1439,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={!isOwner}
+                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1483,7 +1462,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={!isOwner}
+                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1506,7 +1485,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={!isOwner}
+                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>
