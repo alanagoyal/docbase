@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server"
 import InvestmentForm from "@/components/investment-form"
 import MagicLink from "@/components/magic-link"
 
-export default async function Safe({
+export default async function NewInvestment({
   searchParams,
 }: {
   searchParams: { [key: string]: string | string[] | undefined }
@@ -37,7 +37,7 @@ export default async function Safe({
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-center">New Link</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">New Investment</h1>
       <InvestmentForm account={account} />
     </div>
   )

@@ -102,16 +102,18 @@ type User = Database["public"]["Tables"]["users"]["Row"]
 export default function InvestmentForm({
   investment,
   account,
+  isEditMode = false,
 }: {
   investment?: any
   account: User
+  isEditMode?: boolean
 }) {
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState(parseInt(searchParams.get("step") || "0"))
   const [investmentId, setInvestmentId] = useState<string | null>(
-    searchParams.get("id") || null
+    investment?.id || null
   )
   const [sideLetterId, setSideLetterId] = useState<string | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
@@ -122,13 +124,13 @@ export default function InvestmentForm({
   const [showFundSelector, setShowFundSelector] = useState(true)
   const [showCompanySelector, setShowCompanySelector] = useState(true)
   const isFormLocked = searchParams.get("sharing") === "true"
-  const isEditMode = searchParams.get("edit") === "true"
   const [isOwner, setIsOwner] = useState(true)
   const [isLoadingSave, setIsLoadingSave] = useState(false)
   const [isLoadingNext, setIsLoadingNext] = useState(false)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
 
   const handleStepChange = (newStep: number) => {
+    console.log("setting step change")
     setStep(newStep)
   }
 
@@ -181,17 +183,21 @@ export default function InvestmentForm({
     }
   }, [account, isFormLocked])
 
-  // Update the URL when the step changes, including sharing state if applicable
+  // Function to update URL with current step
   useEffect(() => {
-    const newSearchParams = new URLSearchParams(searchParams)
-    newSearchParams.set("step", step.toString())
     if (investmentId) {
-      newSearchParams.set("id", investmentId)
+      const newSearchParams = new URLSearchParams(searchParams)
+      newSearchParams.set("step", step.toString())
+      if (isFormLocked) {
+        newSearchParams.set("sharing", "true")
+      }
+      router.push(`/investments/${investmentId}?${newSearchParams.toString()}`)
     }
-    router.push(`?${newSearchParams.toString()}`)
-  }, [step, router, investmentId, searchParams])
+  }, [step, investmentId, isFormLocked])
 
   async function fetchInvestmentDetails(investmentId: string) {
+    console.log("fetching investment details")
+    console.log(investmentId)
     const { data: dataIncorrectlyTyped, error } = await supabase
       .from("investments")
       .select(
@@ -246,16 +252,25 @@ export default function InvestmentForm({
         termination: data.side_letter?.termination || false,
         miscellaneous: data.side_letter?.miscellaneous || false,
       })
-      if (step === 1 && data.fund && data.fund.investor_id === account.id) {
-        setSelectedEntity(data.fund.id)
+
+      // Ensure the correct entity selector is shown based on the step
+      console.log("Step:", step)
+      console.log("Fund:", data.fund)
+      console.log("Company:", data.company)
+      if (step === 1) {
         setShowFundSelector(true)
-      } else if (
-        step === 2 &&
-        data.company &&
-        data.company.founder_id === account.id
-      ) {
-        setSelectedEntity(data.company.id)
+        if (data.fund && data.fund.investor_id === account.auth_id) {
+          setSelectedEntity(data.fund.id)
+        } else {
+          setSelectedEntity(undefined)
+        }
+      } else if (step === 2) {
         setShowCompanySelector(true)
+        if (data.company && data.company.founder_id === account.auth_id) {
+          setSelectedEntity(data.company.id)
+        } else {
+          setSelectedEntity(undefined)
+        }
       } else {
         setSelectedEntity(undefined)
         if (step === 1) {
@@ -265,6 +280,7 @@ export default function InvestmentForm({
           setShowCompanySelector(false)
         }
       }
+
       // If the user is editing an investment that is not theirs, lock the form
       if (account.auth_id !== data.created_by) {
         setIsOwner(false)
@@ -293,6 +309,14 @@ export default function InvestmentForm({
         type: "company",
       }))
       setEntities([...typedFundData, ...typedCompanyData])
+
+      // Ensure the correct entity selector is shown based on the step
+      console.log("Entities:", [...typedFundData, ...typedCompanyData])
+      if (step === 1 && typedFundData.length > 0) {
+        setShowFundSelector(true)
+      } else if (step === 2 && typedCompanyData.length > 0) {
+        setShowCompanySelector(true)
+      }
     }
   }
 
@@ -674,7 +698,8 @@ export default function InvestmentForm({
   async function handleSelectChange(value: string) {
     setSelectedEntity(value)
     const selectedEntityDetails = entities.find((entity) => entity.id === value)
-
+    console.log("Selected Entity Details:", selectedEntityDetails)
+  
     if (selectedEntityDetails) {
       if (showFundSelector && selectedEntityDetails.type === "fund") {
         form.setValue("fundName", selectedEntityDetails.name || "")
@@ -684,14 +709,14 @@ export default function InvestmentForm({
           "fundCityStateZip",
           selectedEntityDetails.city_state_zip || ""
         )
-
+  
         // Fetch investor details
         const { data: investorData, error: investorError } = await supabase
           .from("users")
           .select("name, title, email")
           .eq("id", selectedEntityDetails.investor_id)
           .single()
-
+  
         if (!investorError && investorData) {
           form.setValue("investorName", investorData.name || "")
           form.setValue("investorTitle", investorData.title || "")
@@ -711,14 +736,14 @@ export default function InvestmentForm({
           "stateOfIncorporation",
           selectedEntityDetails.state_of_incorporation || ""
         )
-
+  
         // Fetch founder details
         const { data: founderData, error: founderError } = await supabase
           .from("users")
           .select("name, title, email")
           .eq("id", selectedEntityDetails.founder_id)
           .single()
-
+  
         if (!founderError && founderData) {
           form.setValue("founderName", founderData.name || "")
           form.setValue("founderTitle", founderData.title || "")
@@ -751,7 +776,8 @@ export default function InvestmentForm({
     setIsLoadingNext(type === "next")
     setIsLoadingSave(type === "save")
     const values = form.getValues()
-    await processDealInfo(values)
+    const investmentId = await processDealInfo(values)
+    router.push(`/investments/${investmentId}`)
     setIsLoadingNext(false)
     setIsLoadingSave(false)
     if (type === "next") {
@@ -874,7 +900,7 @@ export default function InvestmentForm({
                     <FormControl>
                       <Input
                         {...field}
-                        disabled={!isOwner}
+                        disabled={isFormLocked || !isOwner}
                         value={Number(
                           field.value.replace(/,/g, "")
                         ).toLocaleString()}
@@ -902,7 +928,7 @@ export default function InvestmentForm({
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      disabled={!isOwner}
+                      disabled={isFormLocked || !isOwner}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -934,7 +960,7 @@ export default function InvestmentForm({
                       <FormControl>
                         <Input
                           {...field}
-                          disabled={!isOwner}
+                          disabled={isFormLocked || !isOwner}
                           value={Number(
                             field.value?.replace(/,/g, "")
                           ).toLocaleString()}
@@ -962,7 +988,7 @@ export default function InvestmentForm({
                     <FormItem>
                       <FormLabel>Discount</FormLabel>
                       <FormControl>
-                        <Input {...field} disabled={!isOwner} />
+                        <Input {...field} disabled={isFormLocked || !isOwner} />
                       </FormControl>
                       <FormDescription>
                         {formDescriptions.discount}
@@ -983,7 +1009,7 @@ export default function InvestmentForm({
                         <FormControl>
                           <Button
                             variant={"outline"}
-                            disabled={!isOwner}
+                            disabled={isFormLocked || !isOwner}
                             className={cn(
                               "w-full pl-3 text-left font-normal",
                               !field.value && "text-muted-foreground"
@@ -1048,7 +1074,7 @@ export default function InvestmentForm({
                       selectedEntity={selectedEntity}
                       onSelectChange={handleSelectChange}
                       entityType="fund"
-                      disabled={!isOwner}
+                      disabled={isFormLocked || !isOwner}
                     />
                     <FormDescription>
                       Choose an existing fund to be used in your signature block
@@ -1063,7 +1089,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Entity Name</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={!isOwner} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.fundName}
@@ -1079,7 +1105,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Byline (Optional)</FormLabel>
                     <FormControl>
-                      <Textarea {...field} disabled={!isOwner} />
+                      <Textarea {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.fundByline}
@@ -1092,7 +1118,7 @@ export default function InvestmentForm({
                 form={form}
                 streetName="fundStreet"
                 cityStateZipName="fundCityStateZip"
-                disabled={!isOwner}
+                disabled={isFormLocked || !isOwner}
                 onAddressChange={(street, cityStateZip) => {
                   form.setValue("fundStreet", street)
                   form.setValue("fundCityStateZip", cityStateZip)
@@ -1110,7 +1136,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Investor Name</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={!isOwner} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.investorName}
@@ -1126,7 +1152,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Investor Title</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={!isOwner} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.investorTitle}
@@ -1142,7 +1168,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Investor Email</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={!isOwner} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.investorEmail}
@@ -1208,7 +1234,7 @@ export default function InvestmentForm({
                       selectedEntity={selectedEntity}
                       onSelectChange={handleSelectChange}
                       entityType="company"
-                      disabled={false}
+                      disabled={isFormLocked || !isOwner}
                     />
                     <FormDescription>
                       Choose an existing company to be used in your signature
@@ -1223,7 +1249,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Company Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.companyName}
@@ -1236,7 +1262,7 @@ export default function InvestmentForm({
                 form={form}
                 streetName="companyStreet"
                 cityStateZipName="companyCityStateZip"
-                disabled={false}
+                disabled={isFormLocked || !isOwner}
                 onAddressChange={(street, cityStateZip) => {
                   form.setValue("companyStreet", street)
                   form.setValue("companyCityStateZip", cityStateZip)
@@ -1251,7 +1277,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>State of Incorporation</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.stateOfIncorporation}
@@ -1270,7 +1296,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Founder Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.founderName}
@@ -1286,7 +1312,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Founder Title</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.founderTitle}
@@ -1302,7 +1328,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Founder Email</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} disabled={isFormLocked || !isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.founderEmail}
@@ -1371,6 +1397,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1393,6 +1420,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1415,6 +1443,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1437,6 +1466,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1459,6 +1489,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>

@@ -72,8 +72,7 @@ export default function Investments({
   >(null)
 
   const handleShareClick = (investmentId: string) => {
-    setSelectedInvestmentId(investmentId)
-    setIsShareDialogOpen(true)
+    router.push(`/investments/${investmentId}?step=2&sharing=true`)
   }
 
   const formatCurrency = (amountStr: string): string => {
@@ -126,9 +125,9 @@ export default function Investments({
 
   const editInvestment = (investment: any) => {
     if (isOwner(investment)) {
-      router.push(`/investments/edit/${investment.id}`)
+      router.push(`/investments/${investment.id}`)
     } else if (isFounder(investment)) {
-      router.push(`/investments/edit/${investment.id}?step=2`)
+      router.push(`/investments/${investment.id}?step=2`)
     }
   }
 
@@ -146,13 +145,14 @@ export default function Investments({
   }
 
   const emailContent = (investment: any) => {
+    const investmentUrl = `${window.location.origin}/investments/new/${investment.id}?step=2&sharing=true`
     return `
       <div>
         <p>Hi ${investment.founder.name.split(" ")[0]},</p><br>
         <p>
           ${investment.fund.name} has shared a SAFE agreement with you.
-          Please find the document attached to this email and find a brief
-          summary of the document and its terms below.
+          Please click on the following link to view and complete the agreement:
+          <a href="${investmentUrl}">${investmentUrl}</a>
         </p><br>
         <p>Summary: ${investment.summary}</p><br>
         <p>
@@ -479,7 +479,7 @@ export default function Investments({
           <Button
             variant="outline"
             onClick={() =>
-              router.push(`/investments/edit/${investment.id}?step=3`)
+              router.push(`/investments/${investment.id}?step=3`)
             }
           >
             Edit Investment

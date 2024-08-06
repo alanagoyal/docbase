@@ -38,7 +38,7 @@ export function Share({
   const [isSending, setIsSending] = useState(false)
   const idString =
     typeof window !== "undefined"
-      ? `${window.location.origin}/investments/new?id=${investmentId}&step=2&sharing=true`
+      ? `${window.location.origin}/investments/${investmentId}?step=2&sharing=true`
       : ""
   const supabase = createClient()
 

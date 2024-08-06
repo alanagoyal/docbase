@@ -68,7 +68,7 @@ export function Documents({
         return `/links/edit/${document.id}`
       case 'safe':
       case 'side letter':
-        return `/investments/edit/${document.id}${document.document_type.toLowerCase() === 'side letter' ? '?step=3' : ''}`
+        return `/investments/${document.id}${document.document_type.toLowerCase() === 'side letter' ? '?step=3' : ''}`
       default:
         return '#'
     }
