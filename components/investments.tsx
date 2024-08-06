@@ -8,12 +8,7 @@ import { createClient } from "@/utils/supabase/client"
 import { Icons } from "./icons"
 import { Share } from "./share"
 import { Button } from "./ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +29,7 @@ import Docxtemplater from "docxtemplater"
 import { AlertCircle, Download, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
+
 import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
@@ -475,9 +471,7 @@ export default function Investments({
         action: (
           <Button
             variant="outline"
-            onClick={() =>
-              router.push(`/investments/${investment.id}?step=3`)
-            }
+            onClick={() => router.push(`/investments/${investment.id}?step=3`)}
           >
             Edit Investment
           </Button>
@@ -687,12 +681,14 @@ export default function Investments({
           // This will be handled by the Share component
         },
         className: "bg-[#74EBD5] text-white hover:bg-[#5ED1BB]",
+        nonOwnerText: "Waiting for required info",
       }
     } else if (!investment.safe_url) {
       return {
         text: "Generate",
         action: () => processSafe(investment),
         className: "bg-[#9FACE6] text-white hover:bg-[#8A9BD1]",
+        nonOwnerText: "Waiting to generate docs",
       }
     } else {
       return {
@@ -702,6 +698,7 @@ export default function Investments({
           setDialogOpen(true)
         },
         className: "bg-[#87C4DB] text-white hover:bg-[#72AFD6]",
+        nonOwnerText: "Awaiting signature",
       }
     }
   }
@@ -764,32 +761,17 @@ export default function Investments({
                 </TableCell>
                 <TableCell>{formatDate(investment.date)}</TableCell>
                 <TableCell>
-                  {nextStep.text === "Share" ? (
-                    <Button
-                      size="sm"
-                      onClick={() => handleShareClick(investment.id)}
-                      className={cn("w-28", nextStep.className)}
-                    >
-                      Share
-                    </Button>
-                  ) : nextStep.text === "Send" ? (
-                    <Button
-                      size="sm"
-                      onClick={nextStep.action}
-                      className={cn("w-28", nextStep.className)}
-                    >
-                      Send
-                    </Button>
-                  ) : (
+                  {isOwner(investment) ? (
                     <Button
                       size="sm"
                       onClick={nextStep.action}
                       disabled={
-                        !isOwner(investment) || generatingSafe === investment.id
+                        nextStep.text === "Generate" &&
+                        generatingSafe === investment.id
                       }
                       className={cn("w-28", nextStep.className, {
                         "opacity-50 cursor-not-allowed":
-                          !isOwner(investment) ||
+                          nextStep.text === "Generate" &&
                           generatingSafe === investment.id,
                       })}
                     >
@@ -799,75 +781,77 @@ export default function Investments({
                         nextStep.text
                       )}
                     </Button>
+                  ) : (
+                    <span className="text-sm text-gray-500">
+                      {nextStep.nonOwnerText}
+                    </span>
                   )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   <div className="flex items-center space-x-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost">
-                          {generatingSafe === investment.id ||
-                          generatingSideLetter === investment.id ? (
-                            <Icons.spinner className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {isOwner(investment) && (
-                          <>
-                            {investment.safe_url ? (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    downloadDocument(investment.safe_url)
-                                  }
-                                >
-                                  Download SAFE Agreement
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => processSafe(investment)}
-                                >
-                                  Update SAFE Agreement
-                                </DropdownMenuItem>
-                              </>
+                    {isOwner(investment) && ( // Only show download button if owner
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost">
+                            {generatingSafe === investment.id ||
+                            generatingSideLetter === investment.id ? (
+                              <Icons.spinner className="h-4 w-4 animate-spin" />
                             ) : (
+                              <Download className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {investment.safe_url ? (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  downloadDocument(investment.safe_url)
+                                }
+                              >
+                                Download SAFE Agreement
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => processSafe(investment)}
                               >
-                                Generate SAFE Agreement
+                                Update SAFE Agreement
                               </DropdownMenuItem>
-                            )}
-                            {investment.side_letter_id &&
-                            investment.side_letter?.side_letter_url ? (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    downloadDocument(
-                                      investment.side_letter.side_letter_url
-                                    )
-                                  }
-                                >
-                                  Download Side Letter
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => processSideLetter(investment)}
-                                >
-                                  Update Side Letter
-                                </DropdownMenuItem>
-                              </>
-                            ) : (
+                            </>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => processSafe(investment)}
+                            >
+                              Generate SAFE Agreement
+                            </DropdownMenuItem>
+                          )}
+                          {investment.side_letter_id &&
+                          investment.side_letter?.side_letter_url ? (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  downloadDocument(
+                                    investment.side_letter.side_letter_url
+                                  )
+                                }
+                              >
+                                Download Side Letter
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => processSideLetter(investment)}
                               >
-                                Generate Side Letter
+                                Update Side Letter
                               </DropdownMenuItem>
-                            )}
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                            </>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => processSideLetter(investment)}
+                            >
+                              Generate Side Letter
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost">
