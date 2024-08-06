@@ -135,7 +135,6 @@ export default function AccountForm({ user, account }: { user: any, account: Use
     } catch (error) {
       console.error(error)
       toast({
-        variant: "destructive",
         description: "Error updating account",
       })
     } finally {
@@ -168,11 +167,16 @@ export default function AccountForm({ user, account }: { user: any, account: Use
         .eq("id", existingFund[0].id)
 
       if (updateError) {
-        console.error("Error updating fund:", updateError)
-        toast({
-          variant: "destructive",
-          description: "Error updating fund",
-        })
+        if (updateError.code === "23505") { 
+          toast({
+            description: "A fund with this name already exists",
+          })
+        } else {
+          console.error("Error updating fund:", updateError)
+          toast({
+            description: "Error updating fund",
+          })
+        }
       }
     } else {
       const { data: newFund, error: newFundError } = await supabase
@@ -181,11 +185,16 @@ export default function AccountForm({ user, account }: { user: any, account: Use
         .select()
 
       if (newFundError) {
-        console.error("Error creating fund:", newFundError)
-        toast({
-          variant: "destructive",
-          description: "Error creating fund",
-        })
+        if (newFundError.code === "23505") { 
+          toast({
+            description: "A fund with this name already exists",
+          })
+        } else {
+          console.error("Error creating fund:", newFundError)
+          toast({
+            description: "Error creating fund",
+          })
+        }
       } else {
         setEntities((prevEntities) => [
           ...prevEntities,
@@ -221,11 +230,17 @@ export default function AccountForm({ user, account }: { user: any, account: Use
         .eq("id", existingCompany[0].id)
 
       if (updateError) {
-        console.error("Error updating company:", updateError)
-        toast({
-          variant: "destructive",
-          description: "Error updating company",
-        })
+        if (updateError.code === "23505") { 
+          toast({
+            description: "A company with this name already exists",
+          })
+        } else {
+          console.error("Error updating company:", updateError)
+          toast({
+            variant: "destructive",
+            description: "Error updating company",
+          })
+        }
       }
     } else {
       // Create a new company
@@ -235,11 +250,17 @@ export default function AccountForm({ user, account }: { user: any, account: Use
         .select()
 
       if (newCompanyError) {
-        console.error("Error creating company:", newCompanyError)
-        toast({
-          variant: "destructive",
-          description: "Error creating company",
-        })
+        if (newCompanyError.code === "23505") { 
+          toast({
+            description: "A company with this name already exists",
+          })
+        } else {
+          console.error("Error creating company:", newCompanyError)
+          toast({
+            variant: "destructive",
+            description: "Error creating company",
+          })
+        }
       } else {
         setEntities((prevEntities) => [
           ...prevEntities,
@@ -384,7 +405,7 @@ export default function AccountForm({ user, account }: { user: any, account: Use
               />
             </div>
             <Icons.trash
-              className="cursor-pointer"
+              className="cursor-pointer w-5 h-5"
               onClick={() => deleteEntity()}
             />
           </div>

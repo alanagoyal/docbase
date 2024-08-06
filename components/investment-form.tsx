@@ -352,28 +352,35 @@ export default function InvestmentForm({
       }
 
       // Check if user already exists and update
-      const { data: existingInvestor, error: existingInvestorError } =
-        await supabase
-          .from("users")
-          .select("id")
-          .eq("email", values.investorEmail)
+      const { data: existingInvestor, error: existingInvestorError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("name", values.investorName)
+        .eq("email", values.investorEmail)
+        .maybeSingle()
 
-      if (existingInvestor && existingInvestor.length > 0) {
+      if (existingInvestor) {
         const { error: updateError } = await supabase
           .from("users")
           .update(investorData)
-          .eq("id", existingInvestor[0].id)
+          .eq("id", existingInvestor.id)
         if (updateError) throw updateError
-        return existingInvestor[0].id
-
-        // Insert new user
+        return existingInvestor.id
       } else {
-        const { data, error } = await supabase
+        const { data: newInvestor, error: newInvestorError } = await supabase
           .from("users")
           .insert(investorData)
           .select("id")
-        if (error) throw error
-        return data[0].id
+        if (newInvestorError) {
+          if (newInvestorError.code === "23505") { 
+            toast({
+              description: "An investor with this name and email already exists",
+            })
+          } else {
+            throw newInvestorError
+          }
+        }
+        return newInvestor ? newInvestor[0].id : null
       }
     } catch (error) {
       console.error("Error processing investor details:", error)
@@ -381,10 +388,7 @@ export default function InvestmentForm({
     }
   }
 
-  async function processFundDetails(
-    values: InvestmentFormValues,
-    investorId: string | null
-  ) {
+  async function processFundDetails(values: InvestmentFormValues, investorId: string | null) {
     if (
       values.fundName === "" &&
       values.fundByline === "" &&
@@ -410,7 +414,6 @@ export default function InvestmentForm({
         .maybeSingle()
 
       if (existingFund) {
-        // Update the fund, keeping the existing investor_id if no new one is provided
         const updateData = {
           ...fundData,
           investor_id: investorId || existingFund.investor_id,
@@ -422,13 +425,20 @@ export default function InvestmentForm({
         if (updateError) throw updateError
         return existingFund.id
       } else {
-        // Insert new fund
         const { data: newFund, error: newFundError } = await supabase
           .from("funds")
           .insert(fundData)
           .select()
-        if (newFundError) throw newFundError
-        return newFund[0].id
+        if (newFundError) {
+          if (newFundError.code === "23505") { 
+            toast({
+              description: "A fund with this name already exists",
+            })
+          } else {
+            throw newFundError
+          }
+        }
+        return newFund ? newFund[0].id : null
       }
     } catch (error) {
       console.error("Error processing fund details:", error)
@@ -452,38 +462,42 @@ export default function InvestmentForm({
       }
 
       // Check if the founder already exists and update
-      const { data: existingFounder, error: existingFounderError } =
-        await supabase
-          .from("users")
-          .select("id")
-          .eq("email", values.founderEmail)
+      const { data: existingFounder, error: existingFounderError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("name", values.founderName)
+        .eq("email", values.founderEmail)
+        .maybeSingle()
 
-      if (existingFounder && existingFounder.length > 0) {
+      if (existingFounder) {
         const { error: updateError } = await supabase
           .from("users")
           .update(founderData)
-          .eq("id", existingFounder[0].id)
+          .eq("id", existingFounder.id)
         if (updateError) throw updateError
-        return existingFounder[0].id
-
-        // Insert new founder
+        return existingFounder.id
       } else {
         const { data: newFounder, error: newFounderError } = await supabase
           .from("users")
           .insert(founderData)
           .select("id")
-        if (newFounderError) throw newFounderError
-        return newFounder[0].id
+        if (newFounderError) {
+          if (newFounderError.code === "23505") { 
+            toast({
+              description: "A founder with this name and email already exists",
+            })
+          } else {
+            throw newFounderError
+          }
+        }
+        return newFounder ? newFounder[0].id : null
       }
     } catch (error) {
       console.error("Error processing founder details:", error)
     }
   }
 
-  async function processCompanyDetails(
-    values: InvestmentFormValues,
-    founderId: string | null
-  ) {
+  async function processCompanyDetails(values: InvestmentFormValues, founderId: string | null) {
     if (
       values.companyName === "" &&
       values.companyStreet === "" &&
@@ -502,15 +516,13 @@ export default function InvestmentForm({
       }
 
       // Check if company already exists
-      const { data: existingCompany, error: existingCompanyError } =
-        await supabase
-          .from("companies")
-          .select("id, founder_id")
-          .eq("name", values.companyName)
-          .maybeSingle()
+      const { data: existingCompany, error: existingCompanyError } = await supabase
+        .from("companies")
+        .select("id, founder_id")
+        .eq("name", values.companyName)
+        .maybeSingle()
 
       if (existingCompany) {
-        // Update the company, keeping the existing founder_id if no new one is provided
         const updateData = {
           ...companyData,
           founder_id: founderId || existingCompany.founder_id,
@@ -522,13 +534,20 @@ export default function InvestmentForm({
         if (updateError) throw updateError
         return existingCompany.id
       } else {
-        // Insert new company
         const { data: newCompany, error: newCompanyError } = await supabase
           .from("companies")
           .insert(companyData)
           .select()
-        if (newCompanyError) throw newCompanyError
-        return newCompany[0].id
+        if (newCompanyError) {
+          if (newCompanyError.code === "23505") { 
+            toast({
+              description: "A company with this name already exists",
+            })
+          } else {
+            throw newCompanyError
+          }
+        }
+        return newCompany ? newCompany[0].id : null
       }
     } catch (error) {
       console.error("Error processing company details:", error)
@@ -785,6 +804,14 @@ export default function InvestmentForm({
   }
 
   async function advanceStepZero() {
+    const values = form.getValues()
+    const isValid = await form.trigger(["purchaseAmount", "type", "date"])
+    if (!isValid) {
+      toast({
+        description: "Please fill out all required fields",
+      })
+      return
+    }
     await processStepZero("next")
   }
 
@@ -888,7 +915,7 @@ export default function InvestmentForm({
                     <FormControl>
                       <Input
                         {...field}
-                        disabled={isFormLocked || !isOwner}
+                        disabled={!isOwner}
                         value={Number(
                           field.value.replace(/,/g, "")
                         ).toLocaleString()}
@@ -916,7 +943,7 @@ export default function InvestmentForm({
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      disabled={isFormLocked || !isOwner}
+                      disabled={!isOwner}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -948,7 +975,7 @@ export default function InvestmentForm({
                       <FormControl>
                         <Input
                           {...field}
-                          disabled={isFormLocked || !isOwner}
+                          disabled={!isOwner}
                           value={Number(
                             field.value?.replace(/,/g, "")
                           ).toLocaleString()}
@@ -976,7 +1003,7 @@ export default function InvestmentForm({
                     <FormItem>
                       <FormLabel>Discount</FormLabel>
                       <FormControl>
-                        <Input {...field} disabled={isFormLocked || !isOwner} />
+                        <Input {...field} disabled={!isOwner} />
                       </FormControl>
                       <FormDescription>
                         {formDescriptions.discount}
@@ -997,7 +1024,7 @@ export default function InvestmentForm({
                         <FormControl>
                           <Button
                             variant={"outline"}
-                            disabled={isFormLocked || !isOwner}
+                            disabled={!isOwner}
                             className={cn(
                               "w-full pl-3 text-left font-normal",
                               !field.value && "text-muted-foreground"
@@ -1062,7 +1089,7 @@ export default function InvestmentForm({
                       selectedEntity={selectedEntity}
                       onSelectChange={handleSelectChange}
                       entityType="fund"
-                      disabled={isFormLocked || !isOwner}
+                      disabled={!isOwner}
                     />
                     <FormDescription>
                       Choose an existing fund to be used in your signature block
@@ -1077,7 +1104,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Entity Name</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} disabled={!isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.fundName}
@@ -1093,7 +1120,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Byline (Optional)</FormLabel>
                     <FormControl>
-                      <Textarea {...field} disabled={isFormLocked || !isOwner} />
+                      <Textarea {...field} disabled={!isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.fundByline}
@@ -1106,7 +1133,7 @@ export default function InvestmentForm({
                 form={form}
                 streetName="fundStreet"
                 cityStateZipName="fundCityStateZip"
-                disabled={isFormLocked || !isOwner}
+                disabled={!isOwner}
                 onAddressChange={(street, cityStateZip) => {
                   form.setValue("fundStreet", street)
                   form.setValue("fundCityStateZip", cityStateZip)
@@ -1124,7 +1151,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Investor Name</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} disabled={!isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.investorName}
@@ -1140,7 +1167,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Investor Title</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} disabled={!isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.investorTitle}
@@ -1156,7 +1183,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Investor Email</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} disabled={!isOwner} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.investorEmail}
@@ -1225,7 +1252,7 @@ export default function InvestmentForm({
                       selectedEntity={selectedEntity}
                       onSelectChange={handleSelectChange}
                       entityType="company"
-                      disabled={isFormLocked || !isOwner}
+                      disabled={false}
                     />
                     <FormDescription>
                       Choose an existing company to be used in your signature
@@ -1240,7 +1267,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Company Name</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.companyName}
@@ -1253,7 +1280,7 @@ export default function InvestmentForm({
                 form={form}
                 streetName="companyStreet"
                 cityStateZipName="companyCityStateZip"
-                disabled={isFormLocked || !isOwner}
+                disabled={false}
                 onAddressChange={(street, cityStateZip) => {
                   form.setValue("companyStreet", street)
                   form.setValue("companyCityStateZip", cityStateZip)
@@ -1268,7 +1295,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>State of Incorporation</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.stateOfIncorporation}
@@ -1287,7 +1314,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Founder Name</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.founderName}
@@ -1303,7 +1330,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Founder Title</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.founderTitle}
@@ -1319,7 +1346,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Founder Email</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.founderEmail}
@@ -1388,7 +1415,6 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isFormLocked || !isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1411,7 +1437,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isFormLocked || !isOwner}
+                            disabled={!isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1434,7 +1460,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isFormLocked || !isOwner}
+                            disabled={!isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1457,7 +1483,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isFormLocked || !isOwner}
+                            disabled={!isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1480,7 +1506,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isFormLocked || !isOwner}
+                            disabled={!isOwner}
                           />
                         </FormControl>
                       </FormItem>
