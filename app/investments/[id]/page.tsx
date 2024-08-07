@@ -1,9 +1,16 @@
+import { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 
+import { Database } from "@/types/supabase"
 import InvestmentForm from "@/components/investment-form"
 import MagicLink from "@/components/magic-link"
 
+type Investment = Database["public"]["Tables"]["investments"]["Row"] & {
+  fund_name: string | null
+  company_name: string | null
+  investor_name: string | null
+}
 export default async function EditInvestment({
   params,
   searchParams,
@@ -39,14 +46,16 @@ export default async function EditInvestment({
 
   const { data: investment } = await supabase
     .from("investments")
-    .select(`
+    .select(
+      `
       *,
       founder:users!founder_id (name, title, email),
       company:companies (id, name, street, city_state_zip, state_of_incorporation, founder_id),
       investor:users!investor_id (name, title, email),
       fund:funds (id, name, byline, street, city_state_zip, investor_id),
       side_letter:side_letters (id, side_letter_url, info_rights, pro_rata_rights, major_investor_rights, termination, miscellaneous)
-    `)
+    `
+    )
     .eq("id", params.id)
     .single()
 
@@ -55,11 +64,34 @@ export default async function EditInvestment({
       <h1 className="text-3xl font-bold mb-6 text-center">
         {investment ? "Investment Details" : "New Investment"}
       </h1>
-      <InvestmentForm 
-        account={account} 
-        investment={investment} 
+      <InvestmentForm
+        account={account}
+        investment={investment}
         isEditMode={!!investment}
       />
     </div>
   )
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string }
+}): Promise<Metadata> {
+  const supabase = createClient()
+  const id = params.id
+
+  const { data: investment } = await supabase
+    .rpc("select_investment_entities", { investment_id: id })
+    .single<Investment>()
+
+  const fundName = investment?.fund_name ?? "Someone"
+  const companyName = investment?.company_name ?? "a company"
+
+  return {
+    title: `${fundName} wants to invest in ${companyName}`,
+    openGraph: {
+      images: [`/api/og/?id=${encodeURIComponent(id)}&type=investment`],
+    },
+  }
 }

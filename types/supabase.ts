@@ -34,6 +34,179 @@ export type Database = {
   }
   public: {
     Tables: {
+      companies: {
+        Row: {
+          city_state_zip: string | null
+          created_at: string
+          founder_id: string | null
+          id: string
+          name: string | null
+          state_of_incorporation: string | null
+          street: string | null
+        }
+        Insert: {
+          city_state_zip?: string | null
+          created_at?: string
+          founder_id?: string | null
+          id?: string
+          name?: string | null
+          state_of_incorporation?: string | null
+          street?: string | null
+        }
+        Update: {
+          city_state_zip?: string | null
+          created_at?: string
+          founder_id?: string | null
+          id?: string
+          name?: string | null
+          state_of_incorporation?: string | null
+          street?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funds: {
+        Row: {
+          byline: string | null
+          city_state_zip: string | null
+          created_at: string
+          id: string
+          investor_id: string | null
+          name: string | null
+          street: string | null
+        }
+        Insert: {
+          byline?: string | null
+          city_state_zip?: string | null
+          created_at?: string
+          id?: string
+          investor_id?: string | null
+          name?: string | null
+          street?: string | null
+        }
+        Update: {
+          byline?: string | null
+          city_state_zip?: string | null
+          created_at?: string
+          id?: string
+          investor_id?: string | null
+          name?: string | null
+          street?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funds_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      investments: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          date: string | null
+          discount: string | null
+          founder_id: string | null
+          fund_id: string | null
+          id: string
+          investment_type: string | null
+          investor_id: string | null
+          purchase_amount: string | null
+          safe_url: string | null
+          side_letter_id: string | null
+          summary: string | null
+          valuation_cap: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string | null
+          discount?: string | null
+          founder_id?: string | null
+          fund_id?: string | null
+          id?: string
+          investment_type?: string | null
+          investor_id?: string | null
+          purchase_amount?: string | null
+          safe_url?: string | null
+          side_letter_id?: string | null
+          summary?: string | null
+          valuation_cap?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string | null
+          discount?: string | null
+          founder_id?: string | null
+          fund_id?: string | null
+          id?: string
+          investment_type?: string | null
+          investor_id?: string | null
+          purchase_amount?: string | null
+          safe_url?: string | null
+          side_letter_id?: string | null
+          summary?: string | null
+          valuation_cap?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["auth_id"]
+          },
+          {
+            foreignKeyName: "investments_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investments_investor_id_fkey"
+            columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "investments_side_letter_id_fkey"
+            columns: ["side_letter_id"]
+            isOneToOne: false
+            referencedRelation: "side_letters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_investments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_investments_fund_id_fkey"
+            columns: ["fund_id"]
+            isOneToOne: false
+            referencedRelation: "funds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       links: {
         Row: {
           created_at: string | null
@@ -71,6 +244,39 @@ export type Database = {
             referencedColumns: ["auth_id"]
           },
         ]
+      }
+      side_letters: {
+        Row: {
+          created_at: string
+          id: string
+          info_rights: boolean | null
+          major_investor_rights: boolean | null
+          miscellaneous: boolean | null
+          pro_rata_rights: boolean | null
+          side_letter_url: string | null
+          termination: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          info_rights?: boolean | null
+          major_investor_rights?: boolean | null
+          miscellaneous?: boolean | null
+          pro_rata_rights?: boolean | null
+          side_letter_url?: string | null
+          termination?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          info_rights?: boolean | null
+          major_investor_rights?: boolean | null
+          miscellaneous?: boolean | null
+          pro_rata_rights?: boolean | null
+          side_letter_url?: string | null
+          termination?: boolean | null
+        }
+        Relationships: []
       }
       users: {
         Row: {
@@ -174,6 +380,18 @@ export type Database = {
           created_by: string
         }[]
       }
+      get_user_documents: {
+        Args: {
+          auth_id_arg: string
+        }
+        Returns: {
+          id: string
+          document_type: string
+          document_url: string
+          document_name: string
+          created_at: string
+        }[]
+      }
       get_user_links: {
         Args: {
           auth_id: string
@@ -188,18 +406,34 @@ export type Database = {
           url: string | null
         }[]
       }
+      get_user_links_with_views: {
+        Args: {
+          auth_id_arg: string
+        }
+        Returns: {
+          id: string
+          created_at: string
+          created_by: string
+          url: string
+          password: string
+          expires: string
+          filename: string
+          view_count: number
+        }[]
+      }
       select_link: {
         Args: {
           link_id: string
         }
         Returns: {
-          created_at: string | null
-          created_by: string | null
-          expires: string | null
-          filename: string | null
           id: string
-          password: string | null
-          url: string | null
+          created_at: string
+          url: string
+          password: string
+          expires: string
+          filename: string
+          created_by: string
+          creator_name: string
         }[]
       }
       update_link: {
@@ -210,6 +444,19 @@ export type Database = {
           password_arg: string
           expires_arg: string
           filename_arg: string
+        }
+        Returns: undefined
+      }
+      upsert_link_data: {
+        Args: {
+          id_arg: string
+          filename_arg: string
+          url_arg: string
+          created_by_arg: string
+          created_at_arg: string
+          password_arg: string
+          expires_arg: string
+          auth_id_arg: string
         }
         Returns: undefined
       }

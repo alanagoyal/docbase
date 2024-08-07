@@ -352,6 +352,24 @@ END;
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.select_investment_entities(investment_id uuid)
+ RETURNS TABLE(fund_name text, company_name text, investor_name text)
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select
+    fd.name as fund_name,
+    c.name as company_name,
+    i.name as investor_name
+  from investments inv
+  left join companies c on inv.company_id = c.id
+  left join users i on inv.investor_id = i.id
+  left join funds fd on inv.fund_id = fd.id
+  where inv.id = investment_id;
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.select_link(link_id uuid)
  RETURNS TABLE(id uuid, created_at timestamp with time zone, url text, password text, expires timestamp with time zone, filename text, created_by uuid, creator_name text)
  LANGUAGE sql
@@ -900,5 +918,38 @@ using (true);
 
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+
+create policy "Authenticated users can do all flreew_0"
+on "storage"."objects"
+as permissive
+for select
+to public
+using ((bucket_id = 'documents'::text));
+
+
+create policy "Authenticated users can do all flreew_1"
+on "storage"."objects"
+as permissive
+for insert
+to public
+with check ((bucket_id = 'documents'::text));
+
+
+create policy "Authenticated users can do all flreew_2"
+on "storage"."objects"
+as permissive
+for update
+to public
+using ((bucket_id = 'documents'::text));
+
+
+create policy "Authenticated users can do all flreew_3"
+on "storage"."objects"
+as permissive
+for delete
+to public
+using ((bucket_id = 'documents'::text));
+
 
 
