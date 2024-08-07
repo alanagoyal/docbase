@@ -46,7 +46,7 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
   )
 
   const handleCopyLink = (linkId: string) => {
-    const link = `${process.env.NEXT_PUBLIC_SITE_URL}/view/${linkId}`
+    const link = `${process.env.NEXT_PUBLIC_SITE_URL}/links/view/${linkId}`
     navigator.clipboard
       .writeText(link)
       .then(() => {
@@ -84,7 +84,7 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
   }
 
   const linkUrl = (link: Link) => {
-    return `${process.env.NEXT_PUBLIC_SITE_URL}/view/${link.id}`
+    return `${process.env.NEXT_PUBLIC_SITE_URL}/links/view/${link.id}`
   }
 
   return (

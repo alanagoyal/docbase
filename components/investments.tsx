@@ -139,13 +139,25 @@ export default function Investments({
 
   const emailContent = (investment: any) => {
     const investmentUrl = `${window.location.origin}/investments/new/${investment.id}?step=2&sharing=true`
+    const safeLink = `/links/view/${investment.id}`
+    const sideLetterLink = investment.side_letter_id
+      ? `/links/view/${investment.side_letter_id}`
+      : null
+
     return `
       <div>
         <p>Hi ${investment.founder.name.split(" ")[0]},</p><br>
         <p>
-          ${investment.fund.name} has shared a SAFE agreement with you.
-          Please click on the following link to view and complete the agreement:
-          <a href="${investmentUrl}">${investmentUrl}</a>
+          ${
+            investment.fund.name
+          } has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${
+      window.location.origin
+    }${safeLink}">here</a>
+          ${
+            sideLetterLink
+              ? `and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>`
+              : ""
+          }.
         </p><br>
         <p>Summary: ${investment.summary}</p><br>
         <p>
@@ -207,41 +219,8 @@ export default function Investments({
 
   async function sendEmail(investment: any) {
     setIsSendingEmail(true)
-    const safeFilepath = `${investment.id}`
-    const sideLetterFilepath = `${investment.sideletter_id}`
-
-    let safeDocNodeBuffer = null
-    let sideLetterDocNodeBuffer = null
 
     try {
-      if (investment.safe_url) {
-        const { data: safeDoc, error: safeDocError } = await supabase.storage
-          .from("documents")
-          .download(safeFilepath)
-
-        if (safeDocError) {
-          console.error("Error downloading SAFE document:", safeDocError)
-        } else if (safeDoc) {
-          const safeDocBuffer = await safeDoc.arrayBuffer()
-          safeDocNodeBuffer = Buffer.from(safeDocBuffer)
-        }
-      }
-
-      if (
-        investment.side_letter_id &&
-        investment.side_letter?.side_letter_url
-      ) {
-        const { data: sideLetterDoc, error: sideLetterDocError } =
-          await supabase.storage.from("documents").download(sideLetterFilepath)
-
-        if (sideLetterDocError) {
-          console.error("Error downloading side letter:", sideLetterDocError)
-        } else if (sideLetterDoc) {
-          const sideLetterDocBuffer = await sideLetterDoc.arrayBuffer()
-          sideLetterDocNodeBuffer = Buffer.from(sideLetterDocBuffer)
-        }
-      }
-
       const emailContentToSend = editableEmailContent.replace(
         /<br\s*\/?>/gi,
         ""
@@ -249,8 +228,6 @@ export default function Investments({
 
       const body = {
         investmentData: investment,
-        safeAttachment: safeDocNodeBuffer,
-        sideLetterAttachment: sideLetterDocNodeBuffer,
         emailContent: emailContentToSend,
       }
 

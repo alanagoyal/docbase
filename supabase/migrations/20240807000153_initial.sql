@@ -296,6 +296,38 @@ END;
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.get_user_links_with_views(auth_id_arg uuid)
+ RETURNS TABLE(id uuid, created_at timestamp with time zone, created_by uuid, url text, password text, expires timestamp with time zone, filename text, view_count bigint)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    l.id,
+    l.created_at,
+    l.created_by,
+    l.url,
+    l.password,
+    l.expires,
+    l.filename,
+    COALESCE(v.view_count, 0) AS view_count
+  FROM 
+    links l
+  LEFT JOIN (
+    SELECT link_id, COUNT(*) AS view_count
+    FROM viewers
+    GROUP BY link_id
+  ) v ON l.id = v.link_id
+  WHERE 
+    l.created_by = auth_id_arg
+  ORDER BY 
+    l.created_at DESC;
+END;
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.handle_new_user()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -868,38 +900,5 @@ using (true);
 
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user();
-
-
-create policy "Authenticated users can do all flreew_0"
-on "storage"."objects"
-as permissive
-for select
-to public
-using ((bucket_id = 'documents'::text));
-
-
-create policy "Authenticated users can do all flreew_1"
-on "storage"."objects"
-as permissive
-for insert
-to public
-with check ((bucket_id = 'documents'::text));
-
-
-create policy "Authenticated users can do all flreew_2"
-on "storage"."objects"
-as permissive
-for update
-to public
-using ((bucket_id = 'documents'::text));
-
-
-create policy "Authenticated users can do all flreew_3"
-on "storage"."objects"
-as permissive
-for delete
-to public
-using ((bucket_id = 'documents'::text));
-
 
 
