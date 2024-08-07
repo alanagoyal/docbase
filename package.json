@@ -15,6 +15,7 @@
     "update-types": "npx supabase gen types typescript --project-id \"dgnvviqfnfrqdxuwuyrm\" > types/supabase.ts"
   },
   "dependencies": {
+    "@braintrust/vercel-ai-sdk": "^0.0.4",
     "@hookform/resolvers": "^3.1.0",
     "@radix-ui/react-avatar": "^1.0.2",
     "@radix-ui/react-dialog": "^1.1.1",
@@ -33,7 +34,7 @@
     "@supabase/ssr": "^0.4.0",
     "@supabase/supabase-js": "^2.44.4",
     "@vercel/og": "^0.5.6",
-    "ai": "^3.3.0",
+    "ai": "^3.3.3",
     "bcryptjs": "^2.4.3",
     "braintrust": "^0.0.148",
     "class-variance-authority": "^0.4.0",

@@ -29,7 +29,7 @@ import Docxtemplater from "docxtemplater"
 import { AlertCircle, Download, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
-
+import { useCompletion } from "ai/react";
 import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
@@ -62,11 +62,21 @@ export default function Investments({
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<
     string | null
   >(null)
+  const [streamingSummary, setStreamingSummary] = useState(false)
 
-  const handleShareClick = (investmentId: string) => {
-    setSelectedInvestmentId(investmentId)
-    setIsShareDialogOpen(true)
-  }
+  const {
+    complete,
+    completion,
+    isLoading: generatingSummary,
+  } = useCompletion({
+    api: "/api/generate-summary",
+    onFinish: (prompt, completion) => {
+      setStreamingSummary(false)
+      setEditableEmailContent((prevContent) => {
+        return prevContent.replace("{summary}", completion)
+      })
+    },
+  });
 
   const formatCurrency = (amountStr: string): string => {
     const amount = parseFloat(amountStr.replace(/,/g, ""))
@@ -137,89 +147,71 @@ export default function Investments({
     router.refresh()
   }
 
-  const emailContent = (investment: any) => {
-    const investmentUrl = `${window.location.origin}/investments/new/${investment.id}?step=2&sharing=true`
-    const safeLink = `/links/view/${investment.id}`
+  async function summarizeInvestment(doc: Docxtemplater): Promise<string | null> {
+    try {
+      const blob = doc.getZip().generate({ type: "blob" });
+      const arrayBuffer = await blob.arrayBuffer();
+      const { value: htmlContent } = await mammoth.convertToHtml({
+        arrayBuffer,
+      });
+
+      setStreamingSummary(true);
+      const result = await complete(htmlContent);
+
+      if (!result) {
+        toast({
+          title: "Error",
+          description: "Failed to summarize investment",
+        });
+        throw new Error("Failed to summarize investment");
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error in summarizing investment:", error);
+      return null;
+    } finally {
+      setStreamingSummary(false);
+    }
+  }
+
+  const emailContent = async (investment: any) => {
+    const safeLink = `/links/view/${investment.id}`;
     const sideLetterLink = investment.side_letter_id
       ? `/links/view/${investment.side_letter_id}`
-      : null
+      : null;
+
+    let summary = investment.summary;
+    if (!summary) {
+      const safeDoc = await generateSafe(investment);
+      summary = await summarizeInvestment(safeDoc);
+    }
 
     return `
       <div>
         <p>Hi ${investment.founder.name.split(" ")[0]},</p><br>
         <p>
-          ${
-            investment.fund.name
-          } has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${
-      window.location.origin
-    }${safeLink}">here</a>
-          ${
-            sideLetterLink
-              ? `and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>`
-              : ""
-          }.
+          ${investment.fund.name} has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${window.location.origin}${safeLink}">here</a>
+          ${sideLetterLink ? `and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>` : ""}.
         </p><br>
-        <p>Summary: ${investment.summary}</p><br>
+        <p>Summary: ${summary || '{summary}'}</p><br>
         <p>
           Disclaimer: This summary is for informational purposes only and does
           not constitute legal advice. For any legal matters or specific
           questions, you should consult with a qualified attorney.
         </p>
       </div>
-    `
+    `;
   }
 
-  const setSelectedInvestmentAndEmailContent = (investment: any) => {
-    setSelectedInvestment(investment)
-    setEditableEmailContent(emailContent(investment))
-  }
-
-  async function summarizeInvestment(
-    doc: Docxtemplater
-  ): Promise<string | null> {
-    try {
-      const blob = doc.getZip().generate({ type: "blob" })
-      const arrayBuffer = await blob.arrayBuffer()
-      const { value: htmlContent } = await mammoth.convertToHtml({
-        arrayBuffer,
-      })
-
-      const response = await fetch("/api/generate-summary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: htmlContent }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        toast({
-          title: "Error",
-          description: "Failed to summarize investment",
-        })
-        throw new Error("Failed to summarize investment")
-      }
-
-      if (data.summary.length === 0) {
-        toast({
-          title: "Error",
-          description: "Failed to summarize investment",
-        })
-        throw new Error("Failed to summarize investment")
-      }
-
-      return data.summary
-    } catch (error) {
-      console.error("Error in summarizing investment:", error)
-      return null
-    }
+  const setSelectedInvestmentAndEmailContent = async (investment: any) => {
+    setSelectedInvestment(investment);
+    const content = await emailContent(investment);
+    setEditableEmailContent(content);
   }
 
   async function sendEmail(investment: any) {
     setIsSendingEmail(true)
-
     try {
       const emailContentToSend = editableEmailContent.replace(
         /<br\s*\/?>/gi,
@@ -892,11 +884,13 @@ export default function Investments({
             <div>
               <Button
                 onClick={() => sendEmail(selectedInvestment)}
-                disabled={isSendingEmail}
+                disabled={isSendingEmail || streamingSummary}
                 className="w-full"
               >
                 {isSendingEmail ? (
                   <Icons.spinner className="h-4 w-4 animate-spin" />
+                ) : streamingSummary ? (
+                  "Generating Summary..."
                 ) : (
                   "Send Email"
                 )}
