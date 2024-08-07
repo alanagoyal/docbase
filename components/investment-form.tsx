@@ -128,6 +128,8 @@ export default function InvestmentForm({
   const [isLoadingSave, setIsLoadingSave] = useState(false)
   const [isLoadingNext, setIsLoadingNext] = useState(false)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
+  const [hasFunds, setHasFunds] = useState(false)
+  const [hasCompanies, setHasCompanies] = useState(false)
 
   const form = useForm<InvestmentFormValues>({
     resolver: zodResolver(InvestmentFormSchema),
@@ -292,6 +294,10 @@ export default function InvestmentForm({
         type: "company",
       }))
       setEntities([...typedFundData, ...typedCompanyData])
+      setHasFunds(typedFundData.length > 0)
+      setHasCompanies(typedCompanyData.length > 0)
+    } else {
+      console.error("Error fetching entities:", fundError || companyError)
     }
   }
 
@@ -338,12 +344,13 @@ export default function InvestmentForm({
       }
 
       // Check if user already exists and update
-      const { data: existingInvestor, error: existingInvestorError } = await supabase
-        .from("users")
-        .select("id")
-        .eq("name", values.investorName)
-        .eq("email", values.investorEmail)
-        .maybeSingle()
+      const { data: existingInvestor, error: existingInvestorError } =
+        await supabase
+          .from("users")
+          .select("id")
+          .eq("name", values.investorName)
+          .eq("email", values.investorEmail)
+          .maybeSingle()
 
       if (existingInvestor) {
         const { error: updateError } = await supabase
@@ -358,9 +365,10 @@ export default function InvestmentForm({
           .insert(investorData)
           .select("id")
         if (newInvestorError) {
-          if (newInvestorError.code === "23505") { 
+          if (newInvestorError.code === "23505") {
             toast({
-              description: "An investor with this name and email already exists",
+              description:
+                "An investor with this name and email already exists",
             })
           } else {
             throw newInvestorError
@@ -374,7 +382,10 @@ export default function InvestmentForm({
     }
   }
 
-  async function processFundDetails(values: InvestmentFormValues, investorId: string | null) {
+  async function processFundDetails(
+    values: InvestmentFormValues,
+    investorId: string | null
+  ) {
     if (
       values.fundName === "" &&
       values.fundByline === "" &&
@@ -416,7 +427,7 @@ export default function InvestmentForm({
           .insert(fundData)
           .select()
         if (newFundError) {
-          if (newFundError.code === "23505") { 
+          if (newFundError.code === "23505") {
             toast({
               description: "A fund with this name already exists",
             })
@@ -448,12 +459,13 @@ export default function InvestmentForm({
       }
 
       // Check if the founder already exists and update
-      const { data: existingFounder, error: existingFounderError } = await supabase
-        .from("users")
-        .select("id")
-        .eq("name", values.founderName)
-        .eq("email", values.founderEmail)
-        .maybeSingle()
+      const { data: existingFounder, error: existingFounderError } =
+        await supabase
+          .from("users")
+          .select("id")
+          .eq("name", values.founderName)
+          .eq("email", values.founderEmail)
+          .maybeSingle()
 
       if (existingFounder) {
         const { error: updateError } = await supabase
@@ -468,7 +480,7 @@ export default function InvestmentForm({
           .insert(founderData)
           .select("id")
         if (newFounderError) {
-          if (newFounderError.code === "23505") { 
+          if (newFounderError.code === "23505") {
             toast({
               description: "A founder with this name and email already exists",
             })
@@ -483,7 +495,10 @@ export default function InvestmentForm({
     }
   }
 
-  async function processCompanyDetails(values: InvestmentFormValues, founderId: string | null) {
+  async function processCompanyDetails(
+    values: InvestmentFormValues,
+    founderId: string | null
+  ) {
     if (
       values.companyName === "" &&
       values.companyStreet === "" &&
@@ -502,11 +517,12 @@ export default function InvestmentForm({
       }
 
       // Check if company already exists
-      const { data: existingCompany, error: existingCompanyError } = await supabase
-        .from("companies")
-        .select("id, founder_id")
-        .eq("name", values.companyName)
-        .maybeSingle()
+      const { data: existingCompany, error: existingCompanyError } =
+        await supabase
+          .from("companies")
+          .select("id, founder_id")
+          .eq("name", values.companyName)
+          .maybeSingle()
 
       if (existingCompany) {
         const updateData = {
@@ -525,7 +541,7 @@ export default function InvestmentForm({
           .insert(companyData)
           .select()
         if (newCompanyError) {
-          if (newCompanyError.code === "23505") { 
+          if (newCompanyError.code === "23505") {
             toast({
               description: "A company with this name already exists",
             })
@@ -692,9 +708,9 @@ export default function InvestmentForm({
   async function handleSelectChange(value: string) {
     setSelectedEntity(value)
     const selectedEntityDetails = entities.find((entity) => entity.id === value)
-  
+
     if (selectedEntityDetails) {
-      if (showFundSelector && selectedEntityDetails.type === "fund") {
+      if (selectedEntityDetails.type === "fund") {
         form.setValue("fundName", selectedEntityDetails.name || "")
         form.setValue("fundByline", selectedEntityDetails.byline || "")
         form.setValue("fundStreet", selectedEntityDetails.street || "")
@@ -702,23 +718,22 @@ export default function InvestmentForm({
           "fundCityStateZip",
           selectedEntityDetails.city_state_zip || ""
         )
-  
+
         // Fetch investor details
         const { data: investorData, error: investorError } = await supabase
           .from("users")
           .select("name, title, email")
           .eq("id", selectedEntityDetails.investor_id)
           .single()
-  
+
         if (!investorError && investorData) {
           form.setValue("investorName", investorData.name || "")
           form.setValue("investorTitle", investorData.title || "")
           form.setValue("investorEmail", investorData.email || "")
+        } else {
+          console.error("Error fetching investor details:", investorError)
         }
-      } else if (
-        showCompanySelector &&
-        selectedEntityDetails.type === "company"
-      ) {
+      } else if (selectedEntityDetails.type === "company") {
         form.setValue("companyName", selectedEntityDetails.name || "")
         form.setValue("companyStreet", selectedEntityDetails.street || "")
         form.setValue(
@@ -729,38 +744,21 @@ export default function InvestmentForm({
           "stateOfIncorporation",
           selectedEntityDetails.state_of_incorporation || ""
         )
-  
+
         // Fetch founder details
         const { data: founderData, error: founderError } = await supabase
           .from("users")
           .select("name, title, email")
           .eq("id", selectedEntityDetails.founder_id)
           .single()
-  
+
         if (!founderError && founderData) {
           form.setValue("founderName", founderData.name || "")
           form.setValue("founderTitle", founderData.title || "")
           form.setValue("founderEmail", founderData.email || "")
+        } else {
+          console.error("Error fetching founder details:", founderError)
         }
-      }
-    } else {
-      // Reset form fields if "Add new" is selected
-      if (showFundSelector) {
-        form.setValue("fundName", "")
-        form.setValue("fundByline", "")
-        form.setValue("fundStreet", "")
-        form.setValue("fundCityStateZip", "")
-        form.setValue("investorName", "")
-        form.setValue("investorTitle", "")
-        form.setValue("investorEmail", "")
-      } else if (showCompanySelector) {
-        form.setValue("companyName", "")
-        form.setValue("companyStreet", "")
-        form.setValue("companyCityStateZip", "")
-        form.setValue("stateOfIncorporation", "")
-        form.setValue("founderName", "")
-        form.setValue("founderTitle", "")
-        form.setValue("founderEmail", "")
       }
     }
   }
@@ -790,6 +788,14 @@ export default function InvestmentForm({
   }
 
   async function advanceStepZero() {
+    const values = form.getValues()
+    const isValid = await form.trigger(["purchaseAmount", "type", "date"])
+    if (!isValid) {
+      toast({
+        description: "Please fill out all required fields",
+      })
+      return
+    }
     await processStepZero("next")
   }
 
@@ -1032,7 +1038,7 @@ export default function InvestmentForm({
                   </FormItem>
                 )}
               />
-               <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 {(isEditMode || isFormLocked) && (
                   <Button
                     type="button"
@@ -1058,23 +1064,24 @@ export default function InvestmentForm({
               <div className="pt-4 flex justify-between items-center h-10">
                 <Label className="text-xl font-bold">Investor Details</Label>
               </div>
-              {showFundSelector &&
-                entities.some((entity) => entity.type === "fund") && (
-                  <FormItem>
-                    <FormLabel>Select Entity</FormLabel>
-                    <EntitySelector
-                      entities={entities}
-                      selectedEntity={selectedEntity}
-                      onSelectChange={handleSelectChange}
-                      entityType="fund"
-                      disabled={!isOwner}
-                    />
-                    <FormDescription>
-                      Choose an existing fund to be used in your signature block
-                      or add one below
-                    </FormDescription>
-                  </FormItem>
-                )}
+              {hasFunds && (
+                <FormItem>
+                  <FormLabel>Select Entity</FormLabel>
+                  <EntitySelector
+                    entities={entities.filter(
+                      (entity) => entity.type === "fund"
+                    )}
+                    selectedEntity={selectedEntity}
+                    onSelectChange={handleSelectChange}
+                    entityType="fund"
+                    disabled={!isOwner}
+                  />
+                  <FormDescription>
+                    Choose an existing fund to be used in your signature block
+                    or add one below
+                  </FormDescription>
+                </FormItem>
+              )}
               <FormField
                 control={form.control}
                 name="fundName"
@@ -1170,7 +1177,7 @@ export default function InvestmentForm({
                   </FormItem>
                 )}
               />
-                <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 {(isEditMode || isFormLocked) && (
                   <Button
                     type="button"
@@ -1221,23 +1228,24 @@ export default function InvestmentForm({
                   </Button>
                 )}
               </div>
-              {showCompanySelector &&
-                entities.some((entity) => entity.type === "company") && (
-                  <FormItem>
-                    <FormLabel>Select Entity</FormLabel>
-                    <EntitySelector
-                      entities={entities}
-                      selectedEntity={selectedEntity}
-                      onSelectChange={handleSelectChange}
-                      entityType="company"
-                      disabled={false}
-                    />
-                    <FormDescription>
-                      Choose an existing company to be used in your signature
-                      block or add one below
-                    </FormDescription>
-                  </FormItem>
-                )}
+              {hasCompanies && (
+                <FormItem>
+                  <FormLabel>Select Entity</FormLabel>
+                  <EntitySelector
+                    entities={entities.filter(
+                      (entity) => entity.type === "company"
+                    )}
+                    selectedEntity={selectedEntity}
+                    onSelectChange={handleSelectChange}
+                    entityType="company"
+                    disabled={false}
+                  />
+                  <FormDescription>
+                    Choose an existing company to be used in your signature
+                    block or add one below
+                  </FormDescription>
+                </FormItem>
+              )}
               <FormField
                 control={form.control}
                 name="companyName"
@@ -1308,7 +1316,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Founder Title</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.founderTitle}
@@ -1324,7 +1332,7 @@ export default function InvestmentForm({
                   <FormItem>
                     <FormLabel>Founder Email</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled={isFormLocked || !isOwner} />
+                      <Input {...field} />
                     </FormControl>
                     <FormDescription>
                       {formDescriptions.founderEmail}
@@ -1372,9 +1380,7 @@ export default function InvestmentForm({
               {isOwner && (
                 <>
                   <div className="pt-4 flex justify-between items-center h-10">
-                    <Label className="text-xl font-bold">
-                      Side Letter
-                    </Label>
+                    <Label className="text-xl font-bold">Side Letter</Label>
                   </div>
                   <FormField
                     control={form.control}
@@ -1393,7 +1399,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isFormLocked || !isOwner}
+                            disabled={!isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1416,7 +1422,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isFormLocked || !isOwner}
+                            disabled={!isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1439,7 +1445,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isFormLocked || !isOwner}
+                            disabled={!isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1462,7 +1468,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isFormLocked || !isOwner}
+                            disabled={!isOwner}
                           />
                         </FormControl>
                       </FormItem>
@@ -1485,7 +1491,7 @@ export default function InvestmentForm({
                           <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isFormLocked || !isOwner}
+                            disabled={!isOwner}
                           />
                         </FormControl>
                       </FormItem>
