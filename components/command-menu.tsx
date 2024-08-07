@@ -23,7 +23,8 @@ const isTyping = () => {
   return (
     activeElement instanceof HTMLInputElement ||
     activeElement instanceof HTMLTextAreaElement ||
-    (activeElement instanceof HTMLElement && activeElement.isContentEditable)
+    (activeElement instanceof HTMLElement && activeElement.isContentEditable) ||
+    activeElement?.closest('[role="combobox"]') !== null // Check for select component
   );
 };
 

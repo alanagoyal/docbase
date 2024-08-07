@@ -776,7 +776,7 @@ export default function Investments({
                           (generatingSafe === investment.id || generatingSideLetter === investment.id),
                       })}
                     >
-                      {generatingSafe === investment.id || generatingSideLetter === investment.id ? (
+                      {nextStep.text === "Generate" && (generatingSafe === investment.id || generatingSideLetter === investment.id) ? (
                         <Icons.spinner className="h-4 w-4 animate-spin" />
                       ) : (
                         nextStep.text
@@ -790,16 +790,11 @@ export default function Investments({
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   <div className="flex items-center space-x-2">
-                    {isOwner(investment) && ( // Only show download button if owner
+                    {isOwner(investment) && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost">
-                            {generatingSafe === investment.id ||
-                            generatingSideLetter === investment.id ? (
-                              <Icons.spinner className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Download className="h-4 w-4" />
-                            )}
+                            <Download className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

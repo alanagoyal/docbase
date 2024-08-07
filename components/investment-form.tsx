@@ -926,7 +926,7 @@ export default function InvestmentForm({
                     <FormLabel>Investment Type</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                       disabled={!isOwner}
                     >
                       <FormControl>
