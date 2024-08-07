@@ -6,6 +6,8 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Links } from "@/components/links"
 
+export const dynamic = "force-dynamic"
+
 export default async function LinksPage() {
   const supabase = createClient()
   const {

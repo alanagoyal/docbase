@@ -660,10 +660,10 @@ export default function Investments({
         className: "bg-[#74EBD5] text-white hover:bg-[#5ED1BB]",
         nonOwnerText: "Waiting for required info",
       }
-    } else if (!investment.safe_url) {
+    } else if (!investment.safe_url || (investment.side_letter && !investment.side_letter.side_letter_url)) {
       return {
         text: "Generate",
-        action: () => processSafe(investment),
+        action: () => processDocuments(investment),
         className: "bg-[#9FACE6] text-white hover:bg-[#8A9BD1]",
         nonOwnerText: "Waiting to generate docs",
       }
@@ -677,6 +677,30 @@ export default function Investments({
         className: "bg-[#87C4DB] text-white hover:bg-[#72AFD6]",
         nonOwnerText: "Awaiting signature",
       }
+    }
+  }
+
+  async function processDocuments(investment: any) {
+    setGeneratingSafe(investment.id)
+    setGeneratingSideLetter(investment.id)
+    try {
+      await processSafe(investment)
+      if (investment.side_letter) {
+        await processSideLetter(investment)
+      }
+      toast({
+        description: "Documents have been generated and shareable links have been created",
+      })
+    } catch (error) {
+      console.error("Error processing documents:", error)
+      toast({
+        description: "There was an error generating the documents",
+        variant: "destructive",
+      })
+    } finally {
+      setGeneratingSafe(null)
+      setGeneratingSideLetter(null)
+      router.refresh()
     }
   }
 
@@ -744,15 +768,15 @@ export default function Investments({
                       onClick={nextStep.action}
                       disabled={
                         nextStep.text === "Generate" &&
-                        generatingSafe === investment.id
+                        (generatingSafe === investment.id || generatingSideLetter === investment.id)
                       }
                       className={cn("w-28", nextStep.className, {
                         "opacity-50 cursor-not-allowed":
                           nextStep.text === "Generate" &&
-                          generatingSafe === investment.id,
+                          (generatingSafe === investment.id || generatingSideLetter === investment.id),
                       })}
                     >
-                      {generatingSafe === investment.id ? (
+                      {generatingSafe === investment.id || generatingSideLetter === investment.id ? (
                         <Icons.spinner className="h-4 w-4 animate-spin" />
                       ) : (
                         nextStep.text

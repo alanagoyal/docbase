@@ -54,36 +54,20 @@ export function Documents({
     document.document_name?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const deleteDocument = async (documentId: string) => {
-    // Implement delete functionality
-    toast({
-      description: "Your document has been deleted",
-    })
-    router.refresh()
-  }
-
   const getEditLink = (document: Document) => {
-    switch (document.document_type.toLowerCase()) {
-      case 'link':
-        return `/links/edit/${document.id}`
-      case 'safe':
-      case 'side letter':
-        return `/investments/${document.id}${document.document_type.toLowerCase() === 'side letter' ? '?step=3' : ''}`
-      default:
-        return '#'
+    const fileName = document.document_name.toLowerCase();
+    if (fileName.includes('safe') || fileName.includes('side letter')) {
+      return `/investments/${document.id}${fileName.includes('side letter') ? '?step=3' : ''}`;
     }
+    return `/links/edit/${document.id}`;
   }
 
   const getViewLink = (document: Document) => {
-    switch (document.document_type.toLowerCase()) {
-      case 'link':
-        return '/links'
-      case 'safe':
-      case 'side letter':
-        return '/investments'
-      default:
-        return '#'
+    const fileName = document.document_name.toLowerCase();
+    if (fileName.includes('safe') || fileName.includes('side letter')) {
+      return `/investments/${document.id}`;
     }
+    return `/links/view/${document.id}`;
   }
 
   const formatDate = (dateString: string | null) => {
