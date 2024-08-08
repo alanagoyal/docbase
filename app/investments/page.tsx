@@ -44,12 +44,14 @@ export default async function InvestmentsPage() {
         side_letter_id,
         safe_url,
         summary,
-        created_by
+        created_by,
+        created_at
       `
     )
     .or(
       `investor_id.eq.${account.id},founder_id.eq.${account.id},created_by.eq.${account.auth_id}`
     )
+    .order('created_at', { ascending: false })
 
   if (investmentError) {
     console.error(investmentError)
