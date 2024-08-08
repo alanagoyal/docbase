@@ -64,6 +64,11 @@ export default function Investments({
     string | null
   >(null)
 
+  const handleShareClick = (investmentId: string) => {
+    setSelectedInvestmentId(investmentId)
+    setIsShareDialogOpen(true)
+  }
+  
   const { complete, isLoading: generatingSummary } = useCompletion({
     api: "/api/generate-summary",
   })
@@ -197,7 +202,7 @@ export default function Investments({
     if (!summary) {
       console.log("No summary found, generating SAFE and summary")
       const safeDoc = await generateSafe(investment)
-      summary = await summarizeInvestment(investment, safeDoc) || ""
+      summary = (await summarizeInvestment(investment, safeDoc)) || ""
     }
 
     const content = `
