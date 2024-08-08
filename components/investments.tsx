@@ -25,11 +25,12 @@ import {
 } from "./ui/table"
 import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
+import { useCompletion } from "ai/react"
 import Docxtemplater from "docxtemplater"
 import { AlertCircle, Download, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
-import { useCompletion } from "ai/react";
+
 import { Database } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
@@ -62,21 +63,10 @@ export default function Investments({
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<
     string | null
   >(null)
-  const [streamingSummary, setStreamingSummary] = useState(false)
 
-  const {
-    complete,
-    completion,
-    isLoading: generatingSummary,
-  } = useCompletion({
+  const { complete, isLoading: generatingSummary } = useCompletion({
     api: "/api/generate-summary",
-    onFinish: (prompt, completion) => {
-      setStreamingSummary(false)
-      setEditableEmailContent((prevContent) => {
-        return prevContent.replace("{summary}", completion)
-      })
-    },
-  });
+  })
 
   const formatCurrency = (amountStr: string): string => {
     const amount = parseFloat(amountStr.replace(/,/g, ""))
@@ -147,67 +137,105 @@ export default function Investments({
     router.refresh()
   }
 
-  async function summarizeInvestment(doc: Docxtemplater): Promise<string | null> {
+  async function summarizeInvestment(
+    investment: any,
+    doc: Docxtemplater
+  ): Promise<string> {
+    console.log("Starting summarizeInvestment function")
     try {
-      const blob = doc.getZip().generate({ type: "blob" });
-      const arrayBuffer = await blob.arrayBuffer();
+      const blob = doc.getZip().generate({ type: "blob" })
+      const arrayBuffer = await blob.arrayBuffer()
+      console.log("Document converted to arrayBuffer")
+
       const { value: htmlContent } = await mammoth.convertToHtml({
         arrayBuffer,
-      });
+      })
+      console.log(
+        "Document converted to HTML:",
+        htmlContent.substring(0, 100) + "..."
+      )
 
-      setStreamingSummary(true);
-      const result = await complete(htmlContent);
+      console.log("Calling AI completion...")
+      const result = await complete("", {
+        body: {
+          content: htmlContent,
+        },
+      })
+      console.log("AI completion result:", result)
 
-      if (!result) {
-        toast({
-          title: "Error",
-          description: "Failed to summarize investment",
-        });
-        throw new Error("Failed to summarize investment");
+      if (result) {
+        const { error: summaryUpdateError } = await supabase
+          .from("investments")
+          .update({ summary: result })
+          .eq("id", investment.id)
+
+        if (summaryUpdateError) {
+          console.error(
+            "Error updating investment summary:",
+            summaryUpdateError
+          )
+        }
       }
 
-      return result;
+      return result || ""
     } catch (error) {
-      console.error("Error in summarizing investment:", error);
-      return null;
-    } finally {
-      setStreamingSummary(false);
+      console.error("Error in summarizing investment:", error)
+      return ""
     }
   }
 
   const emailContent = async (investment: any) => {
-    const safeLink = `/links/view/${investment.id}`;
+    console.log("Generating email content")
+    const safeLink = `/links/view/${investment.id}`
     const sideLetterLink = investment.side_letter_id
       ? `/links/view/${investment.side_letter_id}`
-      : null;
+      : null
 
-    let summary = investment.summary;
+    console.log("Initial summary:", investment.summary)
+
+    let summary = investment.summary || ""
     if (!summary) {
-      const safeDoc = await generateSafe(investment);
-      summary = await summarizeInvestment(safeDoc);
+      console.log("No summary found, generating SAFE and summary")
+      const safeDoc = await generateSafe(investment)
+      summary = await summarizeInvestment(investment, safeDoc) || ""
     }
 
-    return `
+    const content = `
       <div>
         <p>Hi ${investment.founder.name.split(" ")[0]},</p><br>
         <p>
-          ${investment.fund.name} has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${window.location.origin}${safeLink}">here</a>
-          ${sideLetterLink ? `and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>` : ""}.
+          ${
+            investment.fund.name
+          } has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${
+      window.location.origin
+    }${safeLink}">here</a>
+          ${
+            sideLetterLink
+              ? `and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>`
+              : ""
+          }.
         </p><br>
-        <p>Summary: ${summary || '{summary}'}</p><br>
+        <p>
+          Summary: ${summary}
+        </p><br>
         <p>
           Disclaimer: This summary is for informational purposes only and does
           not constitute legal advice. For any legal matters or specific
           questions, you should consult with a qualified attorney.
         </p>
       </div>
-    `;
+    `
+
+    console.log("Generated email content:", content)
+    return content
   }
 
   const setSelectedInvestmentAndEmailContent = async (investment: any) => {
-    setSelectedInvestment(investment);
-    const content = await emailContent(investment);
-    setEditableEmailContent(content);
+    console.log("Setting selected investment and email content")
+    setSelectedInvestment(investment)
+    const content = await emailContent(investment)
+    console.log("Setting editable email content:", content)
+    setEditableEmailContent(content)
   }
 
   async function sendEmail(investment: any) {
@@ -392,24 +420,6 @@ export default function Investments({
           toast({
             description:
               "The SAFE document has been generated and a shareable link has been created",
-          })
-
-          // Generate summary and update database in the background
-          summarizeInvestment(safeDoc).then(async (investmentSummary) => {
-            if (investmentSummary) {
-              const { error: summaryUpdateError } = await supabase
-                .from("investments")
-                .update({ summary: investmentSummary })
-                .eq("id", investment.id)
-
-              if (summaryUpdateError) {
-                console.error(
-                  "Error updating investment summary:",
-                  summaryUpdateError
-                )
-                // You might want to handle this error silently or show a less prominent notification
-              }
-            }
           })
         }
       } else {
@@ -652,7 +662,10 @@ export default function Investments({
         className: "bg-[#74EBD5] text-white hover:bg-[#5ED1BB]",
         nonOwnerText: "Waiting for required info",
       }
-    } else if (!investment.safe_url || (investment.side_letter && !investment.side_letter.side_letter_url)) {
+    } else if (
+      !investment.safe_url ||
+      (investment.side_letter && !investment.side_letter.side_letter_url)
+    ) {
       return {
         text: "Generate",
         action: () => processDocuments(investment),
@@ -681,7 +694,8 @@ export default function Investments({
         await processSideLetter(investment)
       }
       toast({
-        description: "Documents have been generated and shareable links have been created",
+        description:
+          "Documents have been generated and shareable links have been created",
       })
     } catch (error) {
       console.error("Error processing documents:", error)
@@ -760,15 +774,19 @@ export default function Investments({
                       onClick={nextStep.action}
                       disabled={
                         nextStep.text === "Generate" &&
-                        (generatingSafe === investment.id || generatingSideLetter === investment.id)
+                        (generatingSafe === investment.id ||
+                          generatingSideLetter === investment.id)
                       }
                       className={cn("w-28", nextStep.className, {
                         "opacity-50 cursor-not-allowed":
                           nextStep.text === "Generate" &&
-                          (generatingSafe === investment.id || generatingSideLetter === investment.id),
+                          (generatingSafe === investment.id ||
+                            generatingSideLetter === investment.id),
                       })}
                     >
-                      {nextStep.text === "Generate" && (generatingSafe === investment.id || generatingSideLetter === investment.id) ? (
+                      {nextStep.text === "Generate" &&
+                      (generatingSafe === investment.id ||
+                        generatingSideLetter === investment.id) ? (
                         <Icons.spinner className="h-4 w-4 animate-spin" />
                       ) : (
                         nextStep.text
@@ -884,13 +902,11 @@ export default function Investments({
             <div>
               <Button
                 onClick={() => sendEmail(selectedInvestment)}
-                disabled={isSendingEmail || streamingSummary}
+                disabled={isSendingEmail || generatingSummary}
                 className="w-full"
               >
                 {isSendingEmail ? (
                   <Icons.spinner className="h-4 w-4 animate-spin" />
-                ) : streamingSummary ? (
-                  "Generating Summary..."
                 ) : (
                   "Send Email"
                 )}

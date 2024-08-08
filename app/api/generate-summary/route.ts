@@ -10,7 +10,6 @@ initLogger({
 export async function POST(req: Request) {
 
   const { content } = await req.json();
-  console.log("content", content)
   const summary = await handleRequest(content);
   return BraintrustAdapter.toAIStreamResponse(summary);
 }
@@ -18,7 +17,7 @@ export async function POST(req: Request) {
 const handleRequest = wrapTraced(async function handleRequest(content ) {
   return await invoke({
     projectName: "docbase",
-    slug: "summarize",
+    slug: "summarize-api",
     input: {
       content
     },
