@@ -63,6 +63,7 @@ export default function Investments({
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<
     string | null
   >(null)
+  const [generatingEmailForId, setGeneratingEmailForId] = useState<string | null>(null)
 
   const handleShareClick = (investmentId: string) => {
     setSelectedInvestmentId(investmentId)
@@ -150,17 +151,11 @@ export default function Investments({
     try {
       const blob = doc.getZip().generate({ type: "blob" })
       const arrayBuffer = await blob.arrayBuffer()
-      console.log("Document converted to arrayBuffer")
 
       const { value: htmlContent } = await mammoth.convertToHtml({
         arrayBuffer,
       })
-      console.log(
-        "Document converted to HTML:",
-        htmlContent.substring(0, 100) + "..."
-      )
 
-      console.log("Calling AI completion...")
       const result = await complete("", {
         body: {
           content: htmlContent,
@@ -209,14 +204,9 @@ export default function Investments({
       <div>
         <p>Hi ${investment.founder.name.split(" ")[0]},</p><br>
         <p>
-          ${
-            investment.fund.name
-          } has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${
-      window.location.origin
-    }${safeLink}">here</a>
-          ${
+          ${investment.fund.name} has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${window.location.origin}${safeLink}">here</a>${
             sideLetterLink
-              ? `and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>`
+              ? ` and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>`
               : ""
           }.
         </p><br>
@@ -236,11 +226,14 @@ export default function Investments({
   }
 
   const setSelectedInvestmentAndEmailContent = async (investment: any) => {
+    setGeneratingEmailForId(investment.id)
     console.log("Setting selected investment and email content")
     setSelectedInvestment(investment)
     const content = await emailContent(investment)
     console.log("Setting editable email content:", content)
     setEditableEmailContent(content)
+    setGeneratingEmailForId(null)
+    setDialogOpen(true)
   }
 
   async function sendEmail(investment: any) {
@@ -283,6 +276,7 @@ export default function Investments({
     } finally {
       setIsSendingEmail(false)
       setDialogOpen(false)
+      router.refresh()
     }
   }
 
@@ -682,7 +676,6 @@ export default function Investments({
         text: "Send",
         action: () => {
           setSelectedInvestmentAndEmailContent(investment)
-          setDialogOpen(true)
         },
         className: "bg-[#87C4DB] text-white hover:bg-[#72AFD6]",
         nonOwnerText: "Awaiting signature",
@@ -778,20 +771,23 @@ export default function Investments({
                       size="sm"
                       onClick={nextStep.action}
                       disabled={
-                        nextStep.text === "Generate" &&
-                        (generatingSafe === investment.id ||
-                          generatingSideLetter === investment.id)
+                        (nextStep.text === "Generate" &&
+                          (generatingSafe === investment.id ||
+                            generatingSideLetter === investment.id)) ||
+                        (nextStep.text === "Send" && generatingEmailForId === investment.id)
                       }
                       className={cn("w-28", nextStep.className, {
                         "opacity-50 cursor-not-allowed":
-                          nextStep.text === "Generate" &&
-                          (generatingSafe === investment.id ||
-                            generatingSideLetter === investment.id),
+                          (nextStep.text === "Generate" &&
+                            (generatingSafe === investment.id ||
+                              generatingSideLetter === investment.id)) ||
+                          (nextStep.text === "Send" && generatingEmailForId === investment.id),
                       })}
                     >
-                      {nextStep.text === "Generate" &&
-                      (generatingSafe === investment.id ||
-                        generatingSideLetter === investment.id) ? (
+                      {(nextStep.text === "Generate" &&
+                        (generatingSafe === investment.id ||
+                          generatingSideLetter === investment.id)) ||
+                      (nextStep.text === "Send" && generatingEmailForId === investment.id) ? (
                         <Icons.spinner className="h-4 w-4 animate-spin" />
                       ) : (
                         nextStep.text
@@ -891,7 +887,10 @@ export default function Investments({
           })}
         </TableBody>
       </Table>
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={() => {
+        setDialogOpen(false)
+        router.refresh()
+      }}>
         <DialogContent className="flex flex-col">
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
