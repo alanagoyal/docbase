@@ -657,7 +657,7 @@ export default function Investments({
       return {
         text: "Share",
         action: () => {
-          // This will be handled by the Share component
+          handleShareClick(investment)
         },
         className: "bg-[#74EBD5] text-white hover:bg-[#5ED1BB]",
         nonOwnerText: "Waiting for required info",
