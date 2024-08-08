@@ -25,6 +25,7 @@ import {
 } from "./ui/table"
 import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
+import { useCompletion } from "ai/react"
 import Docxtemplater from "docxtemplater"
 import { AlertCircle, Download, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
@@ -62,11 +63,16 @@ export default function Investments({
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<
     string | null
   >(null)
+  const [generatingEmailForId, setGeneratingEmailForId] = useState<string | null>(null)
 
   const handleShareClick = (investmentId: string) => {
     setSelectedInvestmentId(investmentId)
     setIsShareDialogOpen(true)
   }
+  
+  const { complete, isLoading: generatingSummary } = useCompletion({
+    api: "/api/generate-summary",
+  })
 
   const formatCurrency = (amountStr: string): string => {
     const amount = parseFloat(amountStr.replace(/,/g, ""))
@@ -137,29 +143,76 @@ export default function Investments({
     router.refresh()
   }
 
-  const emailContent = (investment: any) => {
-    const investmentUrl = `${window.location.origin}/investments/new/${investment.id}?step=2&sharing=true`
+  async function summarizeInvestment(
+    investment: any,
+    doc: Docxtemplater
+  ): Promise<string> {
+    console.log("Starting summarizeInvestment function")
+    try {
+      const blob = doc.getZip().generate({ type: "blob" })
+      const arrayBuffer = await blob.arrayBuffer()
+
+      const { value: htmlContent } = await mammoth.convertToHtml({
+        arrayBuffer,
+      })
+
+      const result = await complete("", {
+        body: {
+          content: htmlContent,
+        },
+      })
+      console.log("AI completion result:", result)
+
+      if (result) {
+        const { error: summaryUpdateError } = await supabase
+          .from("investments")
+          .update({ summary: result })
+          .eq("id", investment.id)
+
+        if (summaryUpdateError) {
+          console.error(
+            "Error updating investment summary:",
+            summaryUpdateError
+          )
+        }
+      }
+
+      return result || ""
+    } catch (error) {
+      console.error("Error in summarizing investment:", error)
+      return ""
+    }
+  }
+
+  const emailContent = async (investment: any) => {
+    console.log("Generating email content")
     const safeLink = `/links/view/${investment.id}`
     const sideLetterLink = investment.side_letter_id
       ? `/links/view/${investment.side_letter_id}`
       : null
 
-    return `
+    console.log("Initial summary:", investment.summary)
+
+    let summary = investment.summary || ""
+    if (!summary) {
+      console.log("No summary found, generating SAFE and summary")
+      const safeDoc = await generateSafe(investment)
+      summary = (await summarizeInvestment(investment, safeDoc)) || ""
+    }
+
+    const content = `
       <div>
         <p>Hi ${investment.founder.name.split(" ")[0]},</p><br>
         <p>
-          ${
-            investment.fund.name
-          } has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${
-      window.location.origin
-    }${safeLink}">here</a>
-          ${
+          ${investment.fund.name} has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${window.location.origin}${safeLink}">here</a>${
             sideLetterLink
-              ? `and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>`
+              ? ` and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>`
               : ""
           }.
         </p><br>
-        <p>Summary: ${investment.summary}</p><br>
+        <p>
+          Summary: ${summary}
+        </p><br>
         <p>
           Disclaimer: This summary is for informational purposes only and does
           not constitute legal advice. For any legal matters or specific
@@ -167,59 +220,24 @@ export default function Investments({
         </p>
       </div>
     `
+
+    console.log("Generated email content:", content)
+    return content
   }
 
-  const setSelectedInvestmentAndEmailContent = (investment: any) => {
+  const setSelectedInvestmentAndEmailContent = async (investment: any) => {
+    setGeneratingEmailForId(investment.id)
+    console.log("Setting selected investment and email content")
     setSelectedInvestment(investment)
-    setEditableEmailContent(emailContent(investment))
-  }
-
-  async function summarizeInvestment(
-    doc: Docxtemplater
-  ): Promise<string | null> {
-    try {
-      const blob = doc.getZip().generate({ type: "blob" })
-      const arrayBuffer = await blob.arrayBuffer()
-      const { value: htmlContent } = await mammoth.convertToHtml({
-        arrayBuffer,
-      })
-
-      const response = await fetch("/api/generate-summary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: htmlContent }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        toast({
-          title: "Error",
-          description: "Failed to summarize investment",
-        })
-        throw new Error("Failed to summarize investment")
-      }
-
-      if (data.summary.length === 0) {
-        toast({
-          title: "Error",
-          description: "Failed to summarize investment",
-        })
-        throw new Error("Failed to summarize investment")
-      }
-
-      return data.summary
-    } catch (error) {
-      console.error("Error in summarizing investment:", error)
-      return null
-    }
+    const content = await emailContent(investment)
+    console.log("Setting editable email content:", content)
+    setEditableEmailContent(content)
+    setGeneratingEmailForId(null)
+    setDialogOpen(true)
   }
 
   async function sendEmail(investment: any) {
     setIsSendingEmail(true)
-
     try {
       const emailContentToSend = editableEmailContent.replace(
         /<br\s*\/?>/gi,
@@ -258,6 +276,7 @@ export default function Investments({
     } finally {
       setIsSendingEmail(false)
       setDialogOpen(false)
+      router.refresh()
     }
   }
 
@@ -400,24 +419,6 @@ export default function Investments({
           toast({
             description:
               "The SAFE document has been generated and a shareable link has been created",
-          })
-
-          // Generate summary and update database in the background
-          summarizeInvestment(safeDoc).then(async (investmentSummary) => {
-            if (investmentSummary) {
-              const { error: summaryUpdateError } = await supabase
-                .from("investments")
-                .update({ summary: investmentSummary })
-                .eq("id", investment.id)
-
-              if (summaryUpdateError) {
-                console.error(
-                  "Error updating investment summary:",
-                  summaryUpdateError
-                )
-                // You might want to handle this error silently or show a less prominent notification
-              }
-            }
           })
         }
       } else {
@@ -660,7 +661,10 @@ export default function Investments({
         className: "bg-[#74EBD5] text-white hover:bg-[#5ED1BB]",
         nonOwnerText: "Waiting for required info",
       }
-    } else if (!investment.safe_url || (investment.side_letter && !investment.side_letter.side_letter_url)) {
+    } else if (
+      !investment.safe_url ||
+      (investment.side_letter && !investment.side_letter.side_letter_url)
+    ) {
       return {
         text: "Generate",
         action: () => processDocuments(investment),
@@ -672,7 +676,6 @@ export default function Investments({
         text: "Send",
         action: () => {
           setSelectedInvestmentAndEmailContent(investment)
-          setDialogOpen(true)
         },
         className: "bg-[#87C4DB] text-white hover:bg-[#72AFD6]",
         nonOwnerText: "Awaiting signature",
@@ -689,7 +692,8 @@ export default function Investments({
         await processSideLetter(investment)
       }
       toast({
-        description: "Documents have been generated and shareable links have been created",
+        description:
+          "Documents have been generated and shareable links have been created",
       })
     } catch (error) {
       console.error("Error processing documents:", error)
@@ -767,16 +771,23 @@ export default function Investments({
                       size="sm"
                       onClick={nextStep.action}
                       disabled={
-                        nextStep.text === "Generate" &&
-                        (generatingSafe === investment.id || generatingSideLetter === investment.id)
+                        (nextStep.text === "Generate" &&
+                          (generatingSafe === investment.id ||
+                            generatingSideLetter === investment.id)) ||
+                        (nextStep.text === "Send" && generatingEmailForId === investment.id)
                       }
                       className={cn("w-28", nextStep.className, {
                         "opacity-50 cursor-not-allowed":
-                          nextStep.text === "Generate" &&
-                          (generatingSafe === investment.id || generatingSideLetter === investment.id),
+                          (nextStep.text === "Generate" &&
+                            (generatingSafe === investment.id ||
+                              generatingSideLetter === investment.id)) ||
+                          (nextStep.text === "Send" && generatingEmailForId === investment.id),
                       })}
                     >
-                      {nextStep.text === "Generate" && (generatingSafe === investment.id || generatingSideLetter === investment.id) ? (
+                      {(nextStep.text === "Generate" &&
+                        (generatingSafe === investment.id ||
+                          generatingSideLetter === investment.id)) ||
+                      (nextStep.text === "Send" && generatingEmailForId === investment.id) ? (
                         <Icons.spinner className="h-4 w-4 animate-spin" />
                       ) : (
                         nextStep.text
@@ -876,7 +887,10 @@ export default function Investments({
           })}
         </TableBody>
       </Table>
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={() => {
+        setDialogOpen(false)
+        router.refresh()
+      }}>
         <DialogContent className="flex flex-col">
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
@@ -892,7 +906,7 @@ export default function Investments({
             <div>
               <Button
                 onClick={() => sendEmail(selectedInvestment)}
-                disabled={isSendingEmail}
+                disabled={isSendingEmail || generatingSummary}
                 className="w-full"
               >
                 {isSendingEmail ? (
