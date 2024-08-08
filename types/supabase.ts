@@ -6,6 +6,55 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export type UserInvestment = {
+  id: string
+  purchase_amount: string | null
+  investment_type: string | null
+  valuation_cap: string | null
+  discount: string | null
+  date: string | null
+  founder: {
+    id: string
+    name: string | null
+    title: string | null
+    email: string | null
+  } | null
+  company: {
+    id: string
+    name: string | null
+    street: string | null
+    city_state_zip: string | null
+    state_of_incorporation: string | null
+  } | null
+  investor: {
+    id: string
+    name: string | null
+    title: string | null
+    email: string | null
+  } | null
+  fund: {
+    id: string
+    name: string | null
+    byline: string | null
+    street: string | null
+    city_state_zip: string | null
+  } | null
+  side_letter: {
+    id: string
+    side_letter_url: string | null
+    info_rights: boolean | null
+    pro_rata_rights: boolean | null
+    major_investor_rights: boolean | null
+    termination: boolean | null
+    miscellaneous: boolean | null
+  } | null
+  side_letter_id: string | null
+  safe_url: string | null
+  summary: string | null
+  created_by: string | null
+  created_at: string
+}
+
 export type Database = {
   graphql_public: {
     Tables: {
@@ -69,7 +118,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       funds: {
@@ -107,7 +156,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       investments: {
@@ -204,7 +253,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "funds"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       links: {
@@ -242,7 +291,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["auth_id"]
-          },
+          }
         ]
       }
       side_letters: {
@@ -313,7 +362,7 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       viewers: {
@@ -345,7 +394,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "links"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
     }
@@ -391,6 +440,12 @@ export type Database = {
           document_name: string
           created_at: string
         }[]
+      }
+      get_user_investments: {
+        Args: {
+          auth_id_arg: string
+        }
+        Returns: UserInvestment[]
       }
       get_user_links: {
         Args: {
@@ -577,7 +632,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "buckets"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       s3_multipart_uploads: {
@@ -618,7 +673,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "buckets"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
       s3_multipart_uploads_parts: {
@@ -672,7 +727,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "s3_multipart_uploads"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
     }
@@ -788,7 +843,7 @@ export type Tables<
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never = never
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
       Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
@@ -797,14 +852,14 @@ export type Tables<
     ? R
     : never
   : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
-        PublicSchema["Views"])
-    ? (PublicSchema["Tables"] &
-        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
+      PublicSchema["Views"])
+  ? (PublicSchema["Tables"] &
+      PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+      Row: infer R
+    }
+    ? R
     : never
+  : never
 
 export type TablesInsert<
   PublicTableNameOrOptions extends
@@ -812,7 +867,7 @@ export type TablesInsert<
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never = never
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
@@ -820,12 +875,12 @@ export type TablesInsert<
     ? I
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
+  ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+      Insert: infer I
+    }
+    ? I
     : never
+  : never
 
 export type TablesUpdate<
   PublicTableNameOrOptions extends
@@ -833,7 +888,7 @@ export type TablesUpdate<
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never = never
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
@@ -841,12 +896,12 @@ export type TablesUpdate<
     ? U
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
+  ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+      Update: infer U
+    }
+    ? U
     : never
+  : never
 
 export type Enums<
   PublicEnumNameOrOptions extends
@@ -854,10 +909,9 @@ export type Enums<
     | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never = never
 > = PublicEnumNameOrOptions extends { schema: keyof Database }
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
-    : never
-
+  ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+  : never

@@ -232,53 +232,73 @@ CREATE OR REPLACE FUNCTION public.get_user_documents(auth_id_arg uuid)
 AS $function$
 BEGIN
     RETURN QUERY
-    -- Documents from links
     SELECT 
         l.id,
-        'Link'::text as document_type,
+        CASE
+            WHEN lower(l.filename) LIKE '%.pdf' THEN 'PDF'
+            WHEN lower(l.filename) LIKE '%.doc' OR lower(l.filename) LIKE '%.docx' THEN 'Word'
+            WHEN lower(l.filename) LIKE '%.xls' OR lower(l.filename) LIKE '%.xlsx' THEN 'Excel'
+            WHEN lower(l.filename) LIKE '%.jpg' OR lower(l.filename) LIKE '%.jpeg' OR lower(l.filename) LIKE '%.png' THEN 'Image'
+            ELSE 'Other'
+        END as document_type,
         l.url as document_url,
         l.filename as document_name,
         l.created_at
     FROM links l
     WHERE l.created_by = auth_id_arg
-
-    UNION ALL
-
-    -- Documents from investments (SAFEs)
-    SELECT 
-        i.id,
-        'SAFE'::text as document_type,
-        i.safe_url as document_url,
-        CASE 
-            WHEN c.name IS NULL AND f.name IS NULL THEN 'SAFE'
-            ELSE CONCAT_WS(' <> ', NULLIF(c.name, ''), NULLIF(f.name, ''), 'SAFE')
-        END as document_name,
-        i.created_at
-    FROM investments i
-    LEFT JOIN companies c ON i.company_id = c.id
-    LEFT JOIN funds f ON i.fund_id = f.id
-    JOIN users u ON i.investor_id = u.id OR i.founder_id = u.id
-    WHERE u.auth_id = auth_id_arg AND i.safe_url IS NOT NULL
-
-    UNION ALL
-
-    -- Documents from side letters
-    SELECT 
-        sl.id,
-        'Side Letter'::text as document_type,
-        sl.side_letter_url as document_url,
-        CASE 
-            WHEN c.name IS NULL AND f.name IS NULL THEN 'Side Letter'
-            ELSE CONCAT_WS(' <> ', NULLIF(c.name, ''), NULLIF(f.name, ''), 'Side Letter')
-        END as document_name,
-        sl.created_at
-    FROM side_letters sl
-    JOIN investments i ON i.side_letter_id = sl.id
-    LEFT JOIN companies c ON i.company_id = c.id
-    LEFT JOIN funds f ON i.fund_id = f.id
-    JOIN users u ON i.investor_id = u.id OR i.founder_id = u.id
-    WHERE u.auth_id = auth_id_arg AND sl.side_letter_url IS NOT NULL;
+    ORDER BY l.created_at DESC;
 END;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.get_user_investments(auth_id_arg uuid)
+ RETURNS TABLE(id uuid, purchase_amount text, investment_type text, valuation_cap text, discount text, date timestamp with time zone, founder json, company json, investor json, fund json, side_letter json, side_letter_id uuid, safe_url text, summary text, created_by uuid, created_at timestamp with time zone)
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  WITH user_investments AS (
+    SELECT DISTINCT ON (i.id) i.*
+    FROM investments i
+    LEFT JOIN users u ON i.investor_id = u.id OR i.founder_id = u.id
+    WHERE u.auth_id = auth_id_arg OR i.created_by = auth_id_arg
+  )
+  SELECT
+    i.id,
+    i.purchase_amount,
+    i.investment_type,
+    i.valuation_cap,
+    i.discount,
+    i.date,
+    CASE WHEN f.id IS NOT NULL THEN
+      json_build_object('id', f.id, 'name', f.name, 'title', f.title, 'email', f.email)
+    ELSE NULL END AS founder,
+    CASE WHEN c.id IS NOT NULL THEN
+      json_build_object('id', c.id, 'name', c.name, 'street', c.street, 'city_state_zip', c.city_state_zip, 'state_of_incorporation', c.state_of_incorporation)
+    ELSE NULL END AS company,
+    CASE WHEN inv.id IS NOT NULL THEN
+      json_build_object('id', inv.id, 'name', inv.name, 'title', inv.title, 'email', inv.email)
+    ELSE NULL END AS investor,
+    CASE WHEN fd.id IS NOT NULL THEN
+      json_build_object('id', fd.id, 'name', fd.name, 'byline', fd.byline, 'street', fd.street, 'city_state_zip', fd.city_state_zip)
+    ELSE NULL END AS fund,
+    CASE WHEN sl.id IS NOT NULL THEN
+      json_build_object('id', sl.id, 'side_letter_url', sl.side_letter_url, 'info_rights', sl.info_rights, 'pro_rata_rights', sl.pro_rata_rights, 'major_investor_rights', sl.major_investor_rights, 'termination', sl.termination, 'miscellaneous', sl.miscellaneous)
+    ELSE NULL END AS side_letter,
+    i.side_letter_id,
+    i.safe_url,
+    i.summary,
+    i.created_by,
+    i.created_at
+  FROM
+    user_investments i
+    LEFT JOIN users f ON i.founder_id = f.id
+    LEFT JOIN companies c ON i.company_id = c.id
+    LEFT JOIN users inv ON i.investor_id = inv.id
+    LEFT JOIN funds fd ON i.fund_id = fd.id
+    LEFT JOIN side_letters sl ON i.side_letter_id = sl.id
+  ORDER BY
+    i.created_at DESC;
 $function$
 ;
 
@@ -301,8 +321,7 @@ CREATE OR REPLACE FUNCTION public.get_user_links_with_views(auth_id_arg uuid)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
-BEGIN
+AS $function$BEGIN
   RETURN QUERY
   SELECT 
     l.id,
@@ -324,8 +343,7 @@ BEGIN
     l.created_by = auth_id_arg
   ORDER BY 
     l.created_at DESC;
-END;
-$function$
+END;$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -916,6 +934,30 @@ to authenticated
 using (true);
 
 
+
+alter type "auth"."factor_type" rename to "factor_type__old_version_to_be_dropped";
+
+create type "auth"."factor_type" as enum ('totp', 'webauthn', 'phone');
+
+alter table "auth"."mfa_factors" alter column factor_type type "auth"."factor_type" using factor_type::text::"auth"."factor_type";
+
+drop type "auth"."factor_type__old_version_to_be_dropped";
+
+alter table "auth"."mfa_challenges" add column "otp_code" text;
+
+alter table "auth"."mfa_factors" add column "last_challenged_at" timestamp with time zone;
+
+alter table "auth"."mfa_factors" add column "phone" text;
+
+CREATE UNIQUE INDEX mfa_factors_last_challenged_at_key ON auth.mfa_factors USING btree (last_challenged_at);
+
+CREATE UNIQUE INDEX mfa_factors_phone_key ON auth.mfa_factors USING btree (phone);
+
+CREATE UNIQUE INDEX unique_verified_phone_factor ON auth.mfa_factors USING btree (user_id, phone);
+
+alter table "auth"."mfa_factors" add constraint "mfa_factors_last_challenged_at_key" UNIQUE using index "mfa_factors_last_challenged_at_key";
+
+alter table "auth"."mfa_factors" add constraint "mfa_factors_phone_key" UNIQUE using index "mfa_factors_phone_key";
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 

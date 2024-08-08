@@ -31,7 +31,7 @@ import { AlertCircle, Download, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
 
-import { Database } from "@/types/supabase"
+import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -46,13 +46,14 @@ export default function Investments({
   investments,
   account,
 }: {
-  investments: any
+  investments: UserInvestment[]
   account: User
 }) {
   const router = useRouter()
   const supabase = createClient()
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [selectedInvestment, setSelectedInvestment] = useState(null)
+  const [selectedInvestment, setSelectedInvestment] =
+    useState<UserInvestment | null>(null)
   const [editableEmailContent, setEditableEmailContent] = useState("")
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [generatingSafe, setGeneratingSafe] = useState<string | null>(null)
@@ -63,13 +64,15 @@ export default function Investments({
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<
     string | null
   >(null)
-  const [generatingEmailForId, setGeneratingEmailForId] = useState<string | null>(null)
+  const [generatingEmailForId, setGeneratingEmailForId] = useState<
+    string | null
+  >(null)
 
-  const handleShareClick = (investmentId: string) => {
-    setSelectedInvestmentId(investmentId)
+  const handleShareClick = (investment: UserInvestment) => {
+    setSelectedInvestmentId(investment.id)
     setIsShareDialogOpen(true)
   }
-  
+
   const { complete, isLoading: generatingSummary } = useCompletion({
     api: "/api/generate-summary",
   })
@@ -108,12 +111,12 @@ export default function Investments({
     return investmentTypes[type as "valuation-cap" | "discount" | "mfn"] || type
   }
 
-  const isOwner = (investment: any) => {
+  const isOwner = (investment: UserInvestment) => {
     return investment.created_by === account.auth_id
   }
 
-  const isFounder = (investment: any) => {
-    return investment.founder.id === account.id
+  const isFounder = (investment: UserInvestment) => {
+    return investment.founder?.id === account.id
   }
   const MissingInfoTooltip = ({ message }: { message: string }) => (
     <span className="text-red-500">
@@ -122,7 +125,7 @@ export default function Investments({
     </span>
   )
 
-  const editInvestment = (investment: any) => {
+  const editInvestment = (investment: UserInvestment) => {
     if (isOwner(investment)) {
       router.push(`/investments/${investment.id}`)
     } else if (isFounder(investment)) {
@@ -130,7 +133,7 @@ export default function Investments({
     }
   }
 
-  async function deleteInvestment(investment: any) {
+  async function deleteInvestment(investment: UserInvestment) {
     const { error } = await supabase
       .from("investments")
       .delete()
@@ -144,10 +147,9 @@ export default function Investments({
   }
 
   async function summarizeInvestment(
-    investment: any,
+    investment: UserInvestment,
     doc: Docxtemplater
   ): Promise<string> {
-    console.log("Starting summarizeInvestment function")
     try {
       const blob = doc.getZip().generate({ type: "blob" })
       const arrayBuffer = await blob.arrayBuffer()
@@ -161,7 +163,6 @@ export default function Investments({
           content: htmlContent,
         },
       })
-      console.log("AI completion result:", result)
 
       if (result) {
         const { error: summaryUpdateError } = await supabase
@@ -184,31 +185,31 @@ export default function Investments({
     }
   }
 
-  const emailContent = async (investment: any) => {
-    console.log("Generating email content")
+  const emailContent = async (investment: UserInvestment) => {
     const safeLink = `/links/view/${investment.id}`
     const sideLetterLink = investment.side_letter_id
       ? `/links/view/${investment.side_letter_id}`
       : null
 
-    console.log("Initial summary:", investment.summary)
-
     let summary = investment.summary || ""
     if (!summary) {
-      console.log("No summary found, generating SAFE and summary")
       const safeDoc = await generateSafe(investment)
       summary = (await summarizeInvestment(investment, safeDoc)) || ""
     }
 
     const content = `
       <div>
-        <p>Hi ${investment.founder.name.split(" ")[0]},</p><br>
+        <p>Hi ${investment.founder?.name?.split(" ")[0] || "there"},</p><br>
         <p>
-          ${investment.fund.name} has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${window.location.origin}${safeLink}">here</a>${
-            sideLetterLink
-              ? ` and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>`
-              : ""
-          }.
+          ${
+            investment.fund?.name || "Someone"
+          } has shared a SAFE agreement with you. You can view and download the SAFE Agreement <a href="${
+      window.location.origin
+    }${safeLink}">here</a>${
+      sideLetterLink
+        ? ` and the Side Letter <a href="${window.location.origin}${sideLetterLink}">here</a>`
+        : ""
+    }.
         </p><br>
         <p>
           Summary: ${summary}
@@ -220,23 +221,21 @@ export default function Investments({
         </p>
       </div>
     `
-
-    console.log("Generated email content:", content)
     return content
   }
 
-  const setSelectedInvestmentAndEmailContent = async (investment: any) => {
+  const setSelectedInvestmentAndEmailContent = async (
+    investment: UserInvestment
+  ) => {
     setGeneratingEmailForId(investment.id)
-    console.log("Setting selected investment and email content")
     setSelectedInvestment(investment)
     const content = await emailContent(investment)
-    console.log("Setting editable email content:", content)
     setEditableEmailContent(content)
     setGeneratingEmailForId(null)
     setDialogOpen(true)
   }
 
-  async function sendEmail(investment: any) {
+  async function sendEmail(investment: UserInvestment) {
     setIsSendingEmail(true)
     try {
       const emailContentToSend = editableEmailContent.replace(
@@ -264,7 +263,9 @@ export default function Investments({
 
       toast({
         title: "Email sent",
-        description: `The email has been sent to ${investment.founder.email}`,
+        description: `The email has been sent to ${
+          investment.founder?.email || "the founder's email"
+        }`,
       })
     } catch (error) {
       console.error("Error in sendEmail function:", error)
@@ -281,7 +282,7 @@ export default function Investments({
   }
 
   async function createSafeUrl(
-    investment: any,
+    investment: UserInvestment,
     doc: Docxtemplater
   ): Promise<string | null> {
     const filepath = `${investment.id}`
@@ -314,7 +315,11 @@ export default function Investments({
 
       const { error: linkError } = await supabase.rpc("upsert_link_data", {
         id_arg: investment.id,
-        filename_arg: `${investment.company.name} <> ${investment.fund.name} SAFE.docx`,
+        filename_arg: `${
+          investment.company?.name && investment.fund?.name
+            ? `${investment.company.name} <> ${investment.fund.name} SAFE.docx`
+            : "SAFE.docx"
+        }`,
         url_arg: newSignedUrlData?.signedUrl,
         created_by_arg: account.auth_id,
         created_at_arg: investment.date,
@@ -334,8 +339,10 @@ export default function Investments({
     }
   }
 
-  async function generateSafe(investment: any) {
-    const formattedDate = formatSubmissionDate(investment.date)
+  async function generateSafe(investment: UserInvestment) {
+    const formattedDate = investment.date
+      ? formatSubmissionDate(investment.date)
+      : "{date}"
     const templateFileName = selectTemplate(investment.investment_type || "mfn")
     const doc = await loadAndPrepareTemplate(
       templateFileName,
@@ -360,7 +367,7 @@ export default function Investments({
 
   async function loadAndPrepareTemplate(
     templateFileName: string,
-    investment: any,
+    investment: UserInvestment,
     formattedDate: string
   ): Promise<Docxtemplater> {
     const response = await fetch(`/${templateFileName}`)
@@ -368,35 +375,36 @@ export default function Investments({
     const zip = new PizZip(arrayBuffer)
     const doc = new Docxtemplater().loadZip(zip)
     doc.setData({
-      company_name: investment.company.name || "{company_name}",
-      investing_entity_name: investment.fund.name || "{investing_entity_name}",
-      byline: investment.fund.byline || "",
+      company_name: investment.company?.name || "{company_name}",
+      investing_entity_name: investment.fund?.name || "{investing_entity_name}",
+      byline: investment.fund?.byline || "",
       purchase_amount: investment.purchase_amount || "{purchase_amount}",
       valuation_cap: investment.valuation_cap || "{valuation_cap}",
       discount: investment.discount
         ? (100 - Number(investment.discount)).toString()
         : "{discount}",
       state_of_incorporation:
-        investment.company.state_of_incorporation || "{state_of_incorporation}",
-      date: formattedDate || "{date}",
-      investor_name: investment.investor.name || "{investor_name}",
-      investor_title: investment.investor.title || "{investor_title}",
-      investor_email: investment.investor.email || "{investor_email}",
-      investor_address_1: investment.fund.street || "{investor_address_1}",
+        investment.company?.state_of_incorporation ||
+        "{state_of_incorporation}",
+      date: formattedDate,
+      investor_name: investment.investor?.name || "{investor_name}",
+      investor_title: investment.investor?.title || "{investor_title}",
+      investor_email: investment.investor?.email || "{investor_email}",
+      investor_address_1: investment.fund?.street || "{investor_address_1}",
       investor_address_2:
-        investment.fund.city_state_zip || "{investor_address_2}",
-      founder_name: investment.founder.name || "{founder_name}",
-      founder_title: investment.founder.title || "{founder_title}",
-      founder_email: investment.founder.email || "{founder_email}",
-      company_address_1: investment.company.street || "{company_address_1}",
+        investment.fund?.city_state_zip || "{investor_address_2}",
+      founder_name: investment.founder?.name || "{founder_name}",
+      founder_title: investment.founder?.title || "{founder_title}",
+      founder_email: investment.founder?.email || "{founder_email}",
+      company_address_1: investment.company?.street || "{company_address_1}",
       company_address_2:
-        investment.company.city_state_zip || "{company_address_2}",
+        investment.company?.city_state_zip || "{company_address_2}",
     })
     doc.render()
     return doc
   }
 
-  async function processSafe(investment: any) {
+  async function processSafe(investment: UserInvestment) {
     setGeneratingSafe(investment.id)
     try {
       const safeDoc = await generateSafe(investment)
@@ -416,6 +424,7 @@ export default function Investments({
             variant: "destructive",
           })
         } else {
+          downloadDocument(safeUrl)
           toast({
             description:
               "The SAFE document has been generated and a shareable link has been created",
@@ -439,7 +448,7 @@ export default function Investments({
     }
   }
 
-  async function processSideLetter(investment: any) {
+  async function processSideLetter(investment: UserInvestment) {
     setGeneratingSideLetter(investment.id)
     // Only process if the side letter is not empty
     if (!investment.side_letter) {
@@ -500,8 +509,10 @@ export default function Investments({
     }
   }
 
-  async function generateSideLetter(investment: any) {
-    const formattedDate = formatSubmissionDate(investment.date)
+  async function generateSideLetter(investment: UserInvestment) {
+    const formattedDate = investment.date
+      ? formatSubmissionDate(investment.date)
+      : "{date}"
     const doc = await loadAndPrepareSideLetterTemplate(
       investment,
       formattedDate
@@ -555,7 +566,7 @@ export default function Investments({
   }
 
   async function loadAndPrepareSideLetterTemplate(
-    investment: any,
+    investment: UserInvestment,
     formattedDate: string
   ): Promise<Docxtemplater> {
     const response = await fetch(`/Side-Letter.docx`)
@@ -563,42 +574,43 @@ export default function Investments({
     const zip = new PizZip(arrayBuffer)
     const doc = new Docxtemplater(zip, { linebreaks: true })
     doc.setData({
-      company_name: investment.company.name || "{company_name}",
-      investing_entity_name: investment.fund.name || "{investing_entity_name}",
-      byline: investment.fund.byline || "",
+      company_name: investment.company?.name || "{company_name}",
+      investing_entity_name: investment.fund?.name || "{investing_entity_name}",
+      byline: investment.fund?.byline || "",
       purchase_amount: investment.purchase_amount || "{purchase_amount}",
       valuation_cap: investment.valuation_cap || "{valuation_cap}",
       discount: investment.discount
         ? (100 - Number(investment.discount)).toString()
         : "{discount}",
       state_of_incorporation:
-        investment.company.state_of_incorporation || "{state_of_incorporation}",
-      date: formattedDate || "{date}",
-      investor_name: investment.investor.name || "{investor_name}",
-      investor_title: investment.investor.title || "{investor_title}",
-      investor_email: investment.investor.email || "{investor_email}",
-      investor_address_1: investment.fund.street || "{investor_address_1}",
+        investment.company?.state_of_incorporation ||
+        "{state_of_incorporation}",
+      date: formattedDate,
+      investor_name: investment.investor?.name || "{investor_name}",
+      investor_title: investment.investor?.title || "{investor_title}",
+      investor_email: investment.investor?.email || "{investor_email}",
+      investor_address_1: investment.fund?.street || "{investor_address_1}",
       investor_address_2:
-        investment.fund.city_state_zip || "{investor_address_2}",
-      founder_name: investment.founder.name || "{founder_name}",
-      founder_title: investment.founder.title || "{founder_title}",
-      founder_email: investment.founder.email || "{founder_email}",
-      company_address_1: investment.company.street || "{company_address_1}",
+        investment.fund?.city_state_zip || "{investor_address_2}",
+      founder_name: investment.founder?.name || "{founder_name}",
+      founder_title: investment.founder?.title || "{founder_title}",
+      founder_email: investment.founder?.email || "{founder_email}",
+      company_address_1: investment.company?.street || "{company_address_1}",
       company_address_2:
-        investment.company.city_state_zip || "{company_address_2}",
-      info_rights: investment.side_letter.info_rights || false,
-      pro_rata_rights: investment.side_letter.pro_rata_rights || false,
+        investment.company?.city_state_zip || "{company_address_2}",
+      info_rights: investment.side_letter?.info_rights || false,
+      pro_rata_rights: investment.side_letter?.pro_rata_rights || false,
       major_investor_rights:
-        investment.side_letter.major_investor_rights || false,
-      termination: investment.side_letter.termination || false,
-      miscellaneous: investment.side_letter.miscellaneous || false,
+        investment.side_letter?.major_investor_rights || false,
+      termination: investment.side_letter?.termination || false,
+      miscellaneous: investment.side_letter?.miscellaneous || false,
     })
     doc.render()
     return doc
   }
 
   async function createSideLetterUrl(
-    investment: any,
+    investment: UserInvestment,
     doc: Docxtemplater
   ): Promise<string | null> {
     const filepath = `${investment.side_letter_id}`
@@ -631,7 +643,11 @@ export default function Investments({
 
       const { error: linkError } = await supabase.rpc("upsert_link_data", {
         id_arg: investment.side_letter_id,
-        filename_arg: `${investment.company.name} <> ${investment.fund.name} Side Letter.docx`,
+        filename_arg: `${
+          investment.company?.name && investment.fund?.name
+            ? `${investment.company.name} <> ${investment.fund.name} Side Letter.docx`
+            : "Side Letter.docx"
+        }`,
         url_arg: newSignedUrlData?.signedUrl,
         created_by_arg: account.auth_id,
         created_at_arg: investment.date,
@@ -651,7 +667,7 @@ export default function Investments({
     }
   }
 
-  const getNextStep = (investment: any) => {
+  const getNextStep = (investment: UserInvestment) => {
     if (!investment.company || !investment.founder) {
       return {
         text: "Share",
@@ -683,7 +699,7 @@ export default function Investments({
     }
   }
 
-  async function processDocuments(investment: any) {
+  async function processDocuments(investment: UserInvestment) {
     setGeneratingSafe(investment.id)
     setGeneratingSideLetter(investment.id)
     try {
@@ -733,7 +749,7 @@ export default function Investments({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {investments.map((investment: any) => {
+          {investments.map((investment: UserInvestment) => {
             const nextStep = getNextStep(investment)
             return (
               <TableRow key={investment.id}>
@@ -751,9 +767,9 @@ export default function Investments({
                   )}
                 </TableCell>
                 <TableCell>
-                  {formatInvestmentType(investment.investment_type)}
+                  {formatInvestmentType(investment.investment_type || "n/a")}
                   {investment.investment_type === "valuation-cap" &&
-                    ` (${formatCurrency(investment.valuation_cap)})`}
+                    ` (${formatCurrency(investment.valuation_cap || "n/a")})`}
                   {investment.investment_type === "discount" &&
                     ` (${investment.discount}%)`}
                 </TableCell>
@@ -774,20 +790,23 @@ export default function Investments({
                         (nextStep.text === "Generate" &&
                           (generatingSafe === investment.id ||
                             generatingSideLetter === investment.id)) ||
-                        (nextStep.text === "Send" && generatingEmailForId === investment.id)
+                        (nextStep.text === "Send" &&
+                          generatingEmailForId === investment.id)
                       }
                       className={cn("w-28", nextStep.className, {
                         "opacity-50 cursor-not-allowed":
                           (nextStep.text === "Generate" &&
                             (generatingSafe === investment.id ||
                               generatingSideLetter === investment.id)) ||
-                          (nextStep.text === "Send" && generatingEmailForId === investment.id),
+                          (nextStep.text === "Send" &&
+                            generatingEmailForId === investment.id),
                       })}
                     >
                       {(nextStep.text === "Generate" &&
                         (generatingSafe === investment.id ||
                           generatingSideLetter === investment.id)) ||
-                      (nextStep.text === "Send" && generatingEmailForId === investment.id) ? (
+                      (nextStep.text === "Send" &&
+                        generatingEmailForId === investment.id) ? (
                         <Icons.spinner className="h-4 w-4 animate-spin" />
                       ) : (
                         nextStep.text
@@ -812,9 +831,11 @@ export default function Investments({
                           {investment.safe_url ? (
                             <>
                               <DropdownMenuItem
-                                onClick={() =>
-                                  downloadDocument(investment.safe_url)
-                                }
+                                onClick={() => {
+                                  if (investment.safe_url) {
+                                    downloadDocument(investment.safe_url)
+                                  }
+                                }}
                               >
                                 Download SAFE Agreement
                               </DropdownMenuItem>
@@ -831,31 +852,34 @@ export default function Investments({
                               Generate SAFE Agreement
                             </DropdownMenuItem>
                           )}
-                          {investment.side_letter_id &&
-                          investment.side_letter?.side_letter_url ? (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  downloadDocument(
-                                    investment.side_letter.side_letter_url
-                                  )
-                                }
-                              >
-                                Download Side Letter
-                              </DropdownMenuItem>
+                          {investment.side_letter_id ? (
+                            investment.side_letter?.side_letter_url ? (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    if (investment.side_letter?.side_letter_url) {
+                                      downloadDocument(
+                                        investment.side_letter.side_letter_url
+                                      )
+                                    }
+                                  }}
+                                >
+                                  Download Side Letter
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => processSideLetter(investment)}
+                                >
+                                  Update Side Letter
+                                </DropdownMenuItem>
+                              </>
+                            ) : (
                               <DropdownMenuItem
                                 onClick={() => processSideLetter(investment)}
                               >
-                                Update Side Letter
+                                Generate Side Letter
                               </DropdownMenuItem>
-                            </>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={() => processSideLetter(investment)}
-                            >
-                              Generate Side Letter
-                            </DropdownMenuItem>
-                          )}
+                            )
+                          ) : null}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
@@ -887,10 +911,13 @@ export default function Investments({
           })}
         </TableBody>
       </Table>
-      <Dialog open={dialogOpen} onOpenChange={() => {
-        setDialogOpen(false)
-        router.refresh()
-      }}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={() => {
+          setDialogOpen(false)
+          router.refresh()
+        }}
+      >
         <DialogContent className="flex flex-col">
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
@@ -903,19 +930,21 @@ export default function Investments({
                 className="flex-grow"
               />
             </div>
-            <div>
-              <Button
-                onClick={() => sendEmail(selectedInvestment)}
-                disabled={isSendingEmail || generatingSummary}
-                className="w-full"
-              >
-                {isSendingEmail ? (
-                  <Icons.spinner className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Send Email"
-                )}
-              </Button>
-            </div>
+            {selectedInvestment && (
+              <div>
+                <Button
+                  onClick={() => sendEmail(selectedInvestment)}
+                  disabled={isSendingEmail || generatingSummary}
+                  className="w-full"
+                >
+                  {isSendingEmail ? (
+                    <Icons.spinner className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Send Email"
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
