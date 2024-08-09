@@ -447,6 +447,13 @@ export type Database = {
         }
         Returns: UserInvestment[]
       }
+      get_user_investments_by_id: {
+        Args: {
+          id_arg: string
+          auth_id_arg: string
+        }
+        Returns: UserInvestment
+      }
       get_user_links: {
         Args: {
           auth_id: string

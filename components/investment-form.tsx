@@ -5,16 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { formDescriptions } from "@/utils/form-descriptions"
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useLoadScript, type Libraries } from "@react-google-maps/api"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import Confetti from "react-confetti"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-
-import { Database } from "@/types/supabase"
+import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
-
 import AuthRefresh from "./auth-refresh"
 import { EntitySelector } from "./entity-selector"
 import { Icons } from "./icons"
@@ -76,27 +73,6 @@ const InvestmentFormSchema = z.object({
 
 type InvestmentFormValues = z.infer<typeof InvestmentFormSchema>
 
-type InvestmentData = {
-  founder_id?: string
-  company_id?: string
-  investor_id?: string
-  fund_id?: string
-  purchase_amount: string
-  investment_type: "valuation-cap" | "discount" | "mfn"
-  valuation_cap?: string
-  discount?: string
-  date: Date
-  created_by?: string
-  safe_url?: string | null
-  summary?: string | null
-  info_rights?: boolean
-  pro_rata_rights?: boolean
-  major_investor_rights?: string
-  termination?: string
-  miscellaneous?: string
-  side_letter_id?: string | null
-}
-
 type User = Database["public"]["Tables"]["users"]["Row"]
 
 export default function InvestmentForm({
@@ -104,7 +80,7 @@ export default function InvestmentForm({
   account,
   isEditMode = false,
 }: {
-  investment?: any
+  investment?: UserInvestment
   account: User
   isEditMode?: boolean
 }) {
@@ -121,8 +97,6 @@ export default function InvestmentForm({
   const [selectedEntity, setSelectedEntity] = useState<string | undefined>(
     undefined
   )
-  const [showFundSelector, setShowFundSelector] = useState(true)
-  const [showCompanySelector, setShowCompanySelector] = useState(true)
   const isFormLocked = searchParams.get("sharing") === "true"
   const [isOwner, setIsOwner] = useState(true)
   const [isLoadingSave, setIsLoadingSave] = useState(false)
@@ -249,22 +223,14 @@ export default function InvestmentForm({
       })
       if (step === 1 && data.fund && data.fund.investor_id === account.id) {
         setSelectedEntity(data.fund.id)
-        setShowFundSelector(true)
       } else if (
         step === 2 &&
         data.company &&
         data.company.founder_id === account.id
       ) {
         setSelectedEntity(data.company.id)
-        setShowCompanySelector(true)
       } else {
         setSelectedEntity(undefined)
-        if (step === 1) {
-          setShowFundSelector(false)
-        }
-        if (step === 2) {
-          setShowCompanySelector(false)
-        }
       }
       // If the user is editing an investment that is not theirs, lock the form
       if (account.auth_id !== data.created_by) {
@@ -565,12 +531,12 @@ export default function InvestmentForm({
       return null
 
     try {
-      const dealData: InvestmentData = {
+      const dealData: Partial<UserInvestment> = {
         purchase_amount: values.purchaseAmount,
         investment_type: values.type,
         valuation_cap: values.valuationCap,
         discount: values.discount,
-        date: values.date,
+        date: values.date.toISOString(),
       }
 
       let investmentIdResult: string | null = null
@@ -610,7 +576,7 @@ export default function InvestmentForm({
     companyId?: string | null
   ): Promise<string | null> {
     try {
-      const investmentData: InvestmentData = {
+      const investmentData: Partial<UserInvestment> = {
         ...(founderId && { founder_id: founderId }),
         ...(companyId && { company_id: companyId }),
         ...(investorId && { investor_id: investorId }),
@@ -619,7 +585,7 @@ export default function InvestmentForm({
         investment_type: values.type,
         ...(values.valuationCap && { valuation_cap: values.valuationCap }),
         ...(values.discount && { discount: values.discount }),
-        date: values.date,
+        date: values.date.toISOString(),
       }
 
       let investmentIdResult: string | null = null

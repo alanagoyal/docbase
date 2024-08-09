@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 
-import { Database } from "@/types/supabase"
+import { Database, UserInvestment } from "@/types/supabase"
 import InvestmentForm from "@/components/investment-form"
 import MagicLink from "@/components/magic-link"
 
@@ -45,19 +45,8 @@ export default async function EditInvestment({
     .single()
 
   const { data: investment } = await supabase
-    .from("investments")
-    .select(
-      `
-      *,
-      founder:users!founder_id (name, title, email),
-      company:companies (id, name, street, city_state_zip, state_of_incorporation, founder_id),
-      investor:users!investor_id (name, title, email),
-      fund:funds (id, name, byline, street, city_state_zip, investor_id),
-      side_letter:side_letters (id, side_letter_url, info_rights, pro_rata_rights, major_investor_rights, termination, miscellaneous)
-    `
-    )
-    .eq("id", params.id)
-    .single()
+    .rpc("get_user_investments_by_id", { id_arg: params.id, auth_id_arg: user.id })
+    .single<UserInvestment>()
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -66,7 +55,7 @@ export default async function EditInvestment({
       </h1>
       <InvestmentForm
         account={account}
-        investment={investment}
+        investment={investment || undefined}
         isEditMode={!!investment}
       />
     </div>

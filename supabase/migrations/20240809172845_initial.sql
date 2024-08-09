@@ -302,6 +302,54 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.get_user_investments_by_id(id_arg uuid, auth_id_arg uuid)
+ RETURNS TABLE(id uuid, purchase_amount text, investment_type text, valuation_cap text, discount text, date timestamp with time zone, founder json, company json, investor json, fund json, side_letter json, side_letter_id uuid, safe_url text, summary text, created_by uuid, created_at timestamp with time zone)
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT
+    i.id,
+    i.purchase_amount,
+    i.investment_type,
+    i.valuation_cap,
+    i.discount,
+    i.date,
+    CASE WHEN f.id IS NOT NULL THEN
+      json_build_object('id', f.id, 'name', f.name, 'title', f.title, 'email', f.email)
+    ELSE NULL END AS founder,
+    CASE WHEN c.id IS NOT NULL THEN
+      json_build_object('id', c.id, 'name', c.name, 'street', c.street, 'city_state_zip', c.city_state_zip, 'state_of_incorporation', c.state_of_incorporation)
+    ELSE NULL END AS company,
+    CASE WHEN inv.id IS NOT NULL THEN
+      json_build_object('id', inv.id, 'name', inv.name, 'title', inv.title, 'email', inv.email)
+    ELSE NULL END AS investor,
+    CASE WHEN fd.id IS NOT NULL THEN
+      json_build_object('id', fd.id, 'name', fd.name, 'byline', fd.byline, 'street', fd.street, 'city_state_zip', fd.city_state_zip)
+    ELSE NULL END AS fund,
+    CASE WHEN sl.id IS NOT NULL THEN
+      json_build_object('id', sl.id, 'side_letter_url', sl.side_letter_url, 'info_rights', sl.info_rights, 'pro_rata_rights', sl.pro_rata_rights, 'major_investor_rights', sl.major_investor_rights, 'termination', sl.termination, 'miscellaneous', sl.miscellaneous)
+    ELSE NULL END AS side_letter,
+    i.side_letter_id,
+    i.safe_url,
+    i.summary,
+    i.created_by,
+    i.created_at
+  FROM
+    investments i
+    LEFT JOIN users f ON i.founder_id = f.id
+    LEFT JOIN companies c ON i.company_id = c.id
+    LEFT JOIN users inv ON i.investor_id = inv.id
+    LEFT JOIN funds fd ON i.fund_id = fd.id
+    LEFT JOIN side_letters sl ON i.side_letter_id = sl.id
+  WHERE
+    i.id = id_arg
+    AND (i.created_by = auth_id_arg
+         OR i.founder_id IN (SELECT id FROM users WHERE auth_id = auth_id_arg)
+         OR i.investor_id IN (SELECT id FROM users WHERE auth_id = auth_id_arg));
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.get_user_links(auth_id uuid)
  RETURNS SETOF links
  LANGUAGE plpgsql
