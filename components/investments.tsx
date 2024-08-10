@@ -27,9 +27,14 @@ import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
 import { useCompletion } from "ai/react"
 import Docxtemplater from "docxtemplater"
-import { AlertCircle, Download, MenuIcon } from "lucide-react"
+import { AlertCircle, Download, MenuIcon, InfoIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "./ui/popover"
 
 import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
@@ -744,7 +749,19 @@ export default function Investments({
             <TableHead className="w-1/6">Type</TableHead>
             <TableHead className="w-1/6">Amount</TableHead>
             <TableHead className="w-1/6">Date</TableHead>
-            <TableHead className="w-1/6">Next Steps</TableHead>
+            <TableHead className="w-1/6">
+              Next Steps
+              <Popover>
+                <PopoverTrigger asChild>
+                  <InfoIcon className="h-4 w-4 ml-2 inline-block cursor-pointer" />
+                </PopoverTrigger>
+                <PopoverContent className="w-100 text-xs text-muted-foreground">
+                  <p><strong className="text-foreground">Complete:</strong> Complete or share with founder to complete required fields</p>
+                  <p><strong className="text-foreground">Generate:</strong> Generate documents and shareable links</p>
+                  <p><strong className="text-foreground">Send:</strong> Send documents to founder to review and sign</p>
+                </PopoverContent>
+              </Popover>
+            </TableHead>
             <TableHead className="w-1/6">Actions</TableHead>
           </TableRow>
         </TableHeader>
