@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
+import { Database } from "@/types/supabase"
 
 const linkFormSchema = z.object({
   email: z
@@ -27,6 +28,7 @@ const linkFormSchema = z.object({
   password: z.string().optional(),
 })
 
+type Link = Database["public"]["Tables"]["links"]["Row"]
 type LinkFormValues = z.infer<typeof linkFormSchema>
 
 const defaultValues: Partial<LinkFormValues> = {
@@ -34,7 +36,7 @@ const defaultValues: Partial<LinkFormValues> = {
   password: "",
 }
 
-export default function ViewLinkForm({ link }: { link: any }) {
+export default function ViewLinkForm({ link }: { link: Link }) {
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
     defaultValues,
@@ -43,7 +45,14 @@ export default function ViewLinkForm({ link }: { link: any }) {
   const passwordRequired = link?.password ? true : false
 
   async function onSubmit(data: LinkFormValues) {
-    // log viewer
+    if (!link.url) {
+      toast({
+        description: "Link is not valid",
+      })
+      return
+    }
+    
+    // Log viewer
     const updates = {
       link_id: link.id,
       email: data.email,

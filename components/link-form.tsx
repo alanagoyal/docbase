@@ -67,12 +67,13 @@ const linkFormSchema = z
 
 type LinkFormValues = z.infer<typeof linkFormSchema>
 type User = Database["public"]["Tables"]["users"]["Row"]
+type Link = Database["public"]["Tables"]["links"]["Row"]
 
 export default function LinkForm({
   link,
   account,
 }: {
-  link: any
+  link: Link
   account: User
 }) {
   const supabase = createClient()

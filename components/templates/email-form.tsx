@@ -1,10 +1,14 @@
+import { Database } from "@/types/supabase"
 import * as React from "react"
+
+type Fund = Database["public"]["Tables"]["funds"]["Row"]
+type Investor = Database["public"]["Tables"]["users"]["Row"]
 
 interface EmailTemplateProps {
   name: string
   url: string
-  investor: any
-  fund: any
+  investor: Investor
+  fund: Fund
 }
 
 export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
@@ -16,7 +20,7 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
   <div>
     <p>Hi {name.split(" ")[0]},</p>
     <p>
-      {investor.name.split(" ")[0]} from {fund.name} wants to make an investment
+      {investor.name && investor.name.split(" ")[0]} from {fund.name} wants to make an investment
       in your company. Please follow <a href={url}>this link</a> to enter your
       information for the SAFE Agreement.
     </p>
