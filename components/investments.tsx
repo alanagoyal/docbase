@@ -324,7 +324,7 @@ export default function Investments({
       }
 
       const { data: newSignedUrlData, error: newSignedUrlError } =
-        await supabase.storage.from("documents").createSignedUrl(filepath, 3600)
+        await supabase.storage.from("documents").createSignedUrl(filepath, 2592000)
       if (newSignedUrlError) {
         console.error(
           "Failed to create signed URL after upload:",
@@ -652,7 +652,7 @@ export default function Investments({
       }
 
       const { data: newSignedUrlData, error: newSignedUrlError } =
-        await supabase.storage.from("documents").createSignedUrl(filepath, 3600)
+        await supabase.storage.from("documents").createSignedUrl(filepath, 2592000)
       if (newSignedUrlError) {
         console.error(
           "Failed to create signed URL after upload:",
