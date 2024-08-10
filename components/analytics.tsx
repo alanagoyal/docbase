@@ -3,8 +3,9 @@
 import { Viewers } from "./viewers"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, Users } from "lucide-react"
+import { ViewerData } from "@/types/supabase"
 
-export default function Analytics({ allViewers, uniqueViewers, allViews }: { allViewers: number, uniqueViewers: number, allViews: any }) {
+export default function Analytics({ allViewers, uniqueViewers, allViews }: { allViewers: number, uniqueViewers: number, allViews: ViewerData[] }) {
   return (
     <div className="w-full max-w-2xl mx-auto space-y-4">
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">

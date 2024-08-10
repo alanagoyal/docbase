@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server"
 import Analytics from "@/components/analytics"
+import { ViewerData } from "@/types/supabase"
 
 export default async function AnalyticsPage({
   params,
@@ -26,7 +27,7 @@ export default async function AnalyticsPage({
   const { data: allViews } = await supabase
     .from("viewers")
     .select("email, viewed_at")
-    .eq("link_id", id)
+    .eq("link_id", id) as { data: ViewerData[] | null }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -34,7 +35,7 @@ export default async function AnalyticsPage({
       <Analytics 
         allViewers={allViewers ?? 0} 
         uniqueViewers={uniqueViewers ?? 0} 
-        allViews={allViews} 
+        allViews={allViews ?? []} 
       />
     </div>
   )

@@ -6,6 +6,11 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+  export type ViewerData = {
+    email: string;
+    viewed_at: string;
+  };
+
 export type UserInvestment = {
   id: string
   purchase_amount: string | null
