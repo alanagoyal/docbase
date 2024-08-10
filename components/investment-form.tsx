@@ -7,11 +7,12 @@ import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
-import Confetti from "react-confetti"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+
 import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
+
 import AuthRefresh from "./auth-refresh"
 import { EntitySelector } from "./entity-selector"
 import { Icons } from "./icons"
@@ -92,7 +93,6 @@ export default function InvestmentForm({
     investment?.id || null
   )
   const [sideLetterId, setSideLetterId] = useState<string | null>(null)
-  const [showConfetti, setShowConfetti] = useState(false)
   const [entities, setEntities] = useState<any[]>([])
   const [selectedEntity, setSelectedEntity] = useState<string | undefined>(
     undefined
@@ -268,29 +268,14 @@ export default function InvestmentForm({
   }
 
   async function onSubmit(values: InvestmentFormValues) {
-    // Process the investment
-    if (isEditMode) {
-      toast({
-        description: "Investment updated",
-      })
-      router.push("/investments")
-      await processInvestment(values)
-      router.refresh()
-    } else {
-      setShowConfetti(true)
-      toast({
-        title: "Your SAFE agreement has been created",
-        description:
-          "You can view, edit, or download it by visiting your Investments.",
-      })
-      try {
-        await processInvestment(values)
-      } finally {
-        setShowConfetti(false)
-      }
-      router.push("/investments")
-      router.refresh()
-    }
+    setIsLoadingSave(true)
+    await processInvestment(values)
+    toast({
+      description: "Investment saved",
+    })
+    setIsLoadingSave(false)
+    router.push("/investments")
+    router.refresh()
   }
 
   async function processInvestorDetails(values: InvestmentFormValues) {
@@ -820,7 +805,6 @@ export default function InvestmentForm({
       router.push("/investments")
     }
     if (isFormLocked) {
-      setShowConfetti(true)
       toast({
         title: "Congratulations!",
         description:
@@ -829,7 +813,6 @@ export default function InvestmentForm({
       try {
         await processStepTwo("save")
       } finally {
-        setShowConfetti(false)
       }
       router.push("/investments")
     } else {
@@ -845,7 +828,6 @@ export default function InvestmentForm({
   return (
     <div className="w-full max-w-2xl mx-auto">
       <AuthRefresh />
-      {showConfetti && <Confetti />}
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -1467,7 +1449,7 @@ export default function InvestmentForm({
               )}
               <div className="flex flex-col gap-2">
                 <Button type="submit" className="w-full">
-                  {isEditMode || isFormLocked ? "Save" : "Submit"}
+                  {isLoadingSave ? <Icons.spinner /> : "Save"}
                 </Button>
                 <Button
                   variant="secondary"
