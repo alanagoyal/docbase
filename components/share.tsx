@@ -2,6 +2,10 @@
 
 import { useState } from "react"
 import { createClient } from "@/utils/supabase/client"
+import { useForm } from "react-hook-form"
+
+import { UserInvestment } from "@/types/supabase"
+
 import { Icons } from "./icons"
 import { Button } from "./ui/button"
 import {
@@ -11,24 +15,29 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./ui/dialog"
-import { Form, FormField, FormItem, FormLabel, FormControl } from "./ui/form"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "./ui/dialog"
+import { Form, FormControl, FormField, FormItem, FormLabel } from "./ui/form"
 import { Input } from "./ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { toast } from "./ui/use-toast"
-import { useForm } from "react-hook-form"
 
 export function Share({
-  investmentId,
+  investment,
   onEmailSent,
   isOpen,
   onOpenChange,
 }: {
-  investmentId: string
+  investment: UserInvestment
   onEmailSent: () => void
   isOpen: boolean
   onOpenChange: (open: boolean) => void
 }) {
+
   const form = useForm({
     defaultValues: {
       name: "",
@@ -38,7 +47,7 @@ export function Share({
   const [isSending, setIsSending] = useState(false)
   const idString =
     typeof window !== "undefined"
-      ? `${window.location.origin}/investments/${investmentId}?step=2&sharing=true`
+      ? `${window.location.origin}/investments/${investment.id}?step=2&sharing=true`
       : ""
   const supabase = createClient()
 
@@ -61,32 +70,14 @@ export function Share({
 
   async function onSubmit(values: { name: string; email: string }) {
     setIsSending(true)
-    const { data: investmentData, error: investmentError } = await supabase
-      .from("investments")
-      .select(
-        `
-        investor_id (
-          name,
-          title,
-          email
-        ),
-        fund_id (
-          name,
-          byline,
-          street,
-          city_state_zip
-        )
-      `
-      )
-      .eq("id", investmentId)
-      .single()
-
-    if (investmentError) throw investmentError
 
     // Upsert founder information
     const { data: founderData, error: founderError } = await supabase
       .from("users")
-      .upsert({ name: values.name, email: values.email }, { onConflict: "email" })
+      .upsert(
+        { name: values.name, email: values.email },
+        { onConflict: "email" }
+      )
       .select("id")
       .single()
 
@@ -96,14 +87,23 @@ export function Share({
     const updateResponse = await supabase
       .from("investments")
       .update({ founder_id: founderData.id })
-      .eq("id", investmentId)
+      .eq("id", investment.id)
+
+    // Check if investment.investor and investment.fund are defined
+    if (!investment.investor || !investment.fund) {
+      toast({
+        description:
+          "Please add investor and fund information to the investment",
+      })
+      throw new Error("Investor or fund not found")
+    }
 
     const body = {
       name: values.name,
       email: values.email,
       url: idString,
-      investor: investmentData?.investor_id,
-      fund: investmentData?.fund_id,
+      investor: investment.investor,
+      fund: investment.fund,
     }
 
     try {
@@ -127,7 +127,9 @@ export function Share({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogTitle className="sr-only">Request Founder Information</DialogTitle>
+        <DialogTitle className="sr-only">
+          Request Founder Information
+        </DialogTitle>
         <DialogDescription className="sr-only">
           Share investment details with a founder via email or link
         </DialogDescription>
@@ -153,7 +155,10 @@ export function Share({
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-4"
+                  >
                     <FormField
                       control={form.control}
                       name="name"

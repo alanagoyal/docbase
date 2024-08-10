@@ -805,9 +805,8 @@ export default function InvestmentForm({
     }
     if (isFormLocked) {
       toast({
-        title: "Congratulations!",
         description:
-          "Your information has been saved. You'll receive an email with the next steps once all parties have provided their information.",
+          "Thanks! You'll receive an email with the next steps once all parties have provided their information",
       })
       try {
         await processStepTwo("save")
@@ -1125,7 +1124,7 @@ export default function InvestmentForm({
                 )}
               />
               <div className="flex flex-col gap-2">
-              <div className="flex w-full gap-2">
+                <div className="flex w-full gap-2">
                   <Button
                     className="w-1/2"
                     onClick={() => {
@@ -1152,7 +1151,6 @@ export default function InvestmentForm({
                     {isLoadingSave ? <Icons.spinner /> : "Save & Close"}
                   </Button>
                 )}
-
               </div>
             </>
           )}
@@ -1160,18 +1158,21 @@ export default function InvestmentForm({
             <>
               <div className="pt-4 flex justify-between items-center h-10">
                 <Label className="text-xl font-bold">Company Details</Label>
-                {!isFormLocked && investmentId && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      setIsShareDialogOpen(true)
-                    }}
-                  >
-                    <span className="text-sm">Share</span>
-                    <Icons.share className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
+                {isOwner &&
+                  investment &&
+                  investment.fund &&
+                  investment.investor && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setIsShareDialogOpen(true)
+                      }}
+                    >
+                      <span className="text-sm">Share</span>
+                      <Icons.share className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
               </div>
               {hasCompanies && (
                 <FormItem>
@@ -1287,160 +1288,177 @@ export default function InvestmentForm({
                 )}
               />
               <div className="flex flex-col gap-2">
-              <div className="flex w-full gap-2">
-                  <Button
-                    className="w-1/2"
-                    onClick={() => {
-                      setStep(1)
-                    }}
-                  >
-                    Back{" "}
-                  </Button>
-                  <Button
-                    type="button"
-                    className="w-1/2"
-                    onClick={advanceStepTwo}
-                  >
-                    {isLoadingNext ? <Icons.spinner /> : "Next"}
-                  </Button>
-                </div>
-                {(isEditMode || isFormLocked) && (
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={saveStepTwo}
-                    variant="secondary"
-                  >
-                    {isLoadingSave ? <Icons.spinner /> : "Save & Close"}
-                  </Button>
+                {!isOwner ? (
+                  <>
+                    <Button
+                      type="button"
+                      className="w-full"
+                      onClick={saveStepTwo}
+                    >
+                      {isLoadingSave ? <Icons.spinner /> : "Save & Close"}
+                    </Button>
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        setStep(1)
+                      }}
+                      variant="secondary"
+                    >
+                      Back
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex w-full gap-2">
+                      <Button
+                        className="w-1/2"
+                        onClick={() => {
+                          setStep(1)
+                        }}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        type="button"
+                        className="w-1/2"
+                        onClick={advanceStepTwo}
+                      >
+                        {isLoadingNext ? <Icons.spinner /> : "Next"}
+                      </Button>
+                    </div>
+                    {isEditMode && (
+                      <Button
+                        type="button"
+                        className="w-full"
+                        onClick={saveStepTwo}
+                        variant="secondary"
+                      >
+                        {isLoadingSave ? <Icons.spinner /> : "Save & Close"}
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </>
           )}
-          {step === 3 && (
+          {step === 3 && isOwner && (
             <>
-              {isOwner && (
-                <>
-                  <div className="pt-4 flex justify-between items-center h-10">
-                    <Label className="text-xl font-bold">Side Letter</Label>
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="infoRights"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Information Rights
-                          </FormLabel>
-                          <FormDescription>
-                            {formDescriptions.infoRights}
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={!isOwner}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="proRataRights"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Pro Rata Rights
-                          </FormLabel>
-                          <FormDescription>
-                            {formDescriptions.proRataRights}
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={!isOwner}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="majorInvestorRights"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Major Investor Rights
-                          </FormLabel>
-                          <FormDescription>
-                            {formDescriptions.majorInvestorRights}
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={!isOwner}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="termination"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Termination Rights
-                          </FormLabel>
-                          <FormDescription>
-                            {formDescriptions.termination}
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={!isOwner}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="miscellaneous"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Miscellaneous
-                          </FormLabel>
-                          <FormDescription>
-                            {formDescriptions.miscellaneous}
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={!isOwner}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
+              <div className="pt-4 flex justify-between items-center h-10">
+                <Label className="text-xl font-bold">Side Letter</Label>
+              </div>
+              <FormField
+                control={form.control}
+                name="infoRights"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Information Rights
+                      </FormLabel>
+                      <FormDescription>
+                        {formDescriptions.infoRights}
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isOwner}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="proRataRights"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Pro Rata Rights
+                      </FormLabel>
+                      <FormDescription>
+                        {formDescriptions.proRataRights}
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isOwner}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="majorInvestorRights"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Major Investor Rights
+                      </FormLabel>
+                      <FormDescription>
+                        {formDescriptions.majorInvestorRights}
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isOwner}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="termination"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Termination Rights
+                      </FormLabel>
+                      <FormDescription>
+                        {formDescriptions.termination}
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isOwner}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="miscellaneous"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Miscellaneous</FormLabel>
+                      <FormDescription>
+                        {formDescriptions.miscellaneous}
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isOwner}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
               <div className="flex flex-col gap-2">
                 <Button type="submit" className="w-full">
                   {isLoadingSave ? <Icons.spinner /> : "Save & Close"}
@@ -1457,12 +1475,14 @@ export default function InvestmentForm({
           )}
         </form>
       </Form>
-      <Share
-        investmentId={investmentId || ""}
-        onEmailSent={() => setStep(3)}
-        isOpen={isShareDialogOpen}
-        onOpenChange={setIsShareDialogOpen}
-      />
+      {investment && investment.fund && investment.investor && (
+        <Share
+          investment={investment}
+          onEmailSent={() => setStep(3)}
+          isOpen={isShareDialogOpen}
+          onOpenChange={setIsShareDialogOpen}
+        />
+      )}
     </div>
   )
 }

@@ -27,17 +27,14 @@ import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
 import { useCompletion } from "ai/react"
 import Docxtemplater from "docxtemplater"
-import { AlertCircle, Download, MenuIcon, InfoIcon } from "lucide-react"
+import { AlertCircle, Download, InfoIcon, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "./ui/popover"
 
 import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
+
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -46,6 +43,27 @@ const ReactQuill = dynamic(() => import("react-quill"), { ssr: false })
 const downloadDocument = (url: string) => {
   window.open(url, "_blank")
 }
+
+const NextStepsPopoverContent = () => (
+  <PopoverContent className="w-80 text-xs text-muted-foreground">
+    <p>
+      <strong className="text-foreground">Complete:</strong> Complete the
+      required fund and investor form fields
+    </p>
+    <p>
+      <strong className="text-foreground">Share:</strong> Complete or share the
+      investment to complete the company and founder form fields
+    </p>
+    <p>
+      <strong className="text-foreground">Generate:</strong> Generate documents
+      and shareable links
+    </p>
+    <p>
+      <strong className="text-foreground">Send:</strong> Send documents to
+      founder to review and sign
+    </p>
+  </PopoverContent>
+)
 
 export default function Investments({
   investments,
@@ -66,15 +84,12 @@ export default function Investments({
     string | null
   >(null)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
-  const [selectedInvestmentId, setSelectedInvestmentId] = useState<
-    string | null
-  >(null)
   const [generatingEmailForId, setGeneratingEmailForId] = useState<
     string | null
   >(null)
 
   const handleShareClick = (investment: UserInvestment) => {
-    setSelectedInvestmentId(investment.id)
+    setSelectedInvestment(investment)
     setIsShareDialogOpen(true)
   }
 
@@ -673,13 +688,20 @@ export default function Investments({
   }
 
   const getNextStep = (investment: UserInvestment) => {
-    if (!investment.company || !investment.founder) {
+    if (!investment.fund || !investment.investor) {
+      return {
+        text: "Complete",
+        action: () => router.push(`/investments/${investment.id}?step=1`),
+        className: "bg-[#74EBD5] text-white hover:bg-[#5ED1BB]",
+        nonOwnerText: "Waiting for fund/investor info",
+      }
+    } else if (!investment.company || !investment.founder) {
       return {
         text: "Share",
         action: () => {
           handleShareClick(investment)
         },
-        className: "bg-[#74EBD5] text-white hover:bg-[#5ED1BB]",
+        className: "bg-[#8AD8E0] text-white hover:bg-[#75C3CB]",
         nonOwnerText: "Waiting for required info",
       }
     } else if (
@@ -689,7 +711,7 @@ export default function Investments({
       return {
         text: "Generate",
         action: () => processDocuments(investment),
-        className: "bg-[#9FACE6] text-white hover:bg-[#8A9BD1]",
+        className: "bg-[#9FC5E8] text-white hover:bg-[#8AB0D3]",
         nonOwnerText: "Waiting to generate docs",
       }
     } else {
@@ -698,7 +720,7 @@ export default function Investments({
         action: () => {
           setSelectedInvestmentAndEmailContent(investment)
         },
-        className: "bg-[#87C4DB] text-white hover:bg-[#72AFD6]",
+        className: "bg-[#9FACE6] text-white hover:bg-[#8A9BD1]",
         nonOwnerText: "Awaiting signature",
       }
     }
@@ -755,11 +777,7 @@ export default function Investments({
                 <PopoverTrigger asChild>
                   <InfoIcon className="h-4 w-4 ml-2 inline-block cursor-pointer" />
                 </PopoverTrigger>
-                <PopoverContent className="w-100 text-xs text-muted-foreground">
-                  <p><strong className="text-foreground">Complete:</strong> Complete or share with founder to complete required fields</p>
-                  <p><strong className="text-foreground">Generate:</strong> Generate documents and shareable links</p>
-                  <p><strong className="text-foreground">Send:</strong> Send documents to founder to review and sign</p>
-                </PopoverContent>
+                <NextStepsPopoverContent />
               </Popover>
             </TableHead>
             <TableHead className="w-1/6">Actions</TableHead>
@@ -874,7 +892,9 @@ export default function Investments({
                               <>
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    if (investment.side_letter?.side_letter_url) {
+                                    if (
+                                      investment.side_letter?.side_letter_url
+                                    ) {
                                       downloadDocument(
                                         investment.side_letter.side_letter_url
                                       )
@@ -965,12 +985,14 @@ export default function Investments({
           </div>
         </DialogContent>
       </Dialog>
-      <Share
-        investmentId={selectedInvestmentId || ""}
-        onEmailSent={() => router.refresh()}
-        isOpen={isShareDialogOpen}
-        onOpenChange={setIsShareDialogOpen}
-      />
+      {selectedInvestment && (
+        <Share
+          investment={selectedInvestment}
+          onEmailSent={() => router.refresh()}
+          isOpen={isShareDialogOpen}
+          onOpenChange={setIsShareDialogOpen}
+        />
+      )}
     </div>
   )
 }
