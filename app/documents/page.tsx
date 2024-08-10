@@ -14,12 +14,6 @@ export default async function DocumentsPage() {
         redirect("/login")
     }
 
-    const { data: account } = await supabase
-    .from("users")
-    .select()
-    .eq("auth_id", user.id)
-    .single()
-
     const { data: documents, error } = await supabase
     .rpc('get_user_documents', { auth_id_arg: user.id })
     
@@ -38,7 +32,7 @@ export default async function DocumentsPage() {
             </Link>
           </div>
           <div className="max-w-5xl mx-auto">
-            <Documents documents={documents} account={account} />
+            <Documents documents={documents} />
           </div>
         </div>
       ) : (

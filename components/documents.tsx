@@ -1,11 +1,7 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/utils/supabase/client"
 import { MenuIcon } from "lucide-react"
-
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import {
@@ -29,8 +25,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-import { toast } from "./ui/use-toast"
-
 type User = Database["public"]["Tables"]["users"]["Row"]
 type Document = {
   id: string
@@ -41,18 +35,10 @@ type Document = {
 }
 export function Documents({
   documents,
-  account,
 }: {
   documents: Document[]
-  account: User
 }) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const supabase = createClient()
-  const router = useRouter()
 
-  const filteredDocuments = documents.filter((document) =>
-    document.document_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
 
   const getEditLink = (document: Document) => {
     const fileName = document.document_name.toLowerCase();
@@ -95,7 +81,7 @@ export function Documents({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredDocuments.map((document) => (
+            {documents.map((document) => (
               <TableRow key={document.id}>
                 <TableCell className="font-medium">
                   {document.document_name}
