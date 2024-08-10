@@ -719,12 +719,12 @@ export default function InvestmentForm({
     setIsLoadingSave(type === "save")
     const values = form.getValues()
     const investmentId = await processDealInfo(values)
-    router.push(`/investments/${investmentId}`)
-    setIsLoadingNext(false)
-    setIsLoadingSave(false)
     if (type === "next") {
+      router.push(`/investments/${investmentId}`)
       setStep(1)
     }
+    setIsLoadingNext(false)
+    setIsLoadingSave(false)
   }
 
   async function saveStepZero() {
@@ -739,7 +739,6 @@ export default function InvestmentForm({
   }
 
   async function advanceStepZero() {
-    const values = form.getValues()
     const isValid = await form.trigger(["purchaseAmount", "type", "date"])
     if (!isValid) {
       toast({
@@ -987,23 +986,23 @@ export default function InvestmentForm({
                 )}
               />
               <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={advanceStepZero}
+                >
+                  {isLoadingNext ? <Icons.spinner /> : "Next"}
+                </Button>
                 {(isEditMode || isFormLocked) && (
                   <Button
                     type="button"
                     className="w-full"
                     onClick={saveStepZero}
+                    variant="secondary"
                   >
-                    {isLoadingSave ? <Icons.spinner /> : "Save"}
+                    {isLoadingSave ? <Icons.spinner /> : "Save & Close"}
                   </Button>
                 )}
-                <Button
-                  type="button"
-                  className="w-full"
-                  onClick={advanceStepZero}
-                  variant={isEditMode || isFormLocked ? "secondary" : "default"}
-                >
-                  {isLoadingNext ? <Icons.spinner /> : "Next"}
-                </Button>
               </div>
             </>
           )}
@@ -1126,18 +1125,8 @@ export default function InvestmentForm({
                 )}
               />
               <div className="flex flex-col gap-2">
-                {(isEditMode || isFormLocked) && (
+              <div className="flex w-full gap-2">
                   <Button
-                    type="button"
-                    className="w-full"
-                    onClick={saveStepOne}
-                  >
-                    {isLoadingSave ? <Icons.spinner /> : "Save"}
-                  </Button>
-                )}
-                <div className="flex w-full gap-2">
-                  <Button
-                    variant="secondary"
                     className="w-1/2"
                     onClick={() => {
                       setStep(0)
@@ -1148,14 +1137,22 @@ export default function InvestmentForm({
                   <Button
                     type="button"
                     className="w-1/2"
-                    variant={
-                      isEditMode || isFormLocked ? "secondary" : "default"
-                    }
                     onClick={advanceStepOne}
                   >
                     {isLoadingNext ? <Icons.spinner /> : "Next"}
                   </Button>
                 </div>
+                {(isEditMode || isFormLocked) && (
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={saveStepOne}
+                    variant="secondary"
+                  >
+                    {isLoadingSave ? <Icons.spinner /> : "Save & Close"}
+                  </Button>
+                )}
+
               </div>
             </>
           )}
@@ -1290,18 +1287,8 @@ export default function InvestmentForm({
                 )}
               />
               <div className="flex flex-col gap-2">
-                {(isEditMode || isFormLocked) && (
+              <div className="flex w-full gap-2">
                   <Button
-                    type="button"
-                    className="w-full"
-                    onClick={saveStepTwo}
-                  >
-                    {isLoadingSave ? <Icons.spinner /> : "Save"}
-                  </Button>
-                )}
-                <div className="flex w-full gap-2">
-                  <Button
-                    variant="secondary"
                     className="w-1/2"
                     onClick={() => {
                       setStep(1)
@@ -1312,14 +1299,21 @@ export default function InvestmentForm({
                   <Button
                     type="button"
                     className="w-1/2"
-                    variant={
-                      isEditMode || isFormLocked ? "secondary" : "default"
-                    }
                     onClick={advanceStepTwo}
                   >
                     {isLoadingNext ? <Icons.spinner /> : "Next"}
                   </Button>
                 </div>
+                {(isEditMode || isFormLocked) && (
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={saveStepTwo}
+                    variant="secondary"
+                  >
+                    {isLoadingSave ? <Icons.spinner /> : "Save & Close"}
+                  </Button>
+                )}
               </div>
             </>
           )}
@@ -1449,7 +1443,7 @@ export default function InvestmentForm({
               )}
               <div className="flex flex-col gap-2">
                 <Button type="submit" className="w-full">
-                  {isLoadingSave ? <Icons.spinner /> : "Save"}
+                  {isLoadingSave ? <Icons.spinner /> : "Save & Close"}
                 </Button>
                 <Button
                   variant="secondary"
