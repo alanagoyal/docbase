@@ -21,7 +21,7 @@ export default async function AccountPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6 text-center">Your Account</h1>
-      <Account user={user} account={account}/>
+      <Account account={account}/>
     </div>
   )
 }

@@ -26,7 +26,6 @@ import {
   CardTitle,
 } from "./ui/card"
 import { EntitySelector } from "./entity-selector"
-import { Libraries, useLoadScript } from "@react-google-maps/api"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ToastAction } from "./ui/toast"
@@ -34,7 +33,6 @@ import { formDescriptions } from "@/utils/form-descriptions"
 import { Icons } from "./icons"
 import { Textarea } from "./ui/textarea"
 import { PlacesAutocomplete } from "./places-autocomplete"
-import { Label } from "./ui/label"
 
 const accountFormSchema = z.object({
   email: z.string().email(),
@@ -51,7 +49,7 @@ const accountFormSchema = z.object({
 type User = Database["public"]["Tables"]["users"]["Row"]
 type AccountFormValues = z.infer<typeof accountFormSchema>
 
-export default function AccountForm({ user, account }: { user: any, account: User }) {
+export default function AccountForm({ account }: { account: User }) {
   const router = useRouter()
   const supabase = createClient()
   const [entities, setEntities] = useState<Entity[]>([])
@@ -127,7 +125,7 @@ export default function AccountForm({ user, account }: { user: any, account: Use
       let { error: accountError } = await supabase
         .from("users")
         .update(accountUpdates)
-        .eq("auth_id", user.id)
+        .eq("auth_id", account.auth_id)
       if (accountError) throw accountError
 
       if (

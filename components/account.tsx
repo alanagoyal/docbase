@@ -7,7 +7,7 @@ import PasswordTabContent from "./password-form";
 
 type User = Database["public"]["Tables"]["users"]["Row"];
 
-export default function Account({ user, account }: { user: any, account: User }) {
+export default function Account({ account }: { account: User }) {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -17,7 +17,7 @@ export default function Account({ user, account }: { user: any, account: User })
           <TabsTrigger value="password">Password</TabsTrigger>
         </TabsList>
         <TabsContent value="profile">
-          <AccountTabContent user={user} account={account} />
+          <AccountTabContent account={account} />
         </TabsContent>
         <TabsContent value="password">
           <PasswordTabContent />
