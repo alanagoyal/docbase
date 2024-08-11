@@ -211,6 +211,24 @@ END;
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.get_link_analytics(link_id_arg uuid)
+ RETURNS TABLE(all_viewers bigint, unique_viewers bigint, all_views json)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT
+    (SELECT COUNT(*) FROM viewers WHERE link_id = link_id_arg) AS all_viewers,
+    (SELECT COUNT(DISTINCT email) FROM viewers WHERE link_id = link_id_arg) AS unique_viewers,
+    (SELECT json_agg(json_build_object('email', email, 'viewed_at', viewed_at))
+     FROM viewers
+     WHERE link_id = link_id_arg) AS all_views;
+END;
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.get_link_by_id(link_id uuid)
  RETURNS TABLE(id uuid, created_at timestamp with time zone, url text, password text, expires timestamp with time zone, filename text, created_by uuid)
  LANGUAGE plpgsql
@@ -956,30 +974,6 @@ as permissive
 for insert
 to public
 with check (true);
-
-
-create policy "Anyone can update"
-on "public"."viewers"
-as permissive
-for update
-to public
-using (true);
-
-
-create policy "Authenticated users can delete"
-on "public"."viewers"
-as permissive
-for delete
-to authenticated
-using (true);
-
-
-create policy "Authenticated users can select"
-on "public"."viewers"
-as permissive
-for select
-to authenticated
-using (true);
 
 
 
