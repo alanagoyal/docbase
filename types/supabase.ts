@@ -6,10 +6,22 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-  export type ViewerData = {
-    email: string;
-    viewed_at: string;
-  };
+export type Entity = {
+  id: string
+  name: string | null
+  type: "fund" | "company"
+  street?: string | null
+  city_state_zip?: string | null
+  byline?: string | null
+  state_of_incorporation?: string | null
+  investor_id?: string | null
+  founder_id?: string | null
+}
+
+export type ViewerData = {
+  email: string
+  viewed_at: string
+}
 
 export type UserInvestment = {
   id: string

@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { Database } from "@/types/supabase"
+import { Database, Entity } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -54,7 +54,7 @@ type AccountFormValues = z.infer<typeof accountFormSchema>
 export default function AccountForm({ user, account }: { user: any, account: User }) {
   const router = useRouter()
   const supabase = createClient()
-  const [entities, setEntities] = useState<any[]>([])
+  const [entities, setEntities] = useState<Entity[]>([])
   const [selectedEntity, setSelectedEntity] = useState<string | undefined>(
     undefined
   )
@@ -93,10 +93,21 @@ export default function AccountForm({ user, account }: { user: any, account: Use
       .eq("founder_id", account.id)
 
     if (!fundError && !companyError) {
-      const typedFundData = fundData.map((fund) => ({ ...fund, type: "fund" }))
-      const typedCompanyData = companyData.map((company) => ({
+      const typedFundData: Entity[] = fundData.map((fund) => ({
+        ...fund,
+        type: "fund" as const,
+        name: fund.name || null,
+        byline: fund.byline || null,
+        street: fund.street || null,
+        city_state_zip: fund.city_state_zip || null,
+      }))
+      const typedCompanyData: Entity[] = companyData.map((company) => ({
         ...company,
-        type: "company",
+        type: "company" as const,
+        name: company.name || null,
+        street: company.street || null,
+        city_state_zip: company.city_state_zip || null,
+        state_of_incorporation: company.state_of_incorporation || null,
       }))
       setEntities([...typedFundData, ...typedCompanyData])
     } else {
@@ -198,7 +209,15 @@ export default function AccountForm({ user, account }: { user: any, account: Use
       } else {
         setEntities((prevEntities) => [
           ...prevEntities,
-          { ...fundUpdates, id: newFund[0].id, type: "fund" },
+          {
+            id: newFund[0].id,
+            name: data.entity_name || null,
+            type: "fund" as const,
+            byline: data.byline || null,
+            street: data.street || null,
+            city_state_zip: data.city_state_zip || null,
+            investor_id: account.id,
+          },
         ])
         setSelectedEntity(undefined)
       }
@@ -264,7 +283,15 @@ export default function AccountForm({ user, account }: { user: any, account: Use
       } else {
         setEntities((prevEntities) => [
           ...prevEntities,
-          { ...companyUpdates, id: newCompany[0].id, type: "company" },
+          {
+            id: newCompany[0].id,
+            name: data.entity_name || null,
+            type: "company" as const,
+            street: data.street || null,
+            city_state_zip: data.city_state_zip || null,
+            state_of_incorporation: data.state_of_incorporation || null,
+            founder_id: account.id,
+          },
         ])
         setSelectedEntity(undefined)
       }
@@ -369,11 +396,11 @@ export default function AccountForm({ user, account }: { user: any, account: Use
         form.reset({
           ...form.getValues(),
           type: selectedEntityDetails.type,
-          entity_name: selectedEntityDetails.name,
-          byline: selectedEntityDetails.byline,
-          street: selectedEntityDetails.street,
-          city_state_zip: selectedEntityDetails.city_state_zip,
-          state_of_incorporation: selectedEntityDetails.state_of_incorporation,
+          entity_name: selectedEntityDetails.name || "",
+          byline: selectedEntityDetails.byline || "",
+          street: selectedEntityDetails.street || "",
+          city_state_zip: selectedEntityDetails.city_state_zip || "",
+          state_of_incorporation: selectedEntityDetails.state_of_incorporation || "",
         })
       }
     }

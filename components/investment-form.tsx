@@ -10,7 +10,7 @@ import { CalendarIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { Database, UserInvestment } from "@/types/supabase"
+import { Database, UserInvestment, Entity } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
 import AuthRefresh from "./auth-refresh"
@@ -93,7 +93,7 @@ export default function InvestmentForm({
     investment?.id || null
   )
   const [sideLetterId, setSideLetterId] = useState<string | null>(null)
-  const [entities, setEntities] = useState<any[]>([])
+  const [entities, setEntities] = useState<Entity[]>([])
   const [selectedEntity, setSelectedEntity] = useState<string | undefined>(
     undefined
   )
@@ -254,8 +254,8 @@ export default function InvestmentForm({
       .eq("founder_id", account.id)
 
     if (!fundError && !companyError) {
-      const typedFundData = fundData.map((fund) => ({ ...fund, type: "fund" }))
-      const typedCompanyData = companyData.map((company) => ({
+      const typedFundData: Entity[] = fundData.map((fund) => ({ ...fund, type: "fund" }))
+      const typedCompanyData: Entity[] = companyData.map((company) => ({
         ...company,
         type: "company",
       }))

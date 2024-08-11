@@ -7,13 +7,14 @@ import {
   SelectValue,
 } from "./ui/select"
 import { Separator } from "./ui/separator"
+import { Entity } from "@/types/supabase"
 
 type EntitySelectorProps = {
-  entities: any[]
-  selectedEntity: string | undefined
-  onSelectChange: (value: string) => void
-  entityType: "fund" | "company" | "both"
-  disabled: boolean
+  entities: Entity[];
+  selectedEntity: string | undefined;
+  onSelectChange: (value: string) => void;
+  entityType: "fund" | "company" | "both";
+  disabled: boolean;
 }
 
 export function EntitySelector({
