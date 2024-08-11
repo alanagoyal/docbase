@@ -539,6 +539,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_link_analytics: {
+        Args: {
+          link_id_arg: string
+        }
+        Returns: {
+          all_viewers: number
+          unique_viewers: number
+          all_views: ViewerData[]
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -846,6 +856,16 @@ export type Database = {
           created_at: string
           last_accessed_at: string
           metadata: Json
+        }[]
+      }
+      get_link_analytics: {
+        Args: {
+          link_id_arg: string
+        }
+        Returns: {
+          all_viewers: number
+          unique_viewers: number
+          all_views: ViewerData[]
         }[]
       }
     }
