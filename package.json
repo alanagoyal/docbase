@@ -15,6 +15,7 @@
     "update-types": "npx supabase gen types typescript --project-id \"dgnvviqfnfrqdxuwuyrm\" > types/supabase.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.25.1",
     "@braintrust/vercel-ai-sdk": "^0.0.4",
     "@hookform/resolvers": "^3.1.0",
     "@radix-ui/react-avatar": "^1.0.2",

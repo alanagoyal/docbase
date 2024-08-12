@@ -1,10 +1,17 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { formDescriptions } from "@/utils/form-descriptions"
+import { parseSignatureBlock } from "@/utils/parse-signature-block"
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useDropzone } from "react-dropzone"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+
 import { Database, Entity } from "@/types/supabase"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -18,6 +25,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
 
+import { EntitySelector } from "./entity-selector"
+import { Icons } from "./icons"
+import { PlacesAutocomplete } from "./places-autocomplete"
 import {
   Card,
   CardContent,
@@ -25,14 +35,8 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card"
-import { EntitySelector } from "./entity-selector"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { ToastAction } from "./ui/toast"
-import { formDescriptions } from "@/utils/form-descriptions"
-import { Icons } from "./icons"
 import { Textarea } from "./ui/textarea"
-import { PlacesAutocomplete } from "./places-autocomplete"
+import { ToastAction } from "./ui/toast"
 
 const accountFormSchema = z.object({
   email: z.string().email(),
@@ -57,7 +61,8 @@ export default function AccountForm({ account }: { account: User }) {
     undefined
   )
   const [showAdditionalFields, setShowAdditionalFields] = useState(false)
-  
+  const [signatureFile, setSignatureFile] = useState<File | null>(null)
+
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
@@ -176,7 +181,7 @@ export default function AccountForm({ account }: { account: User }) {
         .eq("id", existingFund[0].id)
 
       if (updateError) {
-        if (updateError.code === "23505") { 
+        if (updateError.code === "23505") {
           toast({
             description: "A fund with this name already exists",
           })
@@ -194,7 +199,7 @@ export default function AccountForm({ account }: { account: User }) {
         .select()
 
       if (newFundError) {
-        if (newFundError.code === "23505") { 
+        if (newFundError.code === "23505") {
           toast({
             description: "A fund with this name already exists",
           })
@@ -247,7 +252,7 @@ export default function AccountForm({ account }: { account: User }) {
         .eq("id", existingCompany[0].id)
 
       if (updateError) {
-        if (updateError.code === "23505") { 
+        if (updateError.code === "23505") {
           toast({
             description: "A company with this name already exists",
           })
@@ -267,7 +272,7 @@ export default function AccountForm({ account }: { account: User }) {
         .select()
 
       if (newCompanyError) {
-        if (newCompanyError.code === "23505") { 
+        if (newCompanyError.code === "23505") {
           toast({
             description: "A company with this name already exists",
           })
@@ -385,6 +390,7 @@ export default function AccountForm({ account }: { account: User }) {
         city_state_zip: "",
         state_of_incorporation: "",
       })
+      setSignatureFile(null)
     } else {
       // Fetch the selected entity's details and set them in the form
       const selectedEntityDetails = entities.find(
@@ -398,7 +404,8 @@ export default function AccountForm({ account }: { account: User }) {
           byline: selectedEntityDetails.byline || "",
           street: selectedEntityDetails.street || "",
           city_state_zip: selectedEntityDetails.city_state_zip || "",
-          state_of_incorporation: selectedEntityDetails.state_of_incorporation || "",
+          state_of_incorporation:
+            selectedEntityDetails.state_of_incorporation || "",
         })
       }
     }
@@ -408,6 +415,24 @@ export default function AccountForm({ account }: { account: User }) {
     if (showAdditionalFields) {
       return (
         <>
+          {(selectedEntity === "add-new-fund" ||
+            selectedEntity === "add-new-company") && (
+            <div
+              {...getRootProps()}
+              className={cn(
+                "border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer"
+              )}
+            >
+              <input {...getInputProps()} />
+              <p className="text-sm text-muted-foreground">
+                {isDragActive
+                  ? "Drop the signature block image here ..."
+                  : signatureFile
+                  ? `File selected: ${signatureFile.name}`
+                  : "Drag & drop or click to upload a signature block image"}
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-between space-x-2">
             <div className="w-full">
               <FormField
@@ -488,6 +513,47 @@ export default function AccountForm({ account }: { account: User }) {
     return null
   }
 
+  const onDrop = async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0]
+      setSignatureFile(file)
+
+      try {
+        const parsedData = await parseSignatureBlock(file)
+        form.reset({
+          ...form.getValues(),
+          entity_name: parsedData.entity_name || "",
+          name: parsedData.name || form.getValues("name"),
+          title: parsedData.title || form.getValues("title"),
+          street: parsedData.street || "",
+          city_state_zip: parsedData.city_state_zip || "",
+          state_of_incorporation: parsedData.state_of_incorporation || "",
+          type: selectedEntity === "add-new-fund" ? "fund" : "company",
+        })
+        setShowAdditionalFields(true)
+        toast({
+          description: "Signature block image parsed successfully",
+        })
+      } catch (error) {
+        console.error("Error parsing signature block:", error)
+        toast({
+          variant: "destructive",
+          description: "Error parsing signature block",
+        })
+      }
+    }
+  }
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "image/*": [".jpeg", ".jpg", ".png"],
+    },
+    disabled: !(
+      selectedEntity === "add-new-fund" || selectedEntity === "add-new-company"
+    ),
+  })
+
   return (
     <Card>
       <CardHeader>
@@ -497,74 +563,77 @@ export default function AccountForm({ account }: { account: User }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 w-full">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input {...field} disabled />
-                </FormControl>
-                <FormDescription>
-                  This is the email you log in with
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormDescription>
-                  This is the name that will be used in your signature block
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Title</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormDescription>
-                  This is the title that will be used in your signature block
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="space-y-4 w-full">
-            <div className="space-y-2 w-full">
-              <FormLabel>Signature Blocks</FormLabel>
-              <EntitySelector
-                entities={entities}
-                selectedEntity={selectedEntity}
-                onSelectChange={handleSelectChange}
-                entityType="both"
-                disabled={false}
-              />
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-2 w-full"
+          >
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} disabled />
+                  </FormControl>
+                  <FormDescription>
+                    This is the email you log in with
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    This is the name that will be used in your signature block
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    This is the title that will be used in your signature block
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="space-y-4 w-full">
+              <div className="space-y-2 w-full">
+                <FormLabel>Signature Blocks</FormLabel>
+                <EntitySelector
+                  entities={entities}
+                  selectedEntity={selectedEntity}
+                  onSelectChange={handleSelectChange}
+                  entityType="both"
+                  disabled={false}
+                />
+              </div>
+              {renderAdditionalFields()}
+              <Button className="w-full" type="submit">
+                Save
+              </Button>
             </div>
-            {renderAdditionalFields()}
-            <Button className="w-full" type="submit">
-              Save
-            </Button>
-          </div>
-        </form>
-      </Form>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   )
