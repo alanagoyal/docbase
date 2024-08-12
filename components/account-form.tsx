@@ -62,6 +62,7 @@ export default function AccountForm({ account }: { account: User }) {
   )
   const [showAdditionalFields, setShowAdditionalFields] = useState(false)
   const [signatureFile, setSignatureFile] = useState<File | null>(null)
+  const [parsingSignature, setParsingSignature] = useState(false)
 
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
@@ -424,13 +425,19 @@ export default function AccountForm({ account }: { account: User }) {
               )}
             >
               <input {...getInputProps()} />
-              <p className="text-sm text-muted-foreground">
-                {isDragActive
-                  ? "Drop the signature block image here ..."
-                  : signatureFile
-                  ? `File selected: ${signatureFile.name}`
-                  : "Drag & drop or click to upload a signature block image"}
-              </p>
+              <div className="text-sm text-muted-foreground">
+                {isDragActive ? (
+                  "Drop the signature block image here ..."
+                ) : parsingSignature ? (
+                  <div className="flex items-center justify-center">
+                    <Icons.spinner className="w-5 h-5 animate-spin" />
+                  </div>
+                ) : signatureFile ? (
+                  `File selected: ${signatureFile.name}`
+                ) : (
+                  "Drag & drop or click to upload a signature block image"
+                )}
+              </div>
             </div>
           )}
           <div className="flex items-center justify-between space-x-2">
@@ -517,9 +524,11 @@ export default function AccountForm({ account }: { account: User }) {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0]
       setSignatureFile(file)
+      setParsingSignature(true)
 
       try {
         const parsedData = await parseSignatureBlock(file)
+
         form.reset({
           ...form.getValues(),
           entity_name: parsedData.entity_name || "",
@@ -528,8 +537,9 @@ export default function AccountForm({ account }: { account: User }) {
           street: parsedData.street || "",
           city_state_zip: parsedData.city_state_zip || "",
           state_of_incorporation: parsedData.state_of_incorporation || "",
-          type: selectedEntity === "add-new-fund" ? "fund" : "company",
+          byline: parsedData.byline || "",
         })
+
         setShowAdditionalFields(true)
         toast({
           description: "Signature block image parsed successfully",
@@ -540,6 +550,8 @@ export default function AccountForm({ account }: { account: User }) {
           variant: "destructive",
           description: "Error parsing signature block",
         })
+      } finally {
+        setParsingSignature(false)
       }
     }
   }
