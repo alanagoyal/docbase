@@ -142,25 +142,27 @@ export default function AccountForm({ account }: { account: User }) {
         data.state_of_incorporation
       ) {
         if (data.type === "fund") {
-          await processFund(data)
+          const isDuplicate = await processFund(data)
+          if (isDuplicate) return
         } else if (data.type === "company") {
-          await processCompany(data)
+          const isDuplicate = await processCompany(data)
+          if (isDuplicate) return
         }
       }
+
+      toast({
+        description: "Account updated",
+      })
+      setShowAdditionalFields(false)
     } catch (error) {
       console.error(error)
       toast({
         description: "Error updating account",
       })
-    } finally {
-      toast({
-        description: "Account updated",
-      })
-      setShowAdditionalFields(false)
     }
   }
 
-  async function processFund(data: AccountFormValues) {
+  async function processFund(data: AccountFormValues): Promise<boolean> {
     const fundUpdates = {
       name: data.entity_name,
       byline: data.byline,
@@ -172,63 +174,49 @@ export default function AccountForm({ account }: { account: User }) {
     const { data: existingFund, error: existingFundError } = await supabase
       .from("funds")
       .select()
-      .eq("investor_id", account.id)
       .eq("name", data.entity_name)
 
+    if (existingFundError) {
+      console.error("Error checking existing fund:", existingFundError)
+      return true
+    }
+
     if (existingFund && existingFund.length > 0) {
-      const { error: updateError } = await supabase
-        .from("funds")
-        .update(fundUpdates)
-        .eq("id", existingFund[0].id)
+      console.log("existingFund:", existingFund)
+      form.setError("entity_name", {
+        type: "manual",
+        message: "A fund with this name already exists",
+      })
+      return true
+    }
 
-      if (updateError) {
-        if (updateError.code === "23505") {
-          toast({
-            description: "A fund with this name already exists",
-          })
-        } else {
-          console.error("Error updating fund:", updateError)
-          toast({
-            description: "Error updating fund",
-          })
-        }
-      }
+    const { data: newFund, error: newFundError } = await supabase
+      .from("funds")
+      .insert(fundUpdates)
+      .select()
+
+    if (newFundError) {
+      console.error("Error creating fund:", newFundError)
+      return true
     } else {
-      const { data: newFund, error: newFundError } = await supabase
-        .from("funds")
-        .insert(fundUpdates)
-        .select()
-
-      if (newFundError) {
-        if (newFundError.code === "23505") {
-          toast({
-            description: "A fund with this name already exists",
-          })
-        } else {
-          console.error("Error creating fund:", newFundError)
-          toast({
-            description: "Error creating fund",
-          })
-        }
-      } else {
-        setEntities((prevEntities) => [
-          ...prevEntities,
-          {
-            id: newFund[0].id,
-            name: data.entity_name || null,
-            type: "fund" as const,
-            byline: data.byline || null,
-            street: data.street || null,
-            city_state_zip: data.city_state_zip || null,
-            investor_id: account.id,
-          },
-        ])
-        setSelectedEntity(undefined)
-      }
+      setEntities((prevEntities) => [
+        ...prevEntities,
+        {
+          id: newFund[0].id,
+          name: data.entity_name || null,
+          type: "fund" as const,
+          byline: data.byline || null,
+          street: data.street || null,
+          city_state_zip: data.city_state_zip || null,
+          investor_id: account.id,
+        },
+      ])
+      setSelectedEntity(undefined)
+      return false
     }
   }
 
-  async function processCompany(data: AccountFormValues) {
+  async function processCompany(data: AccountFormValues): Promise<boolean> {
     const companyUpdates = {
       name: data.entity_name,
       street: data.street,
@@ -237,68 +225,48 @@ export default function AccountForm({ account }: { account: User }) {
       founder_id: account.id,
     }
 
-    // Check if company already exists
-    const { data: existingCompany, error: existingCompanyError } =
-      await supabase
-        .from("companies")
-        .select()
-        .eq("founder_id", account.id)
-        .eq("name", data.entity_name)
+    const { data: existingCompany, error: existingCompanyError } = await supabase
+      .from("companies")
+      .select()
+      .eq("name", data.entity_name)
+
+    if (existingCompanyError) {
+      console.error("Error checking existing company:", existingCompanyError)
+      return true
+    }
 
     if (existingCompany && existingCompany.length > 0) {
-      // Update the existing company
-      const { error: updateError } = await supabase
-        .from("companies")
-        .update(companyUpdates)
-        .eq("id", existingCompany[0].id)
+      console.log("existingCompany:", existingCompany)
+      form.setError("entity_name", {
+        type: "manual",
+        message: "A company with this name already exists",
+      })
+      return true
+    }
 
-      if (updateError) {
-        if (updateError.code === "23505") {
-          toast({
-            description: "A company with this name already exists",
-          })
-        } else {
-          console.error("Error updating company:", updateError)
-          toast({
-            variant: "destructive",
-            description: "Error updating company",
-          })
-        }
-      }
+    const { data: newCompany, error: newCompanyError } = await supabase
+      .from("companies")
+      .insert(companyUpdates)
+      .select()
+
+    if (newCompanyError) {
+      console.error("Error creating company:", newCompanyError)
+      return true
     } else {
-      // Create a new company
-      const { data: newCompany, error: newCompanyError } = await supabase
-        .from("companies")
-        .insert(companyUpdates)
-        .select()
-
-      if (newCompanyError) {
-        if (newCompanyError.code === "23505") {
-          toast({
-            description: "A company with this name already exists",
-          })
-        } else {
-          console.error("Error creating company:", newCompanyError)
-          toast({
-            variant: "destructive",
-            description: "Error creating company",
-          })
-        }
-      } else {
-        setEntities((prevEntities) => [
-          ...prevEntities,
-          {
-            id: newCompany[0].id,
-            name: data.entity_name || null,
-            type: "company" as const,
-            street: data.street || null,
-            city_state_zip: data.city_state_zip || null,
-            state_of_incorporation: data.state_of_incorporation || null,
-            founder_id: account.id,
-          },
-        ])
-        setSelectedEntity(undefined)
-      }
+      setEntities((prevEntities) => [
+        ...prevEntities,
+        {
+          id: newCompany[0].id,
+          name: data.entity_name || null,
+          type: "company" as const,
+          street: data.street || null,
+          city_state_zip: data.city_state_zip || null,
+          state_of_incorporation: data.state_of_incorporation || null,
+          founder_id: account.id,
+        },
+      ])
+      setSelectedEntity(undefined)
+      return false
     }
   }
 
