@@ -1,6 +1,7 @@
 "use client"
 
 import { createClient } from "./supabase/client"
+import { toast } from "@/components/ui/use-toast" // Import toast
 
 export async function parseSignatureBlock(file: File): Promise<{
   entity_name?: string
@@ -31,6 +32,15 @@ export async function parseSignatureBlock(file: File): Promise<{
     }
 
     const data = await response.json()
+
+    // Check if the response contains any of the expected fields
+    if (!data.entity_name && !data.name && !data.title && !data.street && !data.city_state_zip && !data.state_of_incorporation && !data.byline) {
+      toast({
+        description: "Unable to parse signature block",
+      })
+      throw new Error("No expected fields in response")
+    }
+
     return data
   } catch (error) {
     console.error("Error in parseSignatureBlock:", error)

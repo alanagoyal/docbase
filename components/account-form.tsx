@@ -547,8 +547,7 @@ export default function AccountForm({ account }: { account: User }) {
       } catch (error) {
         console.error("Error parsing signature block:", error)
         toast({
-          variant: "destructive",
-          description: "Error parsing signature block",
+          description: "Unable to parse signature block",
         })
       } finally {
         setParsingSignature(false)
