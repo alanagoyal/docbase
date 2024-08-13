@@ -1,7 +1,7 @@
 "use client"
 
 import { createClient } from "./supabase/client"
-import { toast } from "@/components/ui/use-toast" // Import toast
+import { toast } from "@/components/ui/use-toast" 
 
 export async function parseSignatureBlock(file: File): Promise<{
   entity_name?: string
