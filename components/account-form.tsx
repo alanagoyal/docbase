@@ -225,10 +225,8 @@ export default function AccountForm({ account }: { account: User }) {
       founder_id: account.id,
     }
 
-    const { data: existingCompany, error: existingCompanyError } = await supabase
-      .from("companies")
-      .select()
-      .eq("name", data.entity_name)
+    const { data: existingCompany, error: existingCompanyError } =
+      await supabase.from("companies").select().eq("name", data.entity_name)
 
     if (existingCompanyError) {
       console.error("Error checking existing company:", existingCompanyError)
@@ -302,16 +300,7 @@ export default function AccountForm({ account }: { account: User }) {
 
       if (investmentData && investmentData.length > 0) {
         toast({
-          title: `Unable to delete ${entityType}`,
-          description: `This ${entityType} is currently associated with an active investment.`,
-          action: (
-            <ToastAction
-              onClick={() => router.push("/investments")}
-              altText="Investments"
-            >
-              Investments
-            </ToastAction>
-          ),
+          description: `This ${entityType} is currently associated with an active investment and can't be deleted at this time`,
         })
         return
       }
@@ -408,17 +397,23 @@ export default function AccountForm({ account }: { account: User }) {
               </div>
             </div>
           )}
-          <div className="flex items-center justify-between space-x-2">
-            <div className="w-full">
+          <div className="flex items-start space-x-2">
+            <div className="flex-grow">
               <FormField
                 control={form.control}
                 name="entity_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Entity Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <div className="flex items-center space-x-2">
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <Icons.trash
+                        className="cursor-pointer w-5 h-5 flex-shrink-0 mt-2"
+                        onClick={() => deleteEntity()}
+                      />
+                    </div>
                     <FormDescription>
                       {form.watch("type") === "fund"
                         ? formDescriptions.fundName
@@ -429,10 +424,6 @@ export default function AccountForm({ account }: { account: User }) {
                 )}
               />
             </div>
-            <Icons.trash
-              className="cursor-pointer w-5 h-5"
-              onClick={() => deleteEntity()}
-            />
           </div>
           {form.watch("type") === "fund" && (
             <FormField
