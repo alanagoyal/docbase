@@ -410,7 +410,7 @@ export default function AccountForm({ account }: { account: User }) {
                         <Input {...field} />
                       </FormControl>
                       <Icons.trash
-                        className="cursor-pointer w-5 h-5 flex-shrink-0 mt-2"
+                        className="cursor-pointer w-5 h-5 flex-shrink-0"
                         onClick={() => deleteEntity()}
                       />
                     </div>
