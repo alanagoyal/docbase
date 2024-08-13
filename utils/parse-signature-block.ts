@@ -60,7 +60,7 @@ async function uploadFileToSupabase(file: File): Promise<string> {
 
   const { data: signedUrl } = await supabase.storage
     .from("documents")
-    .createSignedUrl(data.path, 2592000)
+    .createSignedUrl(data.path, 1800)
 
   return signedUrl?.signedUrl || ""
 }
