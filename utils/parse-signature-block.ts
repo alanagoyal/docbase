@@ -1,6 +1,5 @@
 "use client"
 
-import { createClient } from "./supabase/client"
 import { toast } from "@/components/ui/use-toast" 
 
 export async function parseSignatureBlock(file: File): Promise<{
@@ -14,21 +13,20 @@ export async function parseSignatureBlock(file: File): Promise<{
   type?: "fund" | "company"
 }> {
   try {
-    const signedUrl = await uploadFileToSupabase(file)
+    const base64Image = await fileToBase64(file)
 
     const response = await fetch("/api/parse-signature-block", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ imageUrl: signedUrl }),
+      body: JSON.stringify({ base64Image }),
     })
 
-
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error("API Error:", errorData)
-      throw new Error(`Failed to parse signature block: ${response.status} ${errorData.error || ''}`)
+      const errorText = await response.text()
+      console.error("API Error:", errorText)
+      throw new Error(`Failed to parse signature block: ${response.status} ${errorText}`)
     }
 
     const data = await response.json()
@@ -48,19 +46,11 @@ export async function parseSignatureBlock(file: File): Promise<{
   }
 }
 
-async function uploadFileToSupabase(file: File): Promise<string> {
-  const supabase = createClient()
-  const { data, error } = await supabase.storage
-    .from("documents")
-    .upload(`${Date.now()}-${file.name}`, file)
-
-  if (error) {
-    throw new Error(`Failed to upload file to Supabase: ${error.message}`)
-  }
-
-  const { data: signedUrl } = await supabase.storage
-    .from("documents")
-    .createSignedUrl(data.path, 1800)
-
-  return signedUrl?.signedUrl || ""
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
 }

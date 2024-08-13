@@ -8,19 +8,31 @@ initLogger({
 });
 
 export async function POST(req: Request) {
-  const { imageUrl } = await req.json();
-  const data = await handleRequest(imageUrl);
-  
-  return NextResponse.json(data);
+  try {
+    const body = await req.json();
+    const { base64Image } = body;
+    const data = await handleRequest(base64Image);
+    return NextResponse.json(data);
+
+  } catch (error) {
+    console.error("Error in API route:", error);
+    return NextResponse.json({ error: error }, { status: 500 });
+  }
 }
 
-const handleRequest = wrapTraced(async function handleRequest(imageUrl: string) {
-  return await invoke({
-    projectName: "docbase",
-    slug: "parse-signature-block",
-    input: {
-      imageUrl,
-    },
-    stream: false,
-  });
+const handleRequest = wrapTraced(async function handleRequest(base64Image: string) {
+  try {
+    const result = await invoke({
+      projectName: "docbase",
+      slug: "parse-signature-block",
+      input: {
+        base64Image,
+      },
+      stream: false,
+    });
+    return result;
+  } catch (error) {
+    console.error("Error in handleRequest:", error);
+    throw error;
+  }
 });
