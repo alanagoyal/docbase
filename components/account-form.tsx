@@ -1,10 +1,17 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { formDescriptions } from "@/utils/form-descriptions"
+import { parseSignatureBlock } from "@/utils/parse-signature-block"
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useDropzone } from "react-dropzone"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+
 import { Database, Entity } from "@/types/supabase"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -18,6 +25,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
 
+import { EntitySelector } from "./entity-selector"
+import { Icons } from "./icons"
+import { PlacesAutocomplete } from "./places-autocomplete"
 import {
   Card,
   CardContent,
@@ -25,14 +35,8 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card"
-import { EntitySelector } from "./entity-selector"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { ToastAction } from "./ui/toast"
-import { formDescriptions } from "@/utils/form-descriptions"
-import { Icons } from "./icons"
 import { Textarea } from "./ui/textarea"
-import { PlacesAutocomplete } from "./places-autocomplete"
+import { ToastAction } from "./ui/toast"
 
 const accountFormSchema = z.object({
   email: z.string().email(),
@@ -57,7 +61,9 @@ export default function AccountForm({ account }: { account: User }) {
     undefined
   )
   const [showAdditionalFields, setShowAdditionalFields] = useState(false)
-  
+  const [signatureFile, setSignatureFile] = useState<File | null>(null)
+  const [parsingSignature, setParsingSignature] = useState(false)
+
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
@@ -136,25 +142,27 @@ export default function AccountForm({ account }: { account: User }) {
         data.state_of_incorporation
       ) {
         if (data.type === "fund") {
-          await processFund(data)
+          const isDuplicate = await processFund(data)
+          if (isDuplicate) return
         } else if (data.type === "company") {
-          await processCompany(data)
+          const isDuplicate = await processCompany(data)
+          if (isDuplicate) return
         }
       }
+
+      toast({
+        description: "Account updated",
+      })
+      setShowAdditionalFields(false)
     } catch (error) {
       console.error(error)
       toast({
         description: "Error updating account",
       })
-    } finally {
-      toast({
-        description: "Account updated",
-      })
-      setShowAdditionalFields(false)
     }
   }
 
-  async function processFund(data: AccountFormValues) {
+  async function processFund(data: AccountFormValues): Promise<boolean> {
     const fundUpdates = {
       name: data.entity_name,
       byline: data.byline,
@@ -166,63 +174,49 @@ export default function AccountForm({ account }: { account: User }) {
     const { data: existingFund, error: existingFundError } = await supabase
       .from("funds")
       .select()
-      .eq("investor_id", account.id)
       .eq("name", data.entity_name)
 
+    if (existingFundError) {
+      console.error("Error checking existing fund:", existingFundError)
+      return true
+    }
+
     if (existingFund && existingFund.length > 0) {
-      const { error: updateError } = await supabase
-        .from("funds")
-        .update(fundUpdates)
-        .eq("id", existingFund[0].id)
+      console.log("existingFund:", existingFund)
+      form.setError("entity_name", {
+        type: "manual",
+        message: "A fund with this name already exists",
+      })
+      return true
+    }
 
-      if (updateError) {
-        if (updateError.code === "23505") { 
-          toast({
-            description: "A fund with this name already exists",
-          })
-        } else {
-          console.error("Error updating fund:", updateError)
-          toast({
-            description: "Error updating fund",
-          })
-        }
-      }
+    const { data: newFund, error: newFundError } = await supabase
+      .from("funds")
+      .insert(fundUpdates)
+      .select()
+
+    if (newFundError) {
+      console.error("Error creating fund:", newFundError)
+      return true
     } else {
-      const { data: newFund, error: newFundError } = await supabase
-        .from("funds")
-        .insert(fundUpdates)
-        .select()
-
-      if (newFundError) {
-        if (newFundError.code === "23505") { 
-          toast({
-            description: "A fund with this name already exists",
-          })
-        } else {
-          console.error("Error creating fund:", newFundError)
-          toast({
-            description: "Error creating fund",
-          })
-        }
-      } else {
-        setEntities((prevEntities) => [
-          ...prevEntities,
-          {
-            id: newFund[0].id,
-            name: data.entity_name || null,
-            type: "fund" as const,
-            byline: data.byline || null,
-            street: data.street || null,
-            city_state_zip: data.city_state_zip || null,
-            investor_id: account.id,
-          },
-        ])
-        setSelectedEntity(undefined)
-      }
+      setEntities((prevEntities) => [
+        ...prevEntities,
+        {
+          id: newFund[0].id,
+          name: data.entity_name || null,
+          type: "fund" as const,
+          byline: data.byline || null,
+          street: data.street || null,
+          city_state_zip: data.city_state_zip || null,
+          investor_id: account.id,
+        },
+      ])
+      setSelectedEntity(undefined)
+      return false
     }
   }
 
-  async function processCompany(data: AccountFormValues) {
+  async function processCompany(data: AccountFormValues): Promise<boolean> {
     const companyUpdates = {
       name: data.entity_name,
       street: data.street,
@@ -231,68 +225,46 @@ export default function AccountForm({ account }: { account: User }) {
       founder_id: account.id,
     }
 
-    // Check if company already exists
     const { data: existingCompany, error: existingCompanyError } =
-      await supabase
-        .from("companies")
-        .select()
-        .eq("founder_id", account.id)
-        .eq("name", data.entity_name)
+      await supabase.from("companies").select().eq("name", data.entity_name)
+
+    if (existingCompanyError) {
+      console.error("Error checking existing company:", existingCompanyError)
+      return true
+    }
 
     if (existingCompany && existingCompany.length > 0) {
-      // Update the existing company
-      const { error: updateError } = await supabase
-        .from("companies")
-        .update(companyUpdates)
-        .eq("id", existingCompany[0].id)
+      console.log("existingCompany:", existingCompany)
+      form.setError("entity_name", {
+        type: "manual",
+        message: "A company with this name already exists",
+      })
+      return true
+    }
 
-      if (updateError) {
-        if (updateError.code === "23505") { 
-          toast({
-            description: "A company with this name already exists",
-          })
-        } else {
-          console.error("Error updating company:", updateError)
-          toast({
-            variant: "destructive",
-            description: "Error updating company",
-          })
-        }
-      }
+    const { data: newCompany, error: newCompanyError } = await supabase
+      .from("companies")
+      .insert(companyUpdates)
+      .select()
+
+    if (newCompanyError) {
+      console.error("Error creating company:", newCompanyError)
+      return true
     } else {
-      // Create a new company
-      const { data: newCompany, error: newCompanyError } = await supabase
-        .from("companies")
-        .insert(companyUpdates)
-        .select()
-
-      if (newCompanyError) {
-        if (newCompanyError.code === "23505") { 
-          toast({
-            description: "A company with this name already exists",
-          })
-        } else {
-          console.error("Error creating company:", newCompanyError)
-          toast({
-            variant: "destructive",
-            description: "Error creating company",
-          })
-        }
-      } else {
-        setEntities((prevEntities) => [
-          ...prevEntities,
-          {
-            id: newCompany[0].id,
-            name: data.entity_name || null,
-            type: "company" as const,
-            street: data.street || null,
-            city_state_zip: data.city_state_zip || null,
-            state_of_incorporation: data.state_of_incorporation || null,
-            founder_id: account.id,
-          },
-        ])
-        setSelectedEntity(undefined)
-      }
+      setEntities((prevEntities) => [
+        ...prevEntities,
+        {
+          id: newCompany[0].id,
+          name: data.entity_name || null,
+          type: "company" as const,
+          street: data.street || null,
+          city_state_zip: data.city_state_zip || null,
+          state_of_incorporation: data.state_of_incorporation || null,
+          founder_id: account.id,
+        },
+      ])
+      setSelectedEntity(undefined)
+      return false
     }
   }
 
@@ -328,16 +300,7 @@ export default function AccountForm({ account }: { account: User }) {
 
       if (investmentData && investmentData.length > 0) {
         toast({
-          title: `Unable to delete ${entityType}`,
-          description: `This ${entityType} is currently associated with an active investment.`,
-          action: (
-            <ToastAction
-              onClick={() => router.push("/investments")}
-              altText="Investments"
-            >
-              Investments
-            </ToastAction>
-          ),
+          description: `This ${entityType} is currently associated with an active investment and can't be deleted at this time`,
         })
         return
       }
@@ -385,6 +348,7 @@ export default function AccountForm({ account }: { account: User }) {
         city_state_zip: "",
         state_of_incorporation: "",
       })
+      setSignatureFile(null)
     } else {
       // Fetch the selected entity's details and set them in the form
       const selectedEntityDetails = entities.find(
@@ -398,7 +362,8 @@ export default function AccountForm({ account }: { account: User }) {
           byline: selectedEntityDetails.byline || "",
           street: selectedEntityDetails.street || "",
           city_state_zip: selectedEntityDetails.city_state_zip || "",
-          state_of_incorporation: selectedEntityDetails.state_of_incorporation || "",
+          state_of_incorporation:
+            selectedEntityDetails.state_of_incorporation || "",
         })
       }
     }
@@ -408,17 +373,47 @@ export default function AccountForm({ account }: { account: User }) {
     if (showAdditionalFields) {
       return (
         <>
-          <div className="flex items-center justify-between space-x-2">
-            <div className="w-full">
+          {(selectedEntity === "add-new-fund" ||
+            selectedEntity === "add-new-company") && (
+            <div
+              {...getRootProps()}
+              className={cn(
+                "border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer"
+              )}
+            >
+              <input {...getInputProps()} />
+              <div className="text-sm text-muted-foreground">
+                {isDragActive ? (
+                  "Drop the signature block image here ..."
+                ) : parsingSignature ? (
+                  <div className="flex items-center justify-center">
+                    <Icons.spinner className="w-5 h-5 animate-spin" />
+                  </div>
+                ) : signatureFile ? (
+                  `File selected: ${signatureFile.name}`
+                ) : (
+                  "Drag & drop or click to upload a signature block image"
+                )}
+              </div>
+            </div>
+          )}
+          <div className="flex items-start space-x-2">
+            <div className="flex-grow">
               <FormField
                 control={form.control}
                 name="entity_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Entity Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <div className="flex items-center space-x-2">
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <Icons.trash
+                        className="cursor-pointer w-5 h-5 flex-shrink-0 mt-2"
+                        onClick={() => deleteEntity()}
+                      />
+                    </div>
                     <FormDescription>
                       {form.watch("type") === "fund"
                         ? formDescriptions.fundName
@@ -429,10 +424,6 @@ export default function AccountForm({ account }: { account: User }) {
                 )}
               />
             </div>
-            <Icons.trash
-              className="cursor-pointer w-5 h-5"
-              onClick={() => deleteEntity()}
-            />
           </div>
           {form.watch("type") === "fund" && (
             <FormField
@@ -488,6 +479,51 @@ export default function AccountForm({ account }: { account: User }) {
     return null
   }
 
+  const onDrop = async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0]
+      setSignatureFile(file)
+      setParsingSignature(true)
+
+      try {
+        const parsedData = await parseSignatureBlock(file)
+
+        form.reset({
+          ...form.getValues(),
+          entity_name: parsedData.entity_name || "",
+          name: parsedData.name || form.getValues("name"),
+          title: parsedData.title || form.getValues("title"),
+          street: parsedData.street || "",
+          city_state_zip: parsedData.city_state_zip || "",
+          state_of_incorporation: parsedData.state_of_incorporation || "",
+          byline: parsedData.byline || "",
+        })
+
+        setShowAdditionalFields(true)
+        toast({
+          description: "Signature block image parsed successfully",
+        })
+      } catch (error) {
+        console.error("Error parsing signature block:", error)
+        toast({
+          description: "Unable to parse signature block",
+        })
+      } finally {
+        setParsingSignature(false)
+      }
+    }
+  }
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "image/*": [".jpeg", ".jpg", ".png"],
+    },
+    disabled: !(
+      selectedEntity === "add-new-fund" || selectedEntity === "add-new-company"
+    ),
+  })
+
   return (
     <Card>
       <CardHeader>
@@ -497,74 +533,77 @@ export default function AccountForm({ account }: { account: User }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 w-full">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input {...field} disabled />
-                </FormControl>
-                <FormDescription>
-                  This is the email you log in with
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormDescription>
-                  This is the name that will be used in your signature block
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Title</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormDescription>
-                  This is the title that will be used in your signature block
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="space-y-4 w-full">
-            <div className="space-y-2 w-full">
-              <FormLabel>Signature Blocks</FormLabel>
-              <EntitySelector
-                entities={entities}
-                selectedEntity={selectedEntity}
-                onSelectChange={handleSelectChange}
-                entityType="both"
-                disabled={false}
-              />
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-2 w-full"
+          >
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} disabled />
+                  </FormControl>
+                  <FormDescription>
+                    This is the email you log in with
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    This is the name that will be used in your signature block
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    This is the title that will be used in your signature block
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="space-y-4 w-full">
+              <div className="space-y-2 w-full">
+                <FormLabel>Signature Blocks</FormLabel>
+                <EntitySelector
+                  entities={entities}
+                  selectedEntity={selectedEntity}
+                  onSelectChange={handleSelectChange}
+                  entityType="both"
+                  disabled={false}
+                />
+              </div>
+              {renderAdditionalFields()}
+              <Button className="w-full" type="submit">
+                Save
+              </Button>
             </div>
-            {renderAdditionalFields()}
-            <Button className="w-full" type="submit">
-              Save
-            </Button>
-          </div>
-        </form>
-      </Form>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   )
