@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { createClient } from "@/utils/supabase/client"
+import { Icons } from "./icons"
 
 import AuthRefresh from "./auth-refresh"
 import { Button } from "./ui/button"
@@ -18,10 +19,16 @@ import { toast } from "./ui/use-toast"
 export default function MagicLink({ redirect }: { redirect: string }) {
   const supabase = createClient()
   const [email, setEmail] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      signInWithEmail(email);
+    }
+  };
 
   async function signInWithEmail(email: string) {
-    setIsSubmitting(true)
+    setIsLoading(true)
     const redirectUrl =
       redirect === "sharing"
         ? window.location.href
@@ -34,7 +41,7 @@ export default function MagicLink({ redirect }: { redirect: string }) {
         emailRedirectTo: redirectUrl,
       },
     })
-    setIsSubmitting(false)
+    setIsLoading(false)
     setEmail("")
     if (error) {
       toast({
@@ -67,15 +74,16 @@ export default function MagicLink({ redirect }: { redirect: string }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onKeyPress={handleKeyPress}
               placeholder="name@email.com"
               autoComplete="off"
             />
             <Button
               className="w-full"
               onClick={() => signInWithEmail(email)}
-              disabled={isSubmitting}
+              disabled={isLoading}
             >
-              Send Magic Link
+              {isLoading ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : "Send Magic Link"}
             </Button>
           </div>
         </CardContent>

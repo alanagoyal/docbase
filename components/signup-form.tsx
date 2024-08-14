@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+import { Icons } from "./icons"
 
 import {
   Form,
@@ -25,6 +26,7 @@ import {
 import { Input } from "./ui/input"
 import { ToastAction } from "./ui/toast"
 import { toast } from "./ui/use-toast"
+import { useState } from "react"
 
 export interface SignupFormData {
   email: string
@@ -58,7 +60,16 @@ export function SignupForm({ signup }: SignupFormProps) {
     },
   })
 
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      form.handleSubmit(onSubmit)();
+    }
+  };
+
   const onSubmit = async (data: SignupFormData) => {
+    setIsLoading(true)
     try {
       const response = await signup(data)
       if (response && !response.success) {
@@ -94,6 +105,8 @@ export function SignupForm({ signup }: SignupFormProps) {
         title: "Sign up failed",
         description: "An unexpected error occurred. Please try again later.",
       })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -144,6 +157,7 @@ export function SignupForm({ signup }: SignupFormProps) {
                             autoComplete="off"
                             placeholder="••••••••"
                             {...field}
+                            onKeyDown={handleKeyDown}
                           ></Input>
                         </FormControl>{" "}
                         <FormMessage />
@@ -151,7 +165,9 @@ export function SignupForm({ signup }: SignupFormProps) {
                     )}
                   />
                 </div>
-                <Button type="submit">Sign Up</Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : "Sign Up"}
+                </Button>
               </div>
             </form>
           </Form>

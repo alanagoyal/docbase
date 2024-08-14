@@ -22,6 +22,8 @@ import {
 } from "./ui/card"
 import { Input } from "./ui/input"
 import { toast } from "./ui/use-toast"
+import { Icons } from "./icons"
+import { useState } from "react"
 
 export interface LoginFormData {
   email: string
@@ -52,7 +54,10 @@ export function LoginForm({ login }: LoginFormProps) {
     },
   })
 
+  const [isLoading, setIsLoading] = useState(false)
+
   const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true)
     try {
       const response = await login(data)
       if (response && response.errorMessage) {
@@ -67,8 +72,16 @@ export function LoginForm({ login }: LoginFormProps) {
         title: "Login failed",
         description: "An unexpected error occurred. Please try again later.",
       })
+    } finally {
+      setIsLoading(false)
     }
   }
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter') {
+      form.handleSubmit(onSubmit)();
+    }
+  };
 
   return (
     <>
@@ -114,6 +127,7 @@ export function LoginForm({ login }: LoginFormProps) {
                             type="password"
                             placeholder="••••••••"
                             {...field}
+                            onKeyDown={handleKeyDown}
                           ></Input>
                         </FormControl>{" "}
                         <FormMessage />
@@ -121,7 +135,9 @@ export function LoginForm({ login }: LoginFormProps) {
                     )}
                   />
                 </div>
-                <Button type="submit">Sign In</Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? <Icons.spinner className="mr-2 h-4 w-4 animate-spin" /> : "Sign In"}
+                </Button>
               </div>
             </form>
           </Form>
