@@ -11,6 +11,13 @@ import * as z from "zod"
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -22,11 +29,14 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/use-toast"
 
 import { Icons } from "./icons"
@@ -110,68 +120,59 @@ export default function ContactForm({
   }
 
   return (
-    <div>
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>
-              {existingContact ? "Edit Contact" : "New Contact"}
-            </DialogTitle>
-            <DialogDescription>
-              {existingContact
-                ? "Edit contact details"
-                : "Please enter contact details"}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-8"
-              >
-                {" "}
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base mx-2">Email</FormLabel>
-                      </div>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base mx-2">Name</FormLabel>
-                      </div>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <div className="py-1 flex justify-center">
-                  <Button type="submit">
-                    {isLoading ? (
-                      <Icons.spinner className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Add"
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogTitle>
+          {existingContact ? "Edit Contact" : "New Contact"}
+        </DialogTitle>
+        <DialogDescription>
+          {existingContact
+            ? "Edit contact details"
+            : "Add the name and email address of the contact"}
+        </DialogDescription>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 w-full"
+          >
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button className="w-full" type="submit">
+              {isLoading ? (
+                <Icons.spinner className="w-4 h-4 animate-spin" />
+              ) : existingContact ? (
+                "Update Contact"
+              ) : (
+                "Add Contact"
+              )}
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   )
 }
