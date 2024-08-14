@@ -44,6 +44,7 @@ export function ContactsTable({
   const supabase = createClient()
   const router = useRouter()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
 
   async function onDelete(id: string) {
     try {
@@ -55,15 +56,35 @@ export function ContactsTable({
       router.refresh()
     } catch (error) {}
   }
+
+  async function onEdit(id: string) {
+    const contact = contacts.find((contact) => contact.id === id)
+    if (contact) {
+      setSelectedContact(contact)
+      setIsEditDialogOpen(true)
+    }
+  }
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "n/a"
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "2-digit",
+      timeZone: "UTC"
+    })
+  }
+
   return (
-    <>
+    <div className="container mx-auto py-10">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead className="w-1/4">Name</TableHead>
+            <TableHead className="w-1/4">Email</TableHead>
+            <TableHead className="w-1/4">Created</TableHead>
+            <TableHead className="w-1/4">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -71,9 +92,7 @@ export function ContactsTable({
             <TableRow key={contact.id}>
               <TableCell>{contact.name}</TableCell>
               <TableCell>{contact.email}</TableCell>
-              <TableCell>
-                {new Date(contact.created_at).toLocaleString("en-US")}
-              </TableCell>
+              <TableCell>{formatDate(contact.created_at)}</TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -82,7 +101,7 @@ export function ContactsTable({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+                    <DropdownMenuItem onClick={() => onEdit(contact.id)}>
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onDelete(contact.id)}>
@@ -95,11 +114,14 @@ export function ContactsTable({
           ))}
         </TableBody>
       </Table>
-      <ContactForm
-        isOpen={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        account={account}
-      />
-    </>
+      {selectedContact && (
+        <ContactForm
+          isOpen={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          account={account}
+          existingContact={selectedContact}
+        />
+      )}
+    </div>
   )
 }
