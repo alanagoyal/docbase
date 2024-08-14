@@ -138,6 +138,36 @@ export type Database = {
           },
         ]
       }
+      contact_groups: {
+        Row: {
+          contact_id: string
+          group_id: string
+        }
+        Insert: {
+          contact_id: string
+          group_id: string
+        }
+        Update: {
+          contact_id?: string
+          group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_groups_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           created_at: string | null
@@ -194,6 +224,35 @@ export type Database = {
           {
             foreignKeyName: "funds_investor_id_fkey"
             columns: ["investor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]

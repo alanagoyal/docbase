@@ -1,11 +1,9 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-
 import AddContact from "@/components/add-contact"
-import ContactForm from "@/components/contact-form"
 import { ContactsTable } from "@/components/contacts"
 
-export default async function Members() {
+export default async function Contacts() {
   const supabase = createClient()
   const {
     data: { user },
@@ -26,17 +24,52 @@ export default async function Members() {
     .select("*")
     .eq("created_by", user.id)
 
-  return contacts && contacts.length > 0 ? (
+  const { data: groups, error: groupsError } = await supabase
+    .from("groups")
+    .select("id, name")
+    .eq("created_by", user.id)
+
+  const { data: contactGroups, error: contactGroupsError } = await supabase
+    .from("contact_groups")
+    .select("contact_id, group_id")
+    .in("contact_id", contacts?.map(c => c.id) || [])
+
+  if (contactsError || groupsError || contactGroupsError) {
+    console.error("Error fetching data:", contactsError || groupsError || contactGroupsError)
+    // Handle the error appropriately
+  }
+
+  const formattedGroups = groups?.map(group => ({
+    value: group.id,
+    label: group.name
+  })) || []
+
+  const contactGroupMap = contactGroups?.reduce((acc, cg) => {
+    if (!acc[cg.contact_id]) {
+      acc[cg.contact_id] = []
+    }
+    acc[cg.contact_id].push(cg.group_id)
+    return acc
+  }, {} as Record<string, string[]>) || {}
+
+  const contactsWithGroups = contacts?.map(contact => ({
+    ...contact,
+    groups: formattedGroups.filter(g => contactGroupMap[contact.id]?.includes(g.value))
+  }))
+
+  return contactsWithGroups && contactsWithGroups.length > 0 ? (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center max-w-5xl mx-auto py-4 relative">
         <div className="w-[150px]" />
         <h1 className="text-2xl font-bold absolute left-1/2 transform -translate-x-1/2">
           Contacts
         </h1>
-        <AddContact account={account} />
+        <AddContact account={account} groups={formattedGroups} type="page" />
       </div>
       <div className="max-w-5xl mx-auto">
-        <ContactsTable contacts={contacts} account={account} />
+        {contactsWithGroups && (
+          <ContactsTable contacts={contactsWithGroups} account={account} groups={formattedGroups} />
+        )}
       </div>
     </div>
   ) : (
@@ -44,7 +77,7 @@ export default async function Members() {
       <h1 className="text-2xl text-center font-bold mb-6">
         You haven&apos;t created <br /> any contacts yet
       </h1>
-      <AddContact account={account} />
+      <AddContact account={account} groups={formattedGroups} type="empty-state" />
     </div>
   )
 }

@@ -23,12 +23,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip"
 import { toast } from "./ui/use-toast"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
@@ -37,14 +31,16 @@ type User = Database["public"]["Tables"]["users"]["Row"]
 export function ContactsTable({
   contacts,
   account,
+  groups,
 }: {
-  contacts: Contact[]
+  contacts: (Contact & { groups: { value: string, label: string }[] })[]
   account: User
+  groups: { value: string, label: string }[]
 }) {
   const supabase = createClient()
   const router = useRouter()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [selectedContact, setSelectedContact] = useState<Contact & { groups: { value: string, label: string }[] } | null>(null)
 
   async function onDelete(id: string) {
     try {
@@ -83,6 +79,7 @@ export function ContactsTable({
           <TableRow>
             <TableHead className="w-1/4">Name</TableHead>
             <TableHead className="w-1/4">Email</TableHead>
+            <TableHead className="w-1/4">Groups</TableHead>
             <TableHead className="w-1/4">Created</TableHead>
             <TableHead className="w-1/4">Actions</TableHead>
           </TableRow>
@@ -92,11 +89,13 @@ export function ContactsTable({
             <TableRow key={contact.id}>
               <TableCell>{contact.name}</TableCell>
               <TableCell>{contact.email}</TableCell>
+              <TableCell>{contact.groups.map((group: any) => group.label).join(", ")}</TableCell>
               <TableCell>{formatDate(contact.created_at)}</TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost">
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
                       <MenuIcon className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -120,6 +119,7 @@ export function ContactsTable({
           onOpenChange={setIsEditDialogOpen}
           account={account}
           existingContact={selectedContact}
+          groups={groups}
         />
       )}
     </div>

@@ -11,6 +11,15 @@ create table "public"."companies" (
 
 alter table "public"."companies" enable row level security;
 
+create table "public"."contacts" (
+    "id" uuid not null default gen_random_uuid(),
+    "created_at" timestamp with time zone default now(),
+    "created_by" uuid,
+    "name" text,
+    "email" text
+);
+
+
 create table "public"."funds" (
     "id" uuid not null default gen_random_uuid(),
     "created_at" timestamp with time zone not null default now(),
@@ -539,6 +548,48 @@ grant trigger on table "public"."companies" to "service_role";
 grant truncate on table "public"."companies" to "service_role";
 
 grant update on table "public"."companies" to "service_role";
+
+grant delete on table "public"."contacts" to "anon";
+
+grant insert on table "public"."contacts" to "anon";
+
+grant references on table "public"."contacts" to "anon";
+
+grant select on table "public"."contacts" to "anon";
+
+grant trigger on table "public"."contacts" to "anon";
+
+grant truncate on table "public"."contacts" to "anon";
+
+grant update on table "public"."contacts" to "anon";
+
+grant delete on table "public"."contacts" to "authenticated";
+
+grant insert on table "public"."contacts" to "authenticated";
+
+grant references on table "public"."contacts" to "authenticated";
+
+grant select on table "public"."contacts" to "authenticated";
+
+grant trigger on table "public"."contacts" to "authenticated";
+
+grant truncate on table "public"."contacts" to "authenticated";
+
+grant update on table "public"."contacts" to "authenticated";
+
+grant delete on table "public"."contacts" to "service_role";
+
+grant insert on table "public"."contacts" to "service_role";
+
+grant references on table "public"."contacts" to "service_role";
+
+grant select on table "public"."contacts" to "service_role";
+
+grant trigger on table "public"."contacts" to "service_role";
+
+grant truncate on table "public"."contacts" to "service_role";
+
+grant update on table "public"."contacts" to "service_role";
 
 grant delete on table "public"."funds" to "anon";
 
