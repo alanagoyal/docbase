@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-import { ContactsTable } from "@/components/contacts-table"
+
+import AddContact from "@/components/add-contact"
 import ContactForm from "@/components/contact-form"
+import { ContactsTable } from "@/components/contacts"
 
 export default async function Members() {
   const supabase = createClient()
@@ -31,7 +33,7 @@ export default async function Members() {
         <h1 className="text-2xl font-bold absolute left-1/2 transform -translate-x-1/2">
           Contacts
         </h1>
-        <ContactForm account={account} />
+        <AddContact account={account} />
       </div>
       <div className="max-w-5xl mx-auto">
         <ContactsTable contacts={contacts} account={account} />
@@ -42,7 +44,7 @@ export default async function Members() {
       <h1 className="text-2xl text-center font-bold mb-6">
         You haven&apos;t created <br /> any contacts yet
       </h1>
-      <ContactForm account={account} />
+      <AddContact account={account} />
     </div>
   )
 }

@@ -47,13 +47,16 @@ type MemberFormValues = z.infer<typeof memberFormSchema>
 export default function ContactForm({
   existingContact,
   account,
+  isOpen,
+  onOpenChange,
 }: {
   existingContact?: Contact
   account: User
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
 }) {
   const supabase = createClient()
   const [isLoading, setIsLoading] = useState(false)
-  const [open, setOpen] = React.useState(false)
   const router = useRouter()
   const form = useForm<MemberFormValues>({
     resolver: zodResolver(memberFormSchema),
@@ -94,7 +97,7 @@ export default function ContactForm({
           : "New contact added",
       })
       router.refresh()
-      setOpen(false)
+      onOpenChange(false)
     } catch (error) {
       console.error("Error adding/updating contact:", error)
       toast({
@@ -108,16 +111,7 @@ export default function ContactForm({
 
   return (
     <div>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button variant="ghost" className="w-[150px]">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline-block ml-2">
-              {" "}
-              {existingContact ? "Edit Contact" : "New Contact"}
-            </span>
-          </Button>
-        </DialogTrigger>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
@@ -165,13 +159,7 @@ export default function ContactForm({
                   )}
                 />
                 <div className="py-1 flex justify-center">
-                  <Button
-                    type="submit"
-                    onClick={() => {
-                      setOpen(false)
-                    }}
-                    className="bg-[#9FACE6] text-white font-bold py-2 px-4 rounded w-full"
-                  >
+                  <Button type="submit">
                     {isLoading ? (
                       <Icons.spinner className="w-4 h-4 animate-spin" />
                     ) : (
