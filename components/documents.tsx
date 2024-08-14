@@ -25,7 +25,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-type User = Database["public"]["Tables"]["users"]["Row"]
 type Document = {
   id: string
   document_type: string

@@ -74,7 +74,7 @@ export default function MagicLink({ redirect }: { redirect: string }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder="name@email.com"
               autoComplete="off"
             />
