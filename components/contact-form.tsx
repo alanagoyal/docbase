@@ -3,9 +3,9 @@
 import React from 'react'
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Plus, User } from "lucide-react"
-import { useForm, Controller } from "react-hook-form"
-import Select from "react-select"
+import { User } from "lucide-react"
+import { useForm } from "react-hook-form"
+import CreatableSelect from 'react-select/creatable'
 import * as z from "zod"
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
@@ -26,8 +26,6 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
-import { cn } from "@/lib/utils"
-
 import { Icons } from "./icons"
 import { useRouter } from 'next/navigation'
 
@@ -43,7 +41,7 @@ const memberFormSchema = z.object({
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
 type User = Database["public"]["Tables"]["users"]["Row"]
-type Group = Database["public"]["Tables"]["groups"]["Row"]
+
 type MemberFormValues = z.infer<typeof memberFormSchema>
 
 type ContactFormProps = {
@@ -73,6 +71,30 @@ export default function ContactForm({
       groups: existingContact?.groups || [],
     },
   })
+
+  const handleCreateGroup = async (inputValue: string) => {
+    setIsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('groups')
+        .insert({ name: inputValue, created_by: account.auth_id })
+        .select()
+      if (error) throw error
+      
+      const newGroup = { value: data[0].id, label: data[0].name }
+      form.setValue('groups', [...form.getValues('groups'), newGroup])
+      return newGroup
+    } catch (error) {
+      console.error('Error creating new group:', error)
+      toast({
+        description: "Failed to create new group. Please try again.",
+        variant: "destructive",
+      })
+      return null
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   async function onSubmit(data: MemberFormValues) {
     try {
@@ -187,12 +209,14 @@ export default function ContactForm({
                 <FormItem>
                   <FormLabel>Groups</FormLabel>
                   <FormControl>
-                    <Select
+                    <CreatableSelect
                       {...field}
                       isMulti
                       options={groups}
                       className="basic-multi-select"
                       classNamePrefix="select"
+                      onCreateOption={handleCreateGroup}
+                      isDisabled={isLoading}
                     />
                   </FormControl>
                   <FormMessage />
