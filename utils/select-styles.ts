@@ -46,21 +46,17 @@ export const selectStyles: StylesConfig = {
   }),
   multiValue: (provided) => ({
     ...provided,
-    fontSize: '0.875rem',
-    backgroundColor: 'hsl(var(--muted))',
-    borderRadius: '0.25rem',
+    backgroundColor: 'transparent',
+    margin: 0,
   }),
   multiValueLabel: (provided) => ({
     ...provided,
-    padding: '2px 6px',
+    padding: 0,
+    color: 'inherit',
   }),
   multiValueRemove: (provided) => ({
     ...provided,
-    borderRadius: '0 0.25rem 0.25rem 0',
-    '&:hover': {
-      backgroundColor: 'hsl(var(--destructive))',
-      color: 'hsl(var(--destructive-foreground))',
-    },
+    display: 'none',
   }),
   menu: (provided) => ({
     ...provided,

@@ -25,6 +25,7 @@ import {
 } from "./ui/dropdown-menu"
 import { toast } from "./ui/use-toast"
 import { Badge } from "./ui/badge"
+import { getColorForGroup } from "@/utils/group-colors"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -73,18 +74,6 @@ export function ContactsTable({
     })
   }
 
-  const getColorForIndex = (index: number): string => {
-    const startColor = { r: 116, g: 235, b: 213 }; 
-    const endColor = { r: 159, g: 172, b: 230 };  
-    const totalGroups = groups.length;
-    
-    const r = Math.round(startColor.r + (endColor.r - startColor.r) * (index / totalGroups));
-    const g = Math.round(startColor.g + (endColor.g - startColor.g) * (index / totalGroups));
-    const b = Math.round(startColor.b + (endColor.b - startColor.b) * (index / totalGroups));
-    
-    return `rgb(${r}, ${g}, ${b})`;
-  };
-
   return (
     <div className="container mx-auto py-10">
       <Table>
@@ -104,11 +93,11 @@ export function ContactsTable({
               <TableCell>{contact.email}</TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1">
-                  {contact.groups.map((group: any, index: number) => (
+                  {contact.groups.map((group: any) => (
                     <Badge
                       key={group.value}
                       style={{
-                        backgroundColor: getColorForIndex(groups.findIndex(g => g.value === group.value)),
+                        backgroundColor: getColorForGroup(group.value, groups),
                         color: 'white'
                       }}
                     >

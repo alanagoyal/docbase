@@ -29,6 +29,9 @@ import { toast } from "@/components/ui/use-toast"
 import { Icons } from "./icons"
 import { useRouter } from 'next/navigation'
 import { selectStyles } from '@/utils/select-styles'
+import { Badge } from "@/components/ui/badge"
+import { X } from "lucide-react"
+import { getColorForGroup } from "@/utils/group-colors"
 
 const memberFormSchema = z.object({
   email: z
@@ -97,6 +100,32 @@ export default function ContactForm({
     }
   }
 
+  const customComponents = {
+    MultiValue: ({ children, removeProps, ...props }: any) => {
+      const backgroundColor = getColorForGroup(props.data.value, groups);
+      return (
+        <Badge
+          className="flex items-center gap-1 m-1"
+          style={{
+            backgroundColor,
+            color: 'white',
+          }}
+        >
+          {children}
+          <span {...removeProps} className="cursor-pointer hover:opacity-75">
+            <X size={14} />
+          </span>
+        </Badge>
+      );
+    },
+  };
+
+  const handleCloseDialog = React.useCallback(() => {
+    form.reset();
+    onOpenChange(false);
+    router.refresh();
+  }, [form, onOpenChange, router]);
+
   async function onSubmit(data: MemberFormValues) {
     try {
       setIsLoading(true)
@@ -143,14 +172,13 @@ export default function ContactForm({
         if (groupInsertError) throw groupInsertError
       }
 
-      form.reset()
+      handleCloseDialog();
       toast({
         description: existingContact
           ? "Contact updated successfully"
           : "New contact added",
       })
       router.refresh()
-      onOpenChange(false)
     } catch (error) {
       console.error("Error adding/updating contact:", error)
       toast({
@@ -163,7 +191,11 @@ export default function ContactForm({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        handleCloseDialog();
+      }
+    }}>
       <DialogContent className="sm:max-w-[425px] overflow-visible">
         <DialogHeader>
           <DialogTitle>
@@ -219,6 +251,7 @@ export default function ContactForm({
                       onCreateOption={handleCreateGroup}
                       isDisabled={isLoading}
                       styles={selectStyles}
+                      components={customComponents}
                     />
                   </FormControl>
                   <FormMessage />
