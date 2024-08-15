@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
 import { toast } from "./ui/use-toast"
+import { Badge } from "./ui/badge"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -72,6 +73,18 @@ export function ContactsTable({
     })
   }
 
+  const getColorForIndex = (index: number): string => {
+    const startColor = { r: 116, g: 235, b: 213 }; 
+    const endColor = { r: 159, g: 172, b: 230 };  
+    const totalGroups = groups.length;
+    
+    const r = Math.round(startColor.r + (endColor.r - startColor.r) * (index / totalGroups));
+    const g = Math.round(startColor.g + (endColor.g - startColor.g) * (index / totalGroups));
+    const b = Math.round(startColor.b + (endColor.b - startColor.b) * (index / totalGroups));
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
   return (
     <div className="container mx-auto py-10">
       <Table>
@@ -89,7 +102,21 @@ export function ContactsTable({
             <TableRow key={contact.id}>
               <TableCell>{contact.name}</TableCell>
               <TableCell>{contact.email}</TableCell>
-              <TableCell>{contact.groups.map((group: any) => group.label).join(", ")}</TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-1">
+                  {contact.groups.map((group: any, index: number) => (
+                    <Badge
+                      key={group.value}
+                      style={{
+                        backgroundColor: getColorForIndex(groups.findIndex(g => g.value === group.value)),
+                        color: 'white'
+                      }}
+                    >
+                      {group.label}
+                    </Badge>
+                  ))}
+                </div>
+              </TableCell>
               <TableCell>{formatDate(contact.created_at)}</TableCell>
               <TableCell>
                 <DropdownMenu>
