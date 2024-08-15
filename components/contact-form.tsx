@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
 import { Icons } from "./icons"
 import { useRouter } from 'next/navigation'
-import { StylesConfig } from 'react-select'
+import { selectStyles } from '@/utils/select-styles'
 
 const memberFormSchema = z.object({
   email: z
@@ -160,36 +160,6 @@ export default function ContactForm({
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const selectStyles: StylesConfig = {
-    control: (provided, state) => ({
-      ...provided,
-      fontSize: '0.875rem',
-      borderColor: 'hsl(var(--input))',
-      backgroundColor: 'transparent',
-      boxShadow: 'none',
-      '&:hover': {
-        borderColor: 'hsl(var(--input))',
-      },
-      ...(state.isFocused && {
-        outline: 'none',
-        boxShadow: '0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring))',
-        borderColor: 'hsl(var(--ring))',
-      }),
-    }),
-    option: (provided) => ({
-      ...provided,
-      fontSize: '0.875rem',
-    }),
-    multiValue: (provided) => ({
-      ...provided,
-      fontSize: '0.875rem',
-    }),
-    menu: (provided) => ({
-      ...provided,
-      zIndex: 9999,
-    }),
   }
 
   return (
