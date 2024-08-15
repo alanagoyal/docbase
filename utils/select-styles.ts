@@ -3,7 +3,7 @@ import { StylesConfig } from 'react-select';
 export const selectStyles: StylesConfig = {
   control: (provided, state) => ({
     ...provided,
-    height: '40px',
+    height: 'auto',
     minHeight: '40px',
     fontSize: '0.875rem',
     borderRadius: '0.375rem',
@@ -64,11 +64,15 @@ export const selectStyles: StylesConfig = {
   }),
   menu: (provided) => ({
     ...provided,
-    zIndex: 9999,
+    zIndex: 9999, // Increased z-index
     fontSize: '0.875rem',
     borderRadius: '0.375rem',
     overflow: 'hidden',
     backgroundColor: 'hsl(var(--background))',
     border: '1px solid hsl(var(--input))',
+  }),
+  menuList: (provided) => ({
+    ...provided,
+    maxHeight: '200px',
   }),
 };
