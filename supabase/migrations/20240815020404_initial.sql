@@ -11,6 +11,14 @@ create table "public"."companies" (
 
 alter table "public"."companies" enable row level security;
 
+create table "public"."contact_groups" (
+    "contact_id" uuid not null,
+    "group_id" uuid not null
+);
+
+
+alter table "public"."contact_groups" enable row level security;
+
 create table "public"."contacts" (
     "id" uuid not null default gen_random_uuid(),
     "created_at" timestamp with time zone default now(),
@@ -19,6 +27,8 @@ create table "public"."contacts" (
     "email" text
 );
 
+
+alter table "public"."contacts" enable row level security;
 
 create table "public"."funds" (
     "id" uuid not null default gen_random_uuid(),
@@ -32,6 +42,16 @@ create table "public"."funds" (
 
 
 alter table "public"."funds" enable row level security;
+
+create table "public"."groups" (
+    "id" uuid not null default gen_random_uuid(),
+    "name" text not null,
+    "created_at" timestamp with time zone not null default now(),
+    "created_by" uuid not null
+);
+
+
+alter table "public"."groups" enable row level security;
 
 create table "public"."investments" (
     "id" uuid not null default gen_random_uuid(),
@@ -109,9 +129,15 @@ CREATE UNIQUE INDEX companies_name_unique ON public.companies USING btree (name)
 
 CREATE UNIQUE INDEX companies_pkey ON public.companies USING btree (id);
 
+CREATE UNIQUE INDEX contact_groups_pkey ON public.contact_groups USING btree (contact_id, group_id);
+
+CREATE UNIQUE INDEX contacts_pkey ON public.contacts USING btree (id);
+
 CREATE UNIQUE INDEX funds_name_unique ON public.funds USING btree (name);
 
 CREATE UNIQUE INDEX funds_pkey ON public.funds USING btree (id);
+
+CREATE UNIQUE INDEX groups_pkey ON public.groups USING btree (id);
 
 CREATE UNIQUE INDEX investments_pkey ON public.investments USING btree (id);
 
@@ -131,7 +157,13 @@ CREATE UNIQUE INDEX viewers_pkey ON public.viewers USING btree (id);
 
 alter table "public"."companies" add constraint "companies_pkey" PRIMARY KEY using index "companies_pkey";
 
+alter table "public"."contact_groups" add constraint "contact_groups_pkey" PRIMARY KEY using index "contact_groups_pkey";
+
+alter table "public"."contacts" add constraint "contacts_pkey" PRIMARY KEY using index "contacts_pkey";
+
 alter table "public"."funds" add constraint "funds_pkey" PRIMARY KEY using index "funds_pkey";
+
+alter table "public"."groups" add constraint "groups_pkey" PRIMARY KEY using index "groups_pkey";
 
 alter table "public"."investments" add constraint "investments_pkey" PRIMARY KEY using index "investments_pkey";
 
@@ -149,11 +181,23 @@ alter table "public"."companies" validate constraint "companies_founder_id_fkey"
 
 alter table "public"."companies" add constraint "companies_name_unique" UNIQUE using index "companies_name_unique";
 
+alter table "public"."contact_groups" add constraint "contact_groups_contact_id_fkey" FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE not valid;
+
+alter table "public"."contact_groups" validate constraint "contact_groups_contact_id_fkey";
+
+alter table "public"."contact_groups" add constraint "contact_groups_group_id_fkey" FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE not valid;
+
+alter table "public"."contact_groups" validate constraint "contact_groups_group_id_fkey";
+
 alter table "public"."funds" add constraint "funds_investor_id_fkey" FOREIGN KEY (investor_id) REFERENCES users(id) not valid;
 
 alter table "public"."funds" validate constraint "funds_investor_id_fkey";
 
 alter table "public"."funds" add constraint "funds_name_unique" UNIQUE using index "funds_name_unique";
+
+alter table "public"."groups" add constraint "groups_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) not valid;
+
+alter table "public"."groups" validate constraint "groups_created_by_fkey";
 
 alter table "public"."investments" add constraint "investments_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(auth_id) not valid;
 
@@ -549,6 +593,48 @@ grant truncate on table "public"."companies" to "service_role";
 
 grant update on table "public"."companies" to "service_role";
 
+grant delete on table "public"."contact_groups" to "anon";
+
+grant insert on table "public"."contact_groups" to "anon";
+
+grant references on table "public"."contact_groups" to "anon";
+
+grant select on table "public"."contact_groups" to "anon";
+
+grant trigger on table "public"."contact_groups" to "anon";
+
+grant truncate on table "public"."contact_groups" to "anon";
+
+grant update on table "public"."contact_groups" to "anon";
+
+grant delete on table "public"."contact_groups" to "authenticated";
+
+grant insert on table "public"."contact_groups" to "authenticated";
+
+grant references on table "public"."contact_groups" to "authenticated";
+
+grant select on table "public"."contact_groups" to "authenticated";
+
+grant trigger on table "public"."contact_groups" to "authenticated";
+
+grant truncate on table "public"."contact_groups" to "authenticated";
+
+grant update on table "public"."contact_groups" to "authenticated";
+
+grant delete on table "public"."contact_groups" to "service_role";
+
+grant insert on table "public"."contact_groups" to "service_role";
+
+grant references on table "public"."contact_groups" to "service_role";
+
+grant select on table "public"."contact_groups" to "service_role";
+
+grant trigger on table "public"."contact_groups" to "service_role";
+
+grant truncate on table "public"."contact_groups" to "service_role";
+
+grant update on table "public"."contact_groups" to "service_role";
+
 grant delete on table "public"."contacts" to "anon";
 
 grant insert on table "public"."contacts" to "anon";
@@ -632,6 +718,48 @@ grant trigger on table "public"."funds" to "service_role";
 grant truncate on table "public"."funds" to "service_role";
 
 grant update on table "public"."funds" to "service_role";
+
+grant delete on table "public"."groups" to "anon";
+
+grant insert on table "public"."groups" to "anon";
+
+grant references on table "public"."groups" to "anon";
+
+grant select on table "public"."groups" to "anon";
+
+grant trigger on table "public"."groups" to "anon";
+
+grant truncate on table "public"."groups" to "anon";
+
+grant update on table "public"."groups" to "anon";
+
+grant delete on table "public"."groups" to "authenticated";
+
+grant insert on table "public"."groups" to "authenticated";
+
+grant references on table "public"."groups" to "authenticated";
+
+grant select on table "public"."groups" to "authenticated";
+
+grant trigger on table "public"."groups" to "authenticated";
+
+grant truncate on table "public"."groups" to "authenticated";
+
+grant update on table "public"."groups" to "authenticated";
+
+grant delete on table "public"."groups" to "service_role";
+
+grant insert on table "public"."groups" to "service_role";
+
+grant references on table "public"."groups" to "service_role";
+
+grant select on table "public"."groups" to "service_role";
+
+grant trigger on table "public"."groups" to "service_role";
+
+grant truncate on table "public"."groups" to "service_role";
+
+grant update on table "public"."groups" to "service_role";
 
 grant delete on table "public"."investments" to "anon";
 
@@ -885,6 +1013,52 @@ using (((auth.uid() = ( SELECT users.auth_id
   WHERE ((i.company_id = companies.id) AND (u.auth_id = auth.uid()))))));
 
 
+create policy "Users can manage their own contact_groups"
+on "public"."contact_groups"
+as permissive
+for all
+to authenticated
+using ((auth.uid() IN ( SELECT contacts.created_by
+   FROM contacts
+  WHERE (contacts.id = contact_groups.contact_id)
+UNION
+ SELECT groups.created_by
+   FROM groups
+  WHERE (groups.id = contact_groups.group_id))));
+
+
+create policy "Authenticated users can insert contacts"
+on "public"."contacts"
+as permissive
+for insert
+to authenticated
+with check (true);
+
+
+create policy "Users can delete their own contacts"
+on "public"."contacts"
+as permissive
+for delete
+to authenticated
+using ((auth.uid() = created_by));
+
+
+create policy "Users can update their own contacts"
+on "public"."contacts"
+as permissive
+for update
+to authenticated
+using ((auth.uid() = created_by));
+
+
+create policy "Users can view their own contacts"
+on "public"."contacts"
+as permissive
+for select
+to authenticated
+using ((auth.uid() = created_by));
+
+
 create policy "Authenticated users can insert"
 on "public"."funds"
 as permissive
@@ -925,6 +1099,38 @@ using (((auth.uid() = ( SELECT users.auth_id
    FROM (investments i
      JOIN users u ON ((u.id = i.founder_id)))
   WHERE ((i.fund_id = funds.id) AND (u.auth_id = auth.uid()))))));
+
+
+create policy "Users can create their own groups"
+on "public"."groups"
+as permissive
+for insert
+to authenticated
+with check ((auth.uid() = created_by));
+
+
+create policy "Users can delete their own groups"
+on "public"."groups"
+as permissive
+for delete
+to authenticated
+using ((auth.uid() = created_by));
+
+
+create policy "Users can update their own groups"
+on "public"."groups"
+as permissive
+for update
+to authenticated
+using ((auth.uid() = created_by));
+
+
+create policy "Users can view their own groups"
+on "public"."groups"
+as permissive
+for select
+to authenticated
+using ((auth.uid() = created_by));
 
 
 create policy "Authenticated users can insert"
