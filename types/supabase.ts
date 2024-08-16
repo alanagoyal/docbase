@@ -1,11 +1,3 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
 export type Entity = {
   id: string
   name: string | null
@@ -72,6 +64,14 @@ export type UserInvestment = {
   created_at: string
 }
 
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export type Database = {
   graphql_public: {
     Tables: {
@@ -135,8 +135,65 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
+      }
+      contact_groups: {
+        Row: {
+          contact_id: string
+          group_id: string
+        }
+        Insert: {
+          contact_id: string
+          group_id: string
+        }
+        Update: {
+          contact_id?: string
+          group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_groups_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       funds: {
         Row: {
@@ -173,7 +230,39 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
         ]
       }
       investments: {
@@ -270,7 +359,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "funds"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       links: {
@@ -308,7 +397,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["auth_id"]
-          }
+          },
         ]
       }
       side_letters: {
@@ -379,7 +468,7 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       viewers: {
@@ -411,7 +500,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "links"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
     }
@@ -431,6 +520,16 @@ export type Database = {
           auth_id: string
         }
         Returns: undefined
+      }
+      get_link_analytics: {
+        Args: {
+          link_id_arg: string
+        }
+        Returns: {
+          all_viewers: number
+          unique_viewers: number
+          all_views: Json
+        }[]
       }
       get_link_by_id: {
         Args: {
@@ -462,14 +561,48 @@ export type Database = {
         Args: {
           auth_id_arg: string
         }
-        Returns: UserInvestment[]
+        Returns: {
+          id: string
+          purchase_amount: string
+          investment_type: string
+          valuation_cap: string
+          discount: string
+          date: string
+          founder: Json
+          company: Json
+          investor: Json
+          fund: Json
+          side_letter: Json
+          side_letter_id: string
+          safe_url: string
+          summary: string
+          created_by: string
+          created_at: string
+        }[]
       }
       get_user_investments_by_id: {
         Args: {
           id_arg: string
           auth_id_arg: string
         }
-        Returns: UserInvestment
+        Returns: {
+          id: string
+          purchase_amount: string
+          investment_type: string
+          valuation_cap: string
+          discount: string
+          date: string
+          founder: Json
+          company: Json
+          investor: Json
+          fund: Json
+          side_letter: Json
+          side_letter_id: string
+          safe_url: string
+          summary: string
+          created_by: string
+          created_at: string
+        }[]
       }
       get_user_links: {
         Args: {
@@ -498,6 +631,16 @@ export type Database = {
           expires: string
           filename: string
           view_count: number
+        }[]
+      }
+      select_investment_entities: {
+        Args: {
+          investment_id: string
+        }
+        Returns: {
+          fund_name: string
+          company_name: string
+          investor_name: string
         }[]
       }
       select_link: {
@@ -538,16 +681,6 @@ export type Database = {
           auth_id_arg: string
         }
         Returns: undefined
-      }
-      get_link_analytics: {
-        Args: {
-          link_id_arg: string
-        }
-        Returns: {
-          all_viewers: number
-          unique_viewers: number
-          all_views: ViewerData[]
-        }[]
       }
     }
     Enums: {
@@ -666,7 +799,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "buckets"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       s3_multipart_uploads: {
@@ -707,7 +840,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "buckets"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       s3_multipart_uploads_parts: {
@@ -761,7 +894,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "s3_multipart_uploads"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
     }
@@ -858,16 +991,6 @@ export type Database = {
           metadata: Json
         }[]
       }
-      get_link_analytics: {
-        Args: {
-          link_id_arg: string
-        }
-        Returns: {
-          all_viewers: number
-          unique_viewers: number
-          all_views: ViewerData[]
-        }[]
-      }
     }
     Enums: {
       [_ in never]: never
@@ -887,7 +1010,7 @@ export type Tables<
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
         Database[PublicTableNameOrOptions["schema"]]["Views"])
-    : never = never
+    : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
       Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
@@ -896,14 +1019,14 @@ export type Tables<
     ? R
     : never
   : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
-      PublicSchema["Views"])
-  ? (PublicSchema["Tables"] &
-      PublicSchema["Views"])[PublicTableNameOrOptions] extends {
-      Row: infer R
-    }
-    ? R
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
     : never
-  : never
 
 export type TablesInsert<
   PublicTableNameOrOptions extends
@@ -911,7 +1034,7 @@ export type TablesInsert<
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never
+    : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
@@ -919,12 +1042,12 @@ export type TablesInsert<
     ? I
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-  ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-      Insert: infer I
-    }
-    ? I
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
     : never
-  : never
 
 export type TablesUpdate<
   PublicTableNameOrOptions extends
@@ -932,7 +1055,7 @@ export type TablesUpdate<
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
-    : never = never
+    : never = never,
 > = PublicTableNameOrOptions extends { schema: keyof Database }
   ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
@@ -940,12 +1063,12 @@ export type TablesUpdate<
     ? U
     : never
   : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-  ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-      Update: infer U
-    }
-    ? U
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
     : never
-  : never
 
 export type Enums<
   PublicEnumNameOrOptions extends
@@ -953,9 +1076,10 @@ export type Enums<
     | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
     ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
-    : never = never
+    : never = never,
 > = PublicEnumNameOrOptions extends { schema: keyof Database }
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-  ? PublicSchema["Enums"][PublicEnumNameOrOptions]
-  : never
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
+
