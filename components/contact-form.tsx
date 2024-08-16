@@ -1,21 +1,14 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { User } from "lucide-react"
+import { Plus, User } from "lucide-react"
 import { useForm } from "react-hook-form"
 import CreatableSelect from 'react-select/creatable'
 import * as z from "zod"
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import {
   Form,
   FormControl,
@@ -51,16 +44,12 @@ type MemberFormValues = z.infer<typeof memberFormSchema>
 type ContactFormProps = {
   existingContact?: Contact & { groups: { value: string, label: string }[] }
   account: User
-  isOpen: boolean
-  onOpenChange: (open: boolean) => void
   groups: { value: string, label: string }[]
 }
 
 export default function ContactForm({
   existingContact,
   account,
-  isOpen,
-  onOpenChange,
   groups,
 }: ContactFormProps) {
   const supabase = createClient()
@@ -120,12 +109,6 @@ export default function ContactForm({
     },
   };
 
-  const handleCloseDialog = React.useCallback(() => {
-    form.reset();
-    onOpenChange(false);
-    router.refresh();
-  }, [form, onOpenChange, router]);
-
   async function onSubmit(data: MemberFormValues) {
     try {
       setIsLoading(true)
@@ -172,12 +155,12 @@ export default function ContactForm({
         if (groupInsertError) throw groupInsertError
       }
 
-      handleCloseDialog();
       toast({
         description: existingContact
           ? "Contact updated successfully"
           : "New contact added",
       })
+      router.push("/contacts")
       router.refresh()
     } catch (error) {
       console.error("Error adding/updating contact:", error)
@@ -191,85 +174,67 @@ export default function ContactForm({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) {
-        handleCloseDialog();
-      }
-    }}>
-      <DialogContent className="sm:max-w-[425px] overflow-visible">
-        <DialogHeader>
-          <DialogTitle>
-            {existingContact ? "Edit Contact" : "New Contact"}
-          </DialogTitle>
-          <DialogDescription>
-            {existingContact
-              ? "Edit contact details"
-              : "Add the name and email address of the contact"}
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="groups"
-              render={({ field }) => (
-                <FormItem className="overflow-visible">
-                  <FormLabel>Groups</FormLabel>
-                  <FormControl>
-                    <CreatableSelect
-                      {...field}
-                      isMulti
-                      options={groups}
-                      className="basic-multi-select"
-                      classNamePrefix="select"
-                      onCreateOption={handleCreateGroup}
-                      isDisabled={isLoading}
-                      styles={selectStyles}
-                      components={customComponents}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button className="w-full" type="submit">
-              {isLoading ? (
-                <Icons.spinner className="w-4 h-4 animate-spin" />
-              ) : existingContact ? (
-                "Update Contact"
-              ) : (
-                "Add Contact"
-              )}
-            </Button>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 w-full max-w-md mx-auto">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="groups"
+          render={({ field }) => (
+            <FormItem className="overflow-visible">
+              <FormLabel>Groups</FormLabel>
+              <FormControl>
+                <CreatableSelect
+                  {...field}
+                  isMulti
+                  options={groups}
+                  className="basic-multi-select"
+                  classNamePrefix="select"
+                  onCreateOption={handleCreateGroup}
+                  isDisabled={isLoading}
+                  styles={selectStyles}
+                  components={customComponents}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button className="w-full" type="submit">
+          {isLoading ? (
+            <Icons.spinner className="w-4 h-4 animate-spin" />
+          ) : existingContact ? (
+            "Update Contact"
+          ) : (
+            "Add Contact"
+          )}
+        </Button>
+      </form>
+    </Form>
   )
 }

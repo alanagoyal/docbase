@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
+import { getColorForGroup } from "@/utils/group-colors"
 import { createClient } from "@/utils/supabase/client"
 import { MenuIcon, Trash } from "lucide-react"
 
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/table"
 
 import ContactForm from "./contact-form"
+import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import {
   DropdownMenu,
@@ -24,8 +26,6 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
 import { toast } from "./ui/use-toast"
-import { Badge } from "./ui/badge"
-import { getColorForGroup } from "@/utils/group-colors"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -35,14 +35,16 @@ export function ContactsTable({
   account,
   groups,
 }: {
-  contacts: (Contact & { groups: { value: string, label: string }[] })[]
+  contacts: (Contact & { groups: { value: string; label: string }[] })[]
   account: User
-  groups: { value: string, label: string }[]
+  groups: { value: string; label: string }[]
 }) {
   const supabase = createClient()
   const router = useRouter()
+  const [selectedContact, setSelectedContact] = useState<
+    (Contact & { groups: { value: string; label: string }[] }) | null
+  >(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [selectedContact, setSelectedContact] = useState<Contact & { groups: { value: string, label: string }[] } | null>(null)
 
   async function onDelete(id: string) {
     try {
@@ -55,14 +57,6 @@ export function ContactsTable({
     } catch (error) {}
   }
 
-  async function onEdit(id: string) {
-    const contact = contacts.find((contact) => contact.id === id)
-    if (contact) {
-      setSelectedContact(contact)
-      setIsEditDialogOpen(true)
-    }
-  }
-
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "n/a"
     const date = new Date(dateString)
@@ -70,9 +64,15 @@ export function ContactsTable({
       month: "2-digit",
       day: "2-digit",
       year: "2-digit",
-      timeZone: "UTC"
+      timeZone: "UTC",
     })
   }
+
+  const handleCloseDialog = useCallback(() => {
+    setIsEditDialogOpen(false)
+    setSelectedContact(null)
+    router.refresh()
+  }, [router])
 
   return (
     <div className="container mx-auto py-10">
@@ -98,7 +98,7 @@ export function ContactsTable({
                       key={group.value}
                       style={{
                         backgroundColor: getColorForGroup(group.value, groups),
-                        color: 'white'
+                        color: "white",
                       }}
                     >
                       {group.label}
@@ -116,7 +116,11 @@ export function ContactsTable({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(contact.id)}>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        router.push(`/contacts/edit/${contact.id}`)
+                      }
+                    >
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onDelete(contact.id)}>
@@ -129,15 +133,6 @@ export function ContactsTable({
           ))}
         </TableBody>
       </Table>
-      {selectedContact && (
-        <ContactForm
-          isOpen={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
-          account={account}
-          existingContact={selectedContact}
-          groups={groups}
-        />
-      )}
     </div>
   )
 }
