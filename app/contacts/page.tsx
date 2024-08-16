@@ -99,7 +99,9 @@ export default async function Contacts() {
       <h1 className="text-2xl text-center font-bold mb-6">
         You haven&apos;t created <br /> any contacts yet
       </h1>
-      <ContactForm account={account} groups={formattedGroups} />
+      <Link href="/contacts/new">
+        <Button variant="outline">Get Started</Button>
+      </Link>
     </div>
   )
 }
