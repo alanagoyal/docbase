@@ -30,12 +30,13 @@ export default async function EditContact({ params }: { params: { id: string } }
 
   const { data: groups } = await supabase
     .from("groups")
-    .select("id, name")
+    .select("id, name, color")
     .eq("created_by", user.id)
 
   const formattedGroups = groups?.map(group => ({
     value: group.id,
-    label: group.name
+    label: group.name,
+    color: group.color
   })) || []
 
   const { data: contactGroups } = await supabase

@@ -33,7 +33,7 @@ const memberFormSchema = z.object({
     })
     .email(),
   name: z.string().optional(),
-  groups: z.array(z.object({ value: z.string(), label: z.string() })),
+  groups: z.array(z.object({ value: z.string(), label: z.string(), color: z.string() })),
 })
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
@@ -42,9 +42,9 @@ type User = Database["public"]["Tables"]["users"]["Row"]
 type MemberFormValues = z.infer<typeof memberFormSchema>
 
 type ContactFormProps = {
-  existingContact?: Contact & { groups: { value: string, label: string }[] }
+  existingContact?: Contact & { groups: { value: string, label: string, color: string }[] }
   account: User
-  groups: { value: string, label: string }[]
+  groups: { value: string, label: string, color: string }[]
 }
 
 export default function ContactForm({
@@ -68,13 +68,14 @@ export default function ContactForm({
   const handleCreateGroup = async (inputValue: string) => {
     setIsLoading(true)
     try {
+      const newColor = getColorForGroup(inputValue, groups)
       const { data, error } = await supabase
         .from('groups')
-        .insert({ name: inputValue, created_by: account.auth_id })
+        .insert({ name: inputValue, created_by: account.auth_id, color: newColor })
         .select()
       if (error) throw error
       
-      const newGroup = { value: data[0].id, label: data[0].name }
+      const newGroup = { value: data[0].id, label: data[0].name, color: data[0].color }
       form.setValue('groups', [...form.getValues('groups'), newGroup])
       return newGroup
     } catch (error) {
@@ -91,12 +92,11 @@ export default function ContactForm({
 
   const customComponents = {
     MultiValue: ({ children, removeProps, ...props }: any) => {
-      const backgroundColor = getColorForGroup(props.data.value, groups);
       return (
         <Badge
           className="flex items-center gap-1 m-1"
           style={{
-            backgroundColor,
+            backgroundColor: props.data.color,
             color: 'white',
           }}
         >
@@ -112,10 +112,11 @@ export default function ContactForm({
   async function onSubmit(data: MemberFormValues) {
     try {
       setIsLoading(true)
-      const memberUpdates = {
+      const updates = {
         email: data.email,
         name: data.name,
         created_by: account.auth_id,
+        updated_at: new Date().toISOString(),
       }
 
       let contactId: string
@@ -124,7 +125,7 @@ export default function ContactForm({
         // Update existing contact
         const { error: updateError } = await supabase
           .from("contacts")
-          .update(memberUpdates)
+          .update(updates)
           .eq("id", existingContact.id)
         if (updateError) throw updateError
         contactId = existingContact.id
@@ -132,7 +133,7 @@ export default function ContactForm({
         // Create new contact
         const { data: insertedContact, error: insertError } = await supabase
           .from("contacts")
-          .insert([memberUpdates])
+          .insert([updates])
           .select()
         if (insertError) throw insertError
         contactId = insertedContact[0].id

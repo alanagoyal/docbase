@@ -27,10 +27,11 @@ export default async function Contacts() {
     .from("contacts")
     .select("*")
     .eq("created_by", user.id)
+    .order("updated_at", { ascending: true })
 
   const { data: groups, error: groupsError } = await supabase
     .from("groups")
-    .select("id, name")
+    .select("id, name, color")
     .eq("created_by", user.id)
 
   const { data: contactGroups, error: contactGroupsError } = await supabase
@@ -50,6 +51,7 @@ export default async function Contacts() {
     groups?.map((group) => ({
       value: group.id,
       label: group.name,
+      color: group.color,
     })) || []
 
   const contactGroupMap =

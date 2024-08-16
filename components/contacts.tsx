@@ -29,20 +29,21 @@ import { toast } from "./ui/use-toast"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
 type User = Database["public"]["Tables"]["users"]["Row"]
+type Group = { value: string, label: string, color: string }
 
 export function ContactsTable({
   contacts,
   account,
   groups,
 }: {
-  contacts: (Contact & { groups: { value: string; label: string }[] })[]
+  contacts: (Contact & { groups: Group[] })[]
   account: User
-  groups: { value: string; label: string }[]
+  groups: Group[]
 }) {
   const supabase = createClient()
   const router = useRouter()
   const [selectedContact, setSelectedContact] = useState<
-    (Contact & { groups: { value: string; label: string }[] }) | null
+    (Contact & { groups: Group[] }) | null
   >(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
@@ -93,11 +94,11 @@ export function ContactsTable({
               <TableCell>{contact.email}</TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1">
-                  {contact.groups.map((group: any) => (
+                  {contact.groups.map((group: Group) => (
                     <Badge
                       key={group.value}
                       style={{
-                        backgroundColor: getColorForGroup(group.value, groups),
+                        backgroundColor: group.color,
                         color: "white",
                       }}
                     >
