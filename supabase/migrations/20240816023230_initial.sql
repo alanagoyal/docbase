@@ -24,7 +24,8 @@ create table "public"."contacts" (
     "created_at" timestamp with time zone default now(),
     "created_by" uuid,
     "name" text,
-    "email" text
+    "email" text,
+    "updated_at" timestamp with time zone default now()
 );
 
 
@@ -47,7 +48,8 @@ create table "public"."groups" (
     "id" uuid not null default gen_random_uuid(),
     "name" text not null,
     "created_at" timestamp with time zone not null default now(),
-    "created_by" uuid not null
+    "created_by" uuid not null,
+    "color" text
 );
 
 

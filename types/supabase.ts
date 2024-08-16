@@ -175,6 +175,7 @@ export type Database = {
           email: string | null
           id: string
           name: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -182,6 +183,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -189,6 +191,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -232,18 +235,21 @@ export type Database = {
       }
       groups: {
         Row: {
+          color: string | null
           created_at: string
           created_by: string
           id: string
           name: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           created_by: string
           id?: string
           name: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           created_by?: string
           id?: string
