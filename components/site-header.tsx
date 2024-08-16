@@ -16,7 +16,7 @@ export function SiteHeader({ account }: { account: User }) {
     <header className="sticky top-0 z-40 w-full border-b bg-background">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
-          <Link href="/" className="flex text-2xl font-semibold mr-6">
+          <Link href="/" className="hidden md:flex text-2xl font-semibold mr-6">
             <span
               style={{
                 backgroundImage:
@@ -30,10 +30,24 @@ export function SiteHeader({ account }: { account: User }) {
             </span>
             base
           </Link>
-          {account ? <MainNav account={account} /> : null}
+          {account ? (
+            <>
+              <div className="md:hidden mr-2">
+                <MainNav account={account} />
+              </div>
+              <div className="hidden md:block mt-[2px]">
+                <MainNav account={account} />
+              </div>
+            </>
+          ) : null}
         </div>
         <div className="flex items-center space-x-4">
-          <Link href={siteConfig.links.github} target="_blank" rel="noreferrer">
+          <Link
+            href={siteConfig.links.github}
+            target="_blank"
+            rel="noreferrer"
+            className="hidden sm:inline-block"
+          >
             <div
               className={buttonVariants({
                 size: "sm",
