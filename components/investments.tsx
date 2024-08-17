@@ -88,6 +88,7 @@ export default function Investments({
     string | null
   >(null)
 
+  console.log(investments)
   const handleShareClick = (investment: UserInvestment) => {
     setSelectedInvestment(investment)
     setIsShareDialogOpen(true)
@@ -117,7 +118,9 @@ export default function Investments({
   const formatInvestmentType = (
     type: "valuation-cap" | "discount" | "mfn" | string
   ): JSX.Element | string => {
+    console.log("formatInvestmentType called with type:", type);
     if (!type) {
+      console.log("Investment type is falsy, returning MissingInfoTooltip");
       return <MissingInfoTooltip message="Investment type not set" />
     }
     const investmentTypes: Record<
@@ -128,22 +131,27 @@ export default function Investments({
       discount: "Discount",
       mfn: "MFN",
     }
-    return investmentTypes[type as "valuation-cap" | "discount" | "mfn"] || type
+    const result = investmentTypes[type as "valuation-cap" | "discount" | "mfn"] || type;
+    console.log("Returning formatted investment type:", result);
+    return result;
   }
 
   const isOwner = (investment: UserInvestment) => {
-    return investment.created_by === account.auth_id
+    return investment.created_by === account.id
   }
 
   const isFounder = (investment: UserInvestment) => {
     return investment.founder?.id === account.id
   }
-  const MissingInfoTooltip = ({ message }: { message: string }) => (
-    <span className="text-red-500">
-      <AlertCircle className="inline-block mr-2 h-4 w-4" />
-      {message}
-    </span>
-  )
+  const MissingInfoTooltip = ({ message }: { message: string }) => {
+    console.log("Rendering MissingInfoTooltip with message:", message);
+    return (
+      <span className="text-red-500">
+        <AlertCircle className="inline-block mr-2 h-4 w-4" />
+        {message}
+      </span>
+    );
+  }
 
   const editInvestment = (investment: UserInvestment) => {
     if (isOwner(investment)) {
@@ -341,11 +349,11 @@ export default function Investments({
             : "SAFE.docx"
         }`,
         url_arg: newSignedUrlData?.signedUrl,
-        created_by_arg: account.auth_id,
+        created_by_arg: account.id,
         created_at_arg: investment.date,
         password_arg: null,
         expires_arg: null,
-        auth_id_arg: account.auth_id,
+        auth_id_arg: account.id,
       })
 
       if (linkError) {
@@ -669,11 +677,11 @@ export default function Investments({
             : "Side Letter.docx"
         }`,
         url_arg: newSignedUrlData?.signedUrl,
-        created_by_arg: account.auth_id,
+        created_by_arg: account.id,
         created_at_arg: investment.date,
         password_arg: null,
         expires_arg: null,
-        auth_id_arg: account.auth_id,
+        auth_id_arg: account.id,
       })
 
       if (linkError) {
@@ -785,20 +793,21 @@ export default function Investments({
         </TableHeader>
         <TableBody>
           {investments.map((investment: UserInvestment) => {
+            console.log("Rendering investment:", investment);
             const nextStep = getNextStep(investment)
             return (
               <TableRow key={investment.id}>
                 <TableCell className="font-medium">
                   {investment.company ? (
-                    investment.company.name
+                    investment.company.name || <MissingInfoTooltip message="Company name missing" />
                   ) : (
-                    <MissingInfoTooltip message="Company name missing" />
+                    <MissingInfoTooltip message="Company information missing" />
                   )}
                   {" <> "}
                   {investment.fund ? (
-                    `${investment.fund.name}`
+                    investment.fund.name || <MissingInfoTooltip message="Fund name missing" />
                   ) : (
-                    <MissingInfoTooltip message="Fund name missing" />
+                    <MissingInfoTooltip message="Fund information missing" />
                   )}
                 </TableCell>
                 <TableCell>

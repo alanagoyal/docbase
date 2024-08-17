@@ -10,7 +10,7 @@ import { CalendarIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { Database, UserInvestment, Entity } from "@/types/supabase"
+import { Database, Entity, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
 import AuthRefresh from "./auth-refresh"
@@ -144,7 +144,10 @@ export default function InvestmentForm({
 
   useEffect(() => {
     if (account) {
-      fetchEntities()
+      fetchEntities().then(() => {
+        setHasFunds(entities.some(entity => entity.type === "fund"))
+        setHasCompanies(entities.some(entity => entity.type === "company"))
+      })
       if (isFormLocked) {
         form.reset({
           ...form.getValues(),
@@ -171,18 +174,18 @@ export default function InvestmentForm({
       .from("investments")
       .select(
         `
-      purchase_amount,
-      investment_type,
-      valuation_cap,
-      discount,
-      date,
-      created_by,
-      founder:users!founder_id (name, title, email),
-      company:companies (id, name, street, city_state_zip, state_of_incorporation, founder_id),
-      investor:users!investor_id (name, title, email),
-      fund:funds (id, name, byline, street, city_state_zip, investor_id),
-      side_letter:side_letters (id, side_letter_url, info_rights, pro_rata_rights, major_investor_rights, termination, miscellaneous)
-    `
+        purchase_amount,
+        investment_type,
+        valuation_cap,
+        discount,
+        date,
+        created_by,
+        founder:contacts!founder_contact_id (id, name, email, title),
+        company:companies (id, name, street, city_state_zip, state_of_incorporation, contact_id),
+        investor:contacts!investor_contact_id (id, name, email, title),
+        fund:funds (id, name, byline, street, city_state_zip, contact_id),
+        side_letter:side_letters (id, side_letter_url, info_rights, pro_rata_rights, major_investor_rights, termination, miscellaneous)
+      `
       )
       .eq("id", investmentId)
       .single()
@@ -221,19 +224,24 @@ export default function InvestmentForm({
         termination: data.side_letter?.termination || false,
         miscellaneous: data.side_letter?.miscellaneous || false,
       })
-      if (step === 1 && data.fund && data.fund.investor_id === account.id) {
+
+      if (step === 1 && data.fund && data.fund.contact_id === account.id) {
         setSelectedEntity(data.fund.id)
+        setHasFunds(true)
+        console.log("Has funds:", hasFunds)
       } else if (
         step === 2 &&
         data.company &&
-        data.company.founder_id === account.id
+        data.company.contact_id === account.id
       ) {
         setSelectedEntity(data.company.id)
+        setHasCompanies(true)
+        console.log("Has companies:", hasCompanies)
       } else {
         setSelectedEntity(undefined)
       }
-      // If the user is editing an investment that is not theirs, lock the form
-      if (account.auth_id !== data.created_by) {
+
+      if (account.id !== data.created_by) {
         setIsOwner(false)
       }
       if (data.side_letter) {
@@ -243,27 +251,100 @@ export default function InvestmentForm({
   }
 
   async function fetchEntities() {
-    const { data: fundData, error: fundError } = await supabase
-      .from("funds")
-      .select()
-      .eq("investor_id", account.id)
+    console.log("Starting fetchEntities function")
+    try {
+      console.log("Fetching user data for account ID:", account.id)
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", account.id)
+        .single()
 
-    const { data: companyData, error: companyError } = await supabase
-      .from("companies")
-      .select()
-      .eq("founder_id", account.id)
+      if (userError) {
+        console.error("Error fetching user data:", userError)
+        throw userError
+      }
+      console.log("User data fetched:", userData)
 
-    if (!fundError && !companyError) {
-      const typedFundData: Entity[] = fundData.map((fund) => ({ ...fund, type: "fund" }))
-      const typedCompanyData: Entity[] = companyData.map((company) => ({
-        ...company,
-        type: "company",
+      console.log("Fetching contact data for user ID:", userData.id)
+      const { data: contactData, error: contactError } = await supabase
+        .from("contacts")
+        .select("id")
+        .eq("user_id", userData.id)
+        .single()
+
+      if (contactError) {
+        console.error("Error fetching contact data:", contactError)
+        throw contactError
+      }
+      console.log("Contact data fetched:", contactData)
+
+      console.log("Fetching funds data for contact ID:", contactData.id)
+      const { data: fundsData, error: fundsError } = await supabase
+        .from("funds")
+        .select(
+          `
+          *,
+          contact:contacts(id, name, email)
+        `
+        )
+        .eq("contact_id", contactData.id)
+
+      if (fundsError) {
+        console.error("Error fetching funds data:", fundsError)
+        throw fundsError
+      }
+      console.log("Funds data fetched:", fundsData)
+
+      console.log("Fetching companies data for contact ID:", contactData.id)
+      const { data: companiesData, error: companiesError } = await supabase
+        .from("companies")
+        .select(
+          `
+          *,
+          contact:contacts(id, name, email)
+        `
+        )
+        .eq("contact_id", contactData.id)
+
+      if (companiesError) {
+        console.error("Error fetching companies data:", companiesError)
+        throw companiesError
+      }
+      console.log("Companies data fetched:", companiesData)
+
+      const fundEntities = fundsData.map((fund) => ({
+        id: fund.id,
+        name: fund.name,
+        type: "fund" as const,
+        byline: fund.byline,
+        street: fund.street,
+        city_state_zip: fund.city_state_zip,
+        contact_id: fund.contact_id,
+        contact_name: fund.contact?.name,
+        contact_email: fund.contact?.email,
       }))
-      setEntities([...typedFundData, ...typedCompanyData])
-      setHasFunds(typedFundData.length > 0)
-      setHasCompanies(typedCompanyData.length > 0)
-    } else {
-      console.error("Error fetching entities:", fundError || companyError)
+
+      const companyEntities = companiesData.map((company) => ({
+        id: company.id,
+        name: company.name,
+        type: "company" as const,
+        street: company.street,
+        city_state_zip: company.city_state_zip,
+        state_of_incorporation: company.state_of_incorporation,
+        contact_id: company.contact_id,
+        contact_name: company.contact?.name,
+        contact_email: company.contact?.email,
+      }))
+
+      console.log("Setting entities:", [...fundEntities, ...companyEntities])
+      setEntities([...fundEntities, ...companyEntities])
+
+      // Set hasFunds and hasCompanies based on the fetched data
+      setHasFunds(fundEntities.length > 0)
+      setHasCompanies(companyEntities.length > 0)
+    } catch (error) {
+      console.error("Error in fetchEntities:", error)
     }
   }
 
@@ -279,52 +360,76 @@ export default function InvestmentForm({
   }
 
   async function processInvestorDetails(values: InvestmentFormValues) {
+    console.log("Processing investor details:", values)
+
     if (
       values.investorName === "" &&
-      values.investorTitle === "" &&
-      values.investorEmail === ""
-    )
+      values.investorEmail === "" &&
+      values.investorTitle === ""
+    ) {
+      console.log("No investor details provided, skipping")
       return null
+    }
 
     try {
       const investorData = {
         name: values.investorName,
-        title: values.investorTitle,
         email: values.investorEmail,
-        updated_at: new Date(),
+        title: values.investorTitle,
+        is_investor: true,
+        created_by: account.id,
+        user_id: null,
       }
 
-      // Check if user already exists and update
+      console.log("Checking for existing investor contact")
       const { data: existingInvestor, error: existingInvestorError } =
         await supabase
-          .from("users")
-          .select("id")
-          .eq("name", values.investorName)
+          .from("contacts")
+          .select("id, user_id")
           .eq("email", values.investorEmail)
+          .eq("created_by", account.id)
           .maybeSingle()
 
+      if (existingInvestorError) {
+        console.error(
+          "Error checking for existing investor:",
+          existingInvestorError
+        )
+      }
+
       if (existingInvestor) {
+        console.log("Existing investor found, updating:", existingInvestor)
+        if (existingInvestor.user_id) {
+          investorData.user_id = existingInvestor.user_id
+          console.log("Preserving existing user_id:", existingInvestor.user_id)
+        }
         const { error: updateError } = await supabase
-          .from("users")
+          .from("contacts")
           .update(investorData)
           .eq("id", existingInvestor.id)
-        if (updateError) throw updateError
+        if (updateError) {
+          console.error("Error updating existing investor:", updateError)
+          throw updateError
+        }
+        console.log("Investor updated successfully")
         return existingInvestor.id
       } else {
+        console.log("No existing investor found, creating new contact")
         const { data: newInvestor, error: newInvestorError } = await supabase
-          .from("users")
+          .from("contacts")
           .insert(investorData)
           .select("id")
         if (newInvestorError) {
-          if (newInvestorError.code === "23505") {
-            toast({
-              description:
-                "An investor with this name and email already exists",
-            })
-          } else {
-            throw newInvestorError
-          }
+          console.error(
+            "Error creating new investor contact:",
+            newInvestorError
+          )
+          toast({
+            description: "Error creating new investor contact",
+          })
+          return null
         }
+        console.log("New investor created successfully:", newInvestor)
         return newInvestor ? newInvestor[0].id : null
       }
     } catch (error) {
@@ -335,7 +440,7 @@ export default function InvestmentForm({
 
   async function processFundDetails(
     values: InvestmentFormValues,
-    investorId: string | null
+    contactId: string | null
   ) {
     if (
       values.fundName === "" &&
@@ -351,20 +456,19 @@ export default function InvestmentForm({
         byline: values.fundByline,
         street: values.fundStreet,
         city_state_zip: values.fundCityStateZip,
-        investor_id: investorId,
+        contact_id: contactId,
       }
 
-      // Check if fund already exists
       const { data: existingFund, error: existingFundError } = await supabase
         .from("funds")
-        .select("id, investor_id")
+        .select("id, contact_id")
         .eq("name", values.fundName)
         .maybeSingle()
 
       if (existingFund) {
         const updateData = {
           ...fundData,
-          investor_id: investorId || existingFund.investor_id,
+          contact_id: contactId || existingFund.contact_id,
         }
         const { error: updateError } = await supabase
           .from("funds")
@@ -373,82 +477,98 @@ export default function InvestmentForm({
         if (updateError) throw updateError
         return existingFund.id
       } else {
-        const { data: newFund, error: newFundError } = await supabase
+        const { data: newFund, error: insertError } = await supabase
           .from("funds")
           .insert(fundData)
-          .select()
-        if (newFundError) {
-          if (newFundError.code === "23505") {
-            toast({
-              description: "A fund with this name already exists",
-            })
-          } else {
-            throw newFundError
-          }
-        }
+          .select("id")
+        if (insertError) throw insertError
         return newFund ? newFund[0].id : null
       }
     } catch (error) {
       console.error("Error processing fund details:", error)
+      return null
     }
   }
 
   async function processFounderDetails(values: InvestmentFormValues) {
+    console.log("Processing founder details:", values)
+
     if (
       values.founderName === "" &&
-      values.founderTitle === "" &&
-      values.founderEmail === ""
-    )
+      values.founderEmail === "" &&
+      values.founderTitle === ""
+    ) {
+      console.log("No founder details provided, skipping")
       return null
+    }
 
     try {
       const founderData = {
         name: values.founderName,
-        title: values.founderTitle,
         email: values.founderEmail,
-        updated_at: new Date(),
+        title: values.founderTitle,
+        is_founder: true,
+        created_by: account.id,
+        user_id: null,
       }
 
-      // Check if the founder already exists and update
+      console.log("Checking for existing founder contact")
       const { data: existingFounder, error: existingFounderError } =
         await supabase
-          .from("users")
-          .select("id")
-          .eq("name", values.founderName)
+          .from("contacts")
+          .select("id, user_id")
           .eq("email", values.founderEmail)
+          .eq("created_by", account.id)
           .maybeSingle()
 
+      if (existingFounderError) {
+        console.error(
+          "Error checking for existing founder:",
+          existingFounderError
+        )
+      }
+
       if (existingFounder) {
+        console.log("Existing founder found, updating:", existingFounder)
+        if (existingFounder.user_id) {
+          founderData.user_id = existingFounder.user_id
+          console.log("Preserving existing user_id:", existingFounder.user_id)
+        }
         const { error: updateError } = await supabase
-          .from("users")
+          .from("contacts")
           .update(founderData)
           .eq("id", existingFounder.id)
-        if (updateError) throw updateError
+        if (updateError) {
+          console.error("Error updating existing founder:", updateError)
+          throw updateError
+        }
+        console.log("Founder updated successfully")
         return existingFounder.id
       } else {
+        console.log("No existing founder found, creating new contact")
         const { data: newFounder, error: newFounderError } = await supabase
-          .from("users")
+          .from("contacts")
           .insert(founderData)
           .select("id")
         if (newFounderError) {
-          if (newFounderError.code === "23505") {
-            toast({
-              description: "A founder with this name and email already exists",
-            })
-          } else {
-            throw newFounderError
-          }
+          console.error("Error creating new founder contact:", newFounderError)
+          toast({
+            description: "Error creating new founder contact",
+          })
+          return null
         }
+        console.log("New founder created successfully:", newFounder)
         return newFounder ? newFounder[0].id : null
       }
     } catch (error) {
       console.error("Error processing founder details:", error)
+      return null
     }
   }
 
   async function processCompanyDetails(
     values: InvestmentFormValues,
-    founderId: string | null
+    contactId: string | null
   ) {
     if (
       values.companyName === "" &&
@@ -464,21 +584,20 @@ export default function InvestmentForm({
         street: values.companyStreet,
         city_state_zip: values.companyCityStateZip,
         state_of_incorporation: values.stateOfIncorporation,
-        founder_id: founderId,
+        contact_id: contactId,
       }
 
-      // Check if company already exists
       const { data: existingCompany, error: existingCompanyError } =
         await supabase
           .from("companies")
-          .select("id, founder_id")
+          .select("id, contact_id")
           .eq("name", values.companyName)
           .maybeSingle()
 
       if (existingCompany) {
         const updateData = {
           ...companyData,
-          founder_id: founderId || existingCompany.founder_id,
+          contact_id: contactId || existingCompany.contact_id,
         }
         const { error: updateError } = await supabase
           .from("companies")
@@ -487,23 +606,24 @@ export default function InvestmentForm({
         if (updateError) throw updateError
         return existingCompany.id
       } else {
-        const { data: newCompany, error: newCompanyError } = await supabase
+        const { data: newCompany, error: insertError } = await supabase
           .from("companies")
           .insert(companyData)
-          .select()
-        if (newCompanyError) {
-          if (newCompanyError.code === "23505") {
+          .select("id")
+        if (insertError) {
+          if (insertError.code === "23505") {
             toast({
               description: "A company with this name already exists",
             })
           } else {
-            throw newCompanyError
+            throw insertError
           }
         }
         return newCompany ? newCompany[0].id : null
       }
     } catch (error) {
       console.error("Error processing company details:", error)
+      return null
     }
   }
 
@@ -527,7 +647,7 @@ export default function InvestmentForm({
       let investmentIdResult: string | null = null
 
       if (!investmentId) {
-        dealData.created_by = account.auth_id!
+        dealData.created_by = account.id!
 
         // Insert investment
         const { data: investmentInsertData, error: investmentInsertError } =
@@ -562,9 +682,9 @@ export default function InvestmentForm({
   ): Promise<string | null> {
     try {
       const investmentData: Partial<UserInvestment> = {
-        ...(founderId && { founder_id: founderId }),
+        ...(founderId && { founder_contact_id: founderId }),
         ...(companyId && { company_id: companyId }),
-        ...(investorId && { investor_id: investorId }),
+        ...(investorId && { investor_contact_id: investorId }),
         ...(fundId && { fund_id: fundId }),
         purchase_amount: values.purchaseAmount,
         investment_type: values.type,
@@ -587,7 +707,7 @@ export default function InvestmentForm({
       const hasSideLetterContent = Object.values(sideLetter).some(Boolean)
 
       if (!investmentId) {
-        investmentData.created_by = account.auth_id!
+        investmentData.created_by = account.id!
 
         if (hasSideLetterContent) {
           // Insert side letter
@@ -670,20 +790,12 @@ export default function InvestmentForm({
           selectedEntityDetails.city_state_zip || ""
         )
 
-        // Fetch investor details
-        const { data: investorData, error: investorError } = await supabase
-          .from("users")
-          .select("name, title, email")
-          .eq("id", selectedEntityDetails.investor_id)
-          .single()
-
-        if (!investorError && investorData) {
-          form.setValue("investorName", investorData.name || "")
-          form.setValue("investorTitle", investorData.title || "")
-          form.setValue("investorEmail", investorData.email || "")
-        } else {
-          console.error("Error fetching investor details:", investorError)
-        }
+        form.setValue("investorName", selectedEntityDetails.contact_name || "")
+        form.setValue(
+          "investorEmail",
+          selectedEntityDetails.contact_email || ""
+        )
+        // Note: We don't have the title in the entities, so you might need to fetch it separately if needed
       } else if (selectedEntityDetails.type === "company") {
         form.setValue("companyName", selectedEntityDetails.name || "")
         form.setValue("companyStreet", selectedEntityDetails.street || "")
@@ -696,20 +808,9 @@ export default function InvestmentForm({
           selectedEntityDetails.state_of_incorporation || ""
         )
 
-        // Fetch founder details
-        const { data: founderData, error: founderError } = await supabase
-          .from("users")
-          .select("name, title, email")
-          .eq("id", selectedEntityDetails.founder_id)
-          .single()
-
-        if (!founderError && founderData) {
-          form.setValue("founderName", founderData.name || "")
-          form.setValue("founderTitle", founderData.title || "")
-          form.setValue("founderEmail", founderData.email || "")
-        } else {
-          console.error("Error fetching founder details:", founderError)
-        }
+        form.setValue("founderName", selectedEntityDetails.contact_name || "")
+        form.setValue("founderEmail", selectedEntityDetails.contact_email || "")
+        // Note: We don't have the title in the entities, so you might need to fetch it separately if needed
       }
     }
   }
@@ -1014,17 +1115,14 @@ export default function InvestmentForm({
                 <FormItem>
                   <FormLabel>Select Entity</FormLabel>
                   <EntitySelector
-                    entities={entities.filter(
-                      (entity) => entity.type === "fund"
-                    )}
+                    entities={entities.filter(entity => entity.type === "fund")}
                     selectedEntity={selectedEntity}
                     onSelectChange={handleSelectChange}
                     entityType="fund"
                     disabled={!isOwner}
                   />
                   <FormDescription>
-                    Choose an existing fund to be used in your signature block
-                    or add one below
+                    Choose an existing fund to be used in your signature block or add one below
                   </FormDescription>
                 </FormItem>
               )}
@@ -1178,17 +1276,14 @@ export default function InvestmentForm({
                 <FormItem>
                   <FormLabel>Select Entity</FormLabel>
                   <EntitySelector
-                    entities={entities.filter(
-                      (entity) => entity.type === "company"
-                    )}
+                    entities={entities.filter(entity => entity.type === "company")}
                     selectedEntity={selectedEntity}
                     onSelectChange={handleSelectChange}
                     entityType="company"
                     disabled={false}
                   />
                   <FormDescription>
-                    Choose an existing company to be used in your signature
-                    block or add one below
+                    Choose an existing company to be used in your signature block or add one below
                   </FormDescription>
                 </FormItem>
               )}

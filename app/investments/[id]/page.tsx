@@ -41,11 +41,11 @@ export default async function EditInvestment({
   const { data: account } = await supabase
     .from("users")
     .select()
-    .eq("auth_id", user.id)
+    .eq("id", user.id)
     .single()
 
   const { data: investment } = await supabase
-    .rpc("get_user_investments_by_id", { id_arg: params.id, auth_id_arg: user.id })
+    .rpc("get_user_investments_by_id", { investment_id_arg: params.id, id_arg: user.id })
     .single<UserInvestment>()
 
   return (

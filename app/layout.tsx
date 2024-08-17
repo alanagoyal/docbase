@@ -33,7 +33,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   const { data: account } = await supabase
     .from("users")
     .select("*")
-    .eq("auth_id", user?.id)
+    .eq("id", user?.id)
     .single()
 
   return (

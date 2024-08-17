@@ -15,7 +15,7 @@ export default async function DocumentsPage() {
     }
 
     const { data: documents, error } = await supabase
-    .rpc('get_user_documents', { auth_id_arg: user.id })
+    .rpc('get_user_documents', { id_arg: user.id })
     
     return documents && documents.length > 0 ? (
         <div className="container mx-auto px-4 py-8">

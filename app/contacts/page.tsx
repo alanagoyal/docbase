@@ -20,7 +20,7 @@ export default async function Contacts() {
   const { data: account } = await supabase
     .from("users")
     .select()
-    .eq("auth_id", user.id)
+    .eq("id", user.id)
     .single()
 
   const { data: contacts, error: contactsError } = await supabase

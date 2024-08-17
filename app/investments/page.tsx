@@ -19,7 +19,7 @@ export default async function InvestmentsPage() {
   const { data: account, error: accountError } = await supabase
     .from("users")
     .select()
-    .eq("auth_id", user?.id)
+    .eq("id", user?.id)
     .single()
 
   if (accountError) {
@@ -27,7 +27,7 @@ export default async function InvestmentsPage() {
   }
 
   const { data: investments, error: investmentError } = await supabase
-    .rpc('get_user_investments', { auth_id_arg: user.id })
+    .rpc('get_user_investments', { id_arg: user.id })
 
   if (investmentError) {
     console.error(investmentError)

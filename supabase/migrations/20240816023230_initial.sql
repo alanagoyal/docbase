@@ -110,7 +110,7 @@ create table "public"."users" (
     "updated_at" timestamp without time zone,
     "title" text,
     "id" uuid not null default gen_random_uuid(),
-    "auth_id" uuid
+    "id" uuid
 );
 
 
@@ -147,7 +147,7 @@ CREATE UNIQUE INDEX links_pkey ON public.links USING btree (id);
 
 CREATE UNIQUE INDEX side_letters_pkey ON public.side_letters USING btree (id);
 
-CREATE UNIQUE INDEX users_auth_id_key ON public.users USING btree (auth_id);
+CREATE UNIQUE INDEX users_id_key ON public.users USING btree (id);
 
 CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email);
 
@@ -201,7 +201,7 @@ alter table "public"."groups" add constraint "groups_created_by_fkey" FOREIGN KE
 
 alter table "public"."groups" validate constraint "groups_created_by_fkey";
 
-alter table "public"."investments" add constraint "investments_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(auth_id) not valid;
+alter table "public"."investments" add constraint "investments_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(id) not valid;
 
 alter table "public"."investments" validate constraint "investments_created_by_fkey";
 
@@ -225,15 +225,15 @@ alter table "public"."investments" add constraint "public_investments_fund_id_fk
 
 alter table "public"."investments" validate constraint "public_investments_fund_id_fkey";
 
-alter table "public"."links" add constraint "links_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(auth_id) not valid;
+alter table "public"."links" add constraint "links_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(id) not valid;
 
 alter table "public"."links" validate constraint "links_created_by_fkey";
 
-alter table "public"."users" add constraint "users_auth_id_fkey" FOREIGN KEY (auth_id) REFERENCES auth.users(id) not valid;
+alter table "public"."users" add constraint "users_id_fkey" FOREIGN KEY (id) REFERENCES auth.users(id) not valid;
 
-alter table "public"."users" validate constraint "users_auth_id_fkey";
+alter table "public"."users" validate constraint "users_id_fkey";
 
-alter table "public"."users" add constraint "users_auth_id_key" UNIQUE using index "users_auth_id_key";
+alter table "public"."users" add constraint "users_id_key" UNIQUE using index "users_id_key";
 
 alter table "public"."users" add constraint "users_email_key" UNIQUE using index "users_email_key";
 
@@ -254,14 +254,14 @@ AS $function$BEGIN
 END;$function$
 ;
 
-CREATE OR REPLACE FUNCTION public.delete_link(link_id uuid, auth_id uuid)
+CREATE OR REPLACE FUNCTION public.delete_link(link_id uuid, id uuid)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
 AS $function$
 BEGIN
     DELETE FROM public.links
-    WHERE id = link_id AND created_by = auth_id;
+    WHERE id = link_id AND created_by = id;
 END;
 $function$
 ;
@@ -297,7 +297,7 @@ END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_user_documents(auth_id_arg uuid)
+CREATE OR REPLACE FUNCTION public.get_user_documents(id_arg uuid)
  RETURNS TABLE(id uuid, document_type text, document_url text, document_name text, created_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -318,13 +318,13 @@ BEGIN
         l.filename as document_name,
         l.created_at
     FROM links l
-    WHERE l.created_by = auth_id_arg
+    WHERE l.created_by = id_arg
     ORDER BY l.created_at DESC;
 END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_user_investments(auth_id_arg uuid)
+CREATE OR REPLACE FUNCTION public.get_user_investments(id_arg uuid)
  RETURNS TABLE(id uuid, purchase_amount text, investment_type text, valuation_cap text, discount text, date timestamp with time zone, founder json, company json, investor json, fund json, side_letter json, side_letter_id uuid, safe_url text, summary text, created_by uuid, created_at timestamp with time zone)
  LANGUAGE sql
  SECURITY DEFINER
@@ -334,7 +334,7 @@ AS $function$
     SELECT DISTINCT ON (i.id) i.*
     FROM investments i
     LEFT JOIN users u ON i.investor_id = u.id OR i.founder_id = u.id
-    WHERE u.auth_id = auth_id_arg OR i.created_by = auth_id_arg
+    WHERE u.id = id_arg OR i.created_by = id_arg
   )
   SELECT
     i.id,
@@ -375,7 +375,7 @@ AS $function$
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_user_investments_by_id(id_arg uuid, auth_id_arg uuid)
+CREATE OR REPLACE FUNCTION public.get_user_investments_by_id(id_arg uuid, id_arg uuid)
  RETURNS TABLE(id uuid, purchase_amount text, investment_type text, valuation_cap text, discount text, date timestamp with time zone, founder json, company json, investor json, fund json, side_letter json, side_letter_id uuid, safe_url text, summary text, created_by uuid, created_at timestamp with time zone)
  LANGUAGE sql
  SECURITY DEFINER
@@ -417,13 +417,13 @@ AS $function$
     LEFT JOIN side_letters sl ON i.side_letter_id = sl.id
   WHERE
     i.id = id_arg
-    AND (i.created_by = auth_id_arg
-         OR i.founder_id IN (SELECT id FROM users WHERE auth_id = auth_id_arg)
-         OR i.investor_id IN (SELECT id FROM users WHERE auth_id = auth_id_arg));
+    AND (i.created_by = id_arg
+         OR i.founder_id IN (SELECT id FROM users WHERE id = id_arg)
+         OR i.investor_id IN (SELECT id FROM users WHERE id = id_arg));
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_user_links(auth_id uuid)
+CREATE OR REPLACE FUNCTION public.get_user_links(id uuid)
  RETURNS SETOF links
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -432,12 +432,12 @@ BEGIN
   RETURN QUERY
   SELECT *
   FROM links
-  WHERE created_by = auth_id;
+  WHERE created_by = id;
 END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_user_links_with_views(auth_id_arg uuid)
+CREATE OR REPLACE FUNCTION public.get_user_links_with_views(id_arg uuid)
  RETURNS TABLE(id uuid, created_at timestamp with time zone, created_by uuid, url text, password text, expires timestamp with time zone, filename text, view_count bigint)
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -461,7 +461,7 @@ AS $function$BEGIN
     GROUP BY link_id
   ) v ON l.id = v.link_id
   WHERE 
-    l.created_by = auth_id_arg
+    l.created_by = id_arg
   ORDER BY 
     l.created_at DESC;
 END;$function$
@@ -476,14 +476,14 @@ AS $function$
 BEGIN
   -- Check if a user with this email already exists
   IF EXISTS (SELECT 1 FROM public.users WHERE email = new.email) THEN
-    -- Update the existing user's auth_id
+    -- Update the existing user's id
     UPDATE public.users
-    SET auth_id = new.id,
+    SET id = new.id,
         updated_at = now()
     WHERE email = new.email;
   ELSE
     -- Insert a new user if no existing user is found
-    INSERT INTO public.users (auth_id, email, created_at)
+    INSERT INTO public.users (id, email, created_at)
     VALUES (new.id, new.email, now());
   END IF;
   RETURN new;
@@ -513,10 +513,10 @@ CREATE OR REPLACE FUNCTION public.select_link(link_id uuid)
  RETURNS TABLE(id uuid, created_at timestamp with time zone, url text, password text, expires timestamp with time zone, filename text, created_by uuid, creator_name text)
  LANGUAGE sql
  STABLE SECURITY DEFINER
-AS $function$ SELECT l.id, l.created_at, l.url, l.password, l.expires, l.filename, l.created_by, u.name as creator_name FROM links l LEFT JOIN users u ON l.created_by = u.auth_id WHERE l.id = link_id LIMIT 1; $function$
+AS $function$ SELECT l.id, l.created_at, l.url, l.password, l.expires, l.filename, l.created_by, u.name as creator_name FROM links l LEFT JOIN users u ON l.created_by = u.id WHERE l.id = link_id LIMIT 1; $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.update_link(link_id uuid, auth_id uuid, url_arg text, password_arg text, expires_arg timestamp without time zone, filename_arg text)
+CREATE OR REPLACE FUNCTION public.update_link(link_id uuid, id uuid, url_arg text, password_arg text, expires_arg timestamp without time zone, filename_arg text)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -527,12 +527,12 @@ BEGIN
         password = password_arg, 
         expires = expires_arg,
         filename = filename_arg
-    WHERE id = link_id AND created_by = auth_id;
+    WHERE id = link_id AND created_by = id;
 END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.upsert_link_data(id_arg uuid, filename_arg text, url_arg text, created_by_arg uuid, created_at_arg timestamp with time zone, password_arg text, expires_arg timestamp with time zone, auth_id_arg uuid)
+CREATE OR REPLACE FUNCTION public.upsert_link_data(id_arg uuid, filename_arg text, url_arg text, created_by_arg uuid, created_at_arg timestamp with time zone, password_arg text, expires_arg timestamp with time zone, id_arg uuid)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -548,7 +548,7 @@ begin
     created_at = excluded.created_at,
     password = excluded.password,
     expires = excluded.expires
-  where links.created_by = auth_id_arg;
+  where links.created_by = id_arg;
 end;
 $function$
 ;
@@ -994,12 +994,12 @@ on "public"."companies"
 as permissive
 for delete
 to public
-using (((auth.uid() = ( SELECT users.auth_id
+using (((auth.uid() = ( SELECT users.id
    FROM users
   WHERE (users.id = companies.founder_id))) OR (EXISTS ( SELECT 1
    FROM (investments i
      JOIN users u ON ((u.id = i.investor_id)))
-  WHERE ((i.company_id = companies.id) AND (u.auth_id = auth.uid()))))));
+  WHERE ((i.company_id = companies.id) AND (u.id = auth.uid()))))));
 
 
 create policy "Investors and founders in investment with fund can update"
@@ -1007,12 +1007,12 @@ on "public"."companies"
 as permissive
 for update
 to public
-using (((auth.uid() = ( SELECT users.auth_id
+using (((auth.uid() = ( SELECT users.id
    FROM users
   WHERE (users.id = companies.founder_id))) OR (EXISTS ( SELECT 1
    FROM (investments i
      JOIN users u ON ((u.id = i.investor_id)))
-  WHERE ((i.company_id = companies.id) AND (u.auth_id = auth.uid()))))));
+  WHERE ((i.company_id = companies.id) AND (u.id = auth.uid()))))));
 
 
 create policy "Users can manage their own contact_groups"
@@ -1082,12 +1082,12 @@ on "public"."funds"
 as permissive
 for delete
 to public
-using (((auth.uid() = ( SELECT users.auth_id
+using (((auth.uid() = ( SELECT users.id
    FROM users
   WHERE (users.id = funds.investor_id))) OR (EXISTS ( SELECT 1
    FROM (investments i
      JOIN users u ON ((u.id = i.founder_id)))
-  WHERE ((i.fund_id = funds.id) AND (u.auth_id = auth.uid()))))));
+  WHERE ((i.fund_id = funds.id) AND (u.id = auth.uid()))))));
 
 
 create policy "Founders and investors of investment with company can update"
@@ -1095,12 +1095,12 @@ on "public"."funds"
 as permissive
 for update
 to public
-using (((auth.uid() = ( SELECT users.auth_id
+using (((auth.uid() = ( SELECT users.id
    FROM users
   WHERE (users.id = funds.investor_id))) OR (EXISTS ( SELECT 1
    FROM (investments i
      JOIN users u ON ((u.id = i.founder_id)))
-  WHERE ((i.fund_id = funds.id) AND (u.auth_id = auth.uid()))))));
+  WHERE ((i.fund_id = funds.id) AND (u.id = auth.uid()))))));
 
 
 create policy "Users can create their own groups"
@@ -1164,15 +1164,15 @@ on "public"."investments"
 as permissive
 for delete
 to public
-using (((auth.uid() = created_by) OR ((auth.uid() = ( SELECT users.auth_id
+using (((auth.uid() = created_by) OR ((auth.uid() = ( SELECT users.id
    FROM users
-  WHERE (users.id = investments.founder_id))) OR (auth.uid() = ( SELECT users.auth_id
+  WHERE (users.id = investments.founder_id))) OR (auth.uid() = ( SELECT users.id
    FROM users
-  WHERE (users.id = investments.investor_id))) OR (auth.uid() IN ( SELECT users.auth_id
+  WHERE (users.id = investments.investor_id))) OR (auth.uid() IN ( SELECT users.id
    FROM users
   WHERE (users.id IN ( SELECT funds.investor_id
            FROM funds
-          WHERE (funds.id = investments.fund_id))))) OR (auth.uid() IN ( SELECT users.auth_id
+          WHERE (funds.id = investments.fund_id))))) OR (auth.uid() IN ( SELECT users.id
    FROM users
   WHERE (users.id IN ( SELECT companies.founder_id
            FROM companies
@@ -1200,7 +1200,7 @@ on "public"."users"
 as permissive
 for delete
 to public
-using ((( SELECT auth.uid() AS uid) = auth_id));
+using ((( SELECT auth.uid() AS uid) = id));
 
 
 create policy "Authenticated users can insert"
