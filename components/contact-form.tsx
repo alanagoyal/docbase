@@ -1,9 +1,9 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Plus, User } from "lucide-react"
+import { User } from "lucide-react"
 import { useForm } from "react-hook-form"
 import CreatableSelect from 'react-select/creatable'
 import * as z from "zod"
@@ -25,6 +25,7 @@ import { selectStyles } from '@/utils/select-styles'
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
 import { getColorForGroup } from "@/utils/group-colors"
+import { v4 as uuidv4 } from 'uuid';
 
 const memberFormSchema = z.object({
   email: z
@@ -55,6 +56,8 @@ export default function ContactForm({
   const supabase = createClient()
   const [isLoading, setIsLoading] = React.useState(false)
   const router = useRouter()
+  const [localGroups, setLocalGroups] = useState(groups)
+  const [selectedGroups, setSelectedGroups] = useState(existingContact?.groups || [])
 
   const form = useForm<MemberFormValues>({
     resolver: zodResolver(memberFormSchema),
@@ -65,29 +68,46 @@ export default function ContactForm({
     },
   })
 
+  const getNextColor = useCallback(() => {
+    return getColorForGroup(localGroups.length);
+  }, [localGroups]);
+
   const handleCreateGroup = async (inputValue: string) => {
-    setIsLoading(true)
-    try {
-      const newColor = getColorForGroup(inputValue, groups)
-      const { data, error } = await supabase
-        .from('groups')
-        .insert({ name: inputValue, created_by: account.auth_id, color: newColor })
-        .select()
-      if (error) throw error
-      
-      const newGroup = { value: data[0].id, label: data[0].name, color: data[0].color }
-      form.setValue('groups', [...form.getValues('groups'), newGroup])
-      return newGroup
-    } catch (error) {
-      console.error('Error creating new group:', error)
+    const newColor = getNextColor();
+    const newGroupId = uuidv4();
+    
+    // Insert the new group into the database
+    const { data: insertedGroup, error } = await supabase
+      .from("groups")
+      .insert({ id: newGroupId, name: inputValue, color: newColor, created_by: account.auth_id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating group:", error);
       toast({
         description: "Failed to create new group. Please try again.",
         variant: "destructive",
-      })
-      return null
-    } finally {
-      setIsLoading(false)
+      });
+      return null;
     }
+
+    const newGroup = { 
+      value: insertedGroup.id,
+      label: inputValue, 
+      color: newColor 
+    };
+    const updatedGroups = [...localGroups, newGroup];
+    setLocalGroups(updatedGroups);
+    
+    // Update the selected groups
+    const updatedSelectedGroups = [...selectedGroups, newGroup];
+    setSelectedGroups(updatedSelectedGroups);
+    
+    // Update the form value
+    form.setValue('groups', updatedSelectedGroups);
+    
+    return newGroup;
   }
 
   const customComponents = {
@@ -213,7 +233,12 @@ export default function ContactForm({
                 <CreatableSelect
                   {...field}
                   isMulti
-                  options={groups}
+                  options={localGroups}
+                  value={selectedGroups}
+                  onChange={(newValue) => {
+                    setSelectedGroups(newValue as any);
+                    field.onChange(newValue);
+                  }}
                   className="basic-multi-select"
                   classNamePrefix="select"
                   onCreateOption={handleCreateGroup}
