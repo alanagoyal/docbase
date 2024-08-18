@@ -176,7 +176,10 @@ export default function AccountForm({ account }: { account: User }) {
       is_investor: data.type === "fund",
       is_founder: data.type === "company",
       user_id: account.id,
+      created_by: account.id,
     }
+
+    console.log(contactData)
 
     try {
       // Check if contact already exists

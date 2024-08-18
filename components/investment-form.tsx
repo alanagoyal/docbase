@@ -144,18 +144,24 @@ export default function InvestmentForm({
 
   useEffect(() => {
     if (account) {
-      fetchEntities().then(() => {
-        setHasFunds(entities.some(entity => entity.type === "fund"))
-        setHasCompanies(entities.some(entity => entity.type === "company"))
-      })
-      if (isFormLocked) {
-        form.reset({
-          ...form.getValues(),
-          founderEmail: account.email || "",
-        })
-      }
+      fetchEntities()
     }
-  }, [account, isFormLocked])
+  }, [account])
+
+  useEffect(() => {
+    console.log("Entities updated:", entities)
+    setHasFunds(entities.some((entity) => entity.type === "fund"))
+    setHasCompanies(entities.some((entity) => entity.type === "company"))
+  }, [entities])
+
+  useEffect(() => {
+    if (isFormLocked) {
+      form.reset({
+        ...form.getValues(),
+        founderEmail: account.email || "",
+      })
+    }
+  }, [isFormLocked, account.email])
 
   // Function to update URL with current step
   useEffect(() => {
@@ -225,15 +231,13 @@ export default function InvestmentForm({
         miscellaneous: data.side_letter?.miscellaneous || false,
       })
 
-      if (step === 1 && data.fund && data.fund.contact_id === account.id) {
+      if (step === 1 && data.fund) {
         setSelectedEntity(data.fund.id)
+        console.log("Fund selected:", data.fund.id)
         setHasFunds(true)
-      } else if (
-        step === 2 &&
-        data.company &&
-        data.company.contact_id === account.id
-      ) {
+      } else if (step === 2 && data.company) {
         setSelectedEntity(data.company.id)
+        console.log("Company selected:", data.company.id)
         setHasCompanies(true)
       } else {
         setSelectedEntity(undefined)
@@ -277,7 +281,7 @@ export default function InvestmentForm({
         .select(
           `
           *,
-          contact:contacts(id, name, email)
+          contact:contacts(id, name, email, title)
         `
         )
         .eq("contact_id", contactData.id)
@@ -292,7 +296,7 @@ export default function InvestmentForm({
         .select(
           `
           *,
-          contact:contacts(id, name, email)
+          contact:contacts(id, name, email, title)
         `
         )
         .eq("contact_id", contactData.id)
@@ -312,6 +316,7 @@ export default function InvestmentForm({
         contact_id: fund.contact_id,
         contact_name: fund.contact?.name,
         contact_email: fund.contact?.email,
+        contact_title: fund.contact?.title,
       }))
 
       const companyEntities = companiesData.map((company) => ({
@@ -324,13 +329,12 @@ export default function InvestmentForm({
         contact_id: company.contact_id,
         contact_name: company.contact?.name,
         contact_email: company.contact?.email,
+        contact_title: company.contact?.title,
       }))
 
-      setEntities([...fundEntities, ...companyEntities])
-
-      // Set hasFunds and hasCompanies based on the fetched data
-      setHasFunds(fundEntities.length > 0)
-      setHasCompanies(companyEntities.length > 0)
+      const newEntities = [...fundEntities, ...companyEntities]
+      setEntities(newEntities)
+      console.log("Entities fetched:", newEntities)
     } catch (error) {
       console.error("Error in fetchEntities:", error)
     }
@@ -765,7 +769,10 @@ export default function InvestmentForm({
           "investorEmail",
           selectedEntityDetails.contact_email || ""
         )
-        // Note: We don't have the title in the entities, so you might need to fetch it separately if needed
+        form.setValue(
+          "investorTitle",
+          selectedEntityDetails.contact_title || ""
+        )
       } else if (selectedEntityDetails.type === "company") {
         form.setValue("companyName", selectedEntityDetails.name || "")
         form.setValue("companyStreet", selectedEntityDetails.street || "")
@@ -780,7 +787,7 @@ export default function InvestmentForm({
 
         form.setValue("founderName", selectedEntityDetails.contact_name || "")
         form.setValue("founderEmail", selectedEntityDetails.contact_email || "")
-        // Note: We don't have the title in the entities, so you might need to fetch it separately if needed
+        form.setValue("founderTitle", selectedEntityDetails.contact_title || "")
       }
     }
   }
@@ -1085,14 +1092,17 @@ export default function InvestmentForm({
                 <FormItem>
                   <FormLabel>Select Entity</FormLabel>
                   <EntitySelector
-                    entities={entities.filter(entity => entity.type === "fund")}
+                    entities={entities.filter(
+                      (entity) => entity.type === "fund"
+                    )}
                     selectedEntity={selectedEntity}
                     onSelectChange={handleSelectChange}
                     entityType="fund"
                     disabled={!isOwner}
                   />
                   <FormDescription>
-                    Choose an existing fund to be used in your signature block or add one below
+                    Choose an existing fund to be used in your signature block
+                    or add one below
                   </FormDescription>
                 </FormItem>
               )}
@@ -1242,18 +1252,27 @@ export default function InvestmentForm({
                     </Button>
                   )}
               </div>
+              {console.log(
+                "Rendering step 2, hasCompanies:",
+                hasCompanies,
+                "entities:",
+                entities
+              )}
               {hasCompanies && (
                 <FormItem>
                   <FormLabel>Select Entity</FormLabel>
                   <EntitySelector
-                    entities={entities.filter(entity => entity.type === "company")}
+                    entities={entities.filter(
+                      (entity) => entity.type === "company"
+                    )}
                     selectedEntity={selectedEntity}
                     onSelectChange={handleSelectChange}
                     entityType="company"
                     disabled={false}
                   />
                   <FormDescription>
-                    Choose an existing company to be used in your signature block or add one below
+                    Choose an existing company to be used in your signature
+                    block or add one below
                   </FormDescription>
                 </FormItem>
               )}
