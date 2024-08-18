@@ -137,7 +137,7 @@ export default function Investments({
   }
 
   const isFounder = (investment: UserInvestment) => {
-    return investment.founder?.id === account.id
+    return investment.founder?.user_id === account.id
   }
   const MissingInfoTooltip = ({ message }: { message: string }) => {
     return (
@@ -149,9 +149,11 @@ export default function Investments({
   }
 
   const editInvestment = (investment: UserInvestment) => {
+    console.log("edit investment", investment)
     if (isOwner(investment)) {
       router.push(`/investments/${investment.id}`)
     } else if (isFounder(investment)) {
+      console.log("is founder")
       router.push(`/investments/${investment.id}?step=2`)
     }
   }

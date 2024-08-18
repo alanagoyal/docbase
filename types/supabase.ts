@@ -29,6 +29,7 @@ export type UserInvestment = {
     name: string | null
     title: string | null
     email: string | null
+    user_id: string | null  // Add this line
   } | null
   company: {
     id: string
@@ -43,6 +44,7 @@ export type UserInvestment = {
     name: string | null
     title: string | null
     email: string | null
+    user_id: string | null  // Add this line
   } | null
   fund: {
     id: string

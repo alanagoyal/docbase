@@ -366,16 +366,13 @@ export default function InvestmentForm({
         email: values.investorEmail,
         title: values.investorTitle,
         is_investor: true,
-        created_by: account.id,
-        user_id: null,
       }
 
       const { data: existingInvestor, error: existingInvestorError } =
         await supabase
           .from("contacts")
-          .select("id, user_id")
+          .select("id, user_id, created_by")
           .eq("email", values.investorEmail)
-          .eq("created_by", account.id)
           .maybeSingle()
 
       if (existingInvestorError) {
@@ -386,33 +383,63 @@ export default function InvestmentForm({
       }
 
       if (existingInvestor) {
-        if (existingInvestor.user_id) {
-          investorData.user_id = existingInvestor.user_id
+        // Update existing investor
+        const updateData = {
+          ...investorData,
+          user_id: existingInvestor.user_id,
+          created_by: existingInvestor.created_by,
         }
         const { error: updateError } = await supabase
           .from("contacts")
-          .update(investorData)
+          .update(updateData)
           .eq("id", existingInvestor.id)
         if (updateError) {
           console.error("Error updating existing investor:", updateError)
           throw updateError
         }
+
+        // Update users table if the user is entering their own information
+        if (existingInvestor.user_id === account.id) {
+          const { error: userUpdateError } = await supabase
+            .from("users")
+            .update({ name: values.investorName, title: values.investorTitle })
+            .eq("id", account.id)
+          if (userUpdateError) {
+            console.error("Error updating user information:", userUpdateError)
+          }
+        }
+
         return existingInvestor.id
       } else {
+        // Create new investor
+        const newInvestorData = {
+          ...investorData,
+          user_id: isOwner ? null : account.id,
+          created_by: isOwner ? account.id : null,
+        }
         const { data: newInvestor, error: newInvestorError } = await supabase
           .from("contacts")
-          .insert(investorData)
+          .insert(newInvestorData)
           .select("id")
         if (newInvestorError) {
-          console.error(
-            "Error creating new investor contact:",
-            newInvestorError
-          )
+          console.error("Error creating new investor contact:", newInvestorError)
           toast({
             description: "Error creating new investor contact",
           })
           return null
         }
+
+        // Update users table if the user is entering their own information
+        if (!isOwner) {
+          const { error: userUpdateError } = await supabase
+            .from("users")
+            .update({ name: values.investorName, title: values.investorTitle })
+            .eq("id", account.id)
+          if (userUpdateError) {
+            console.error("Error updating user information:", userUpdateError)
+          }
+        }
+
         return newInvestor ? newInvestor[0].id : null
       }
     } catch (error) {
@@ -488,16 +515,14 @@ export default function InvestmentForm({
         email: values.founderEmail,
         title: values.founderTitle,
         is_founder: true,
-        created_by: account.id,
-        user_id: null,
       }
 
       const { data: existingFounder, error: existingFounderError } =
         await supabase
           .from("contacts")
-          .select("id, user_id")
+          .select("id, user_id, created_by")
           .eq("email", values.founderEmail)
-          .eq("created_by", account.id)
+          .or(`user_id.eq.${account.id},created_by.eq.${account.id}`)
           .maybeSingle()
 
       if (existingFounderError) {
@@ -508,22 +533,43 @@ export default function InvestmentForm({
       }
 
       if (existingFounder) {
-        if (existingFounder.user_id) {
-          founderData.user_id = existingFounder.user_id
+        // Update existing founder
+        const updateData = {
+          ...founderData,
+          user_id: existingFounder.user_id,
+          created_by: existingFounder.created_by,
         }
         const { error: updateError } = await supabase
           .from("contacts")
-          .update(founderData)
+          .update(updateData)
           .eq("id", existingFounder.id)
         if (updateError) {
           console.error("Error updating existing founder:", updateError)
           throw updateError
         }
+
+        // Update users table if the user is entering their own information
+        if (existingFounder.user_id === account.id) {
+          const { error: userUpdateError } = await supabase
+            .from("users")
+            .update({ name: values.founderName, title: values.founderTitle })
+            .eq("id", account.id)
+          if (userUpdateError) {
+            console.error("Error updating user information:", userUpdateError)
+          }
+        }
+
         return existingFounder.id
       } else {
+        // Create new founder
+        const newFounderData = {
+          ...founderData,
+          user_id: isOwner ? null : account.id,
+          created_by: isOwner ? account.id : null,
+        }
         const { data: newFounder, error: newFounderError } = await supabase
           .from("contacts")
-          .insert(founderData)
+          .insert(newFounderData)
           .select("id")
         if (newFounderError) {
           console.error("Error creating new founder contact:", newFounderError)
@@ -532,6 +578,18 @@ export default function InvestmentForm({
           })
           return null
         }
+
+        // Update users table if the user is entering their own information
+        if (!isOwner) {
+          const { error: userUpdateError } = await supabase
+            .from("users")
+            .update({ name: values.founderName, title: values.founderTitle })
+            .eq("id", account.id)
+          if (userUpdateError) {
+            console.error("Error updating user information:", userUpdateError)
+          }
+        }
+
         return newFounder ? newFounder[0].id : null
       }
     } catch (error) {

@@ -182,7 +182,9 @@ SELECT
         'title',
         fc.title,
         'email',
-        fc.email
+        fc.email,
+        'user_id',
+        fc.user_id
     ) AS founder,
     json_build_object(
         'id',
@@ -204,7 +206,9 @@ SELECT
         'title',
         ic.title,
         'email',
-        ic.email
+        ic.email,
+        'user_id',
+        ic.user_id
     ) AS investor,
     json_build_object(
         'id',
@@ -314,7 +318,9 @@ SELECT
         'title',
         fc.title,
         'email',
-        fc.email
+        fc.email,
+        'user_id',
+        fc.user_id
     ) AS founder,
     json_build_object(
         'id',
@@ -336,7 +342,9 @@ SELECT
         'title',
         ic.title,
         'email',
-        ic.email
+        ic.email,
+        'user_id',
+        ic.user_id
     ) AS investor,
     json_build_object(
         'id',
@@ -519,3 +527,79 @@ BEGIN
         AND created_by = user_id;
 END;
 $$;
+
+-- Drop the existing function
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+DROP FUNCTION IF EXISTS public.handle_new_user();
+
+-- Create the updated function
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $$
+BEGIN
+  -- Check if a user with this email already exists
+  IF EXISTS (SELECT 1 FROM public.users WHERE email = new.email) THEN
+    -- Update the existing user's id
+    UPDATE public.users
+    SET id = new.id,
+        updated_at = now()
+    WHERE email = new.email;
+  ELSE
+    -- Insert a new user if no existing user is found
+    INSERT INTO public.users (id, email, created_at)
+    VALUES (new.id, new.email, now());
+  END IF;
+
+  -- Update contacts with the same email to have the new user's id as user_id
+  UPDATE public.contacts
+  SET user_id = new.id
+  WHERE email = new.email;
+
+  RETURN new;
+END;
+$$;
+
+-- Ensure the trigger is still in place
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION handle_new_user();
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Authenticated users can insert contacts" ON "public"."contacts";
+DROP POLICY IF EXISTS "Users can delete their own contacts" ON "public"."contacts";
+DROP POLICY IF EXISTS "Users can update their own contacts" ON "public"."contacts";
+DROP POLICY IF EXISTS "Authenticated users can view all contacts" ON "public"."contacts";
+
+-- Create new policies
+CREATE POLICY "Authenticated users can insert contacts"
+ON "public"."contacts"
+AS PERMISSIVE
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Users can delete their own contacts"
+ON "public"."contacts"
+AS PERMISSIVE
+FOR DELETE
+TO authenticated
+USING (auth.uid() = created_by OR auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own contacts"
+ON "public"."contacts"
+AS PERMISSIVE
+FOR UPDATE
+TO authenticated
+USING (auth.uid() = created_by OR auth.uid() = user_id);
+
+CREATE POLICY "Authenticated users can view all contacts"
+ON "public"."contacts"
+AS PERMISSIVE
+FOR SELECT
+TO authenticated
+USING (true);
