@@ -532,7 +532,7 @@ END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.upsert_link_data(id_arg uuid, filename_arg text, url_arg text, created_by_arg uuid, created_at_arg timestamp with time zone, password_arg text, expires_arg timestamp with time zone, id_arg uuid)
+CREATE OR REPLACE FUNCTION public.upsert_link_data(id_arg uuid, filename_arg text, url_arg text, created_by_arg uuid, created_at_arg timestamp with time zone, password_arg text, expires_arg timestamp with time zone, auth_id_arg uuid)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -548,7 +548,7 @@ begin
     created_at = excluded.created_at,
     password = excluded.password,
     expires = excluded.expires
-  where links.created_by = id_arg;
+  where links.created_by = auth_id_arg;
 end;
 $function$
 ;

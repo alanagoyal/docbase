@@ -169,8 +169,6 @@ export default function AccountForm({ account }: { account: User }) {
   }
 
   async function processContact(data: AccountFormValues): Promise<string | null> {
-    console.log("Processing contact:", data);
-
     const contactData = {
       name: data.name,
       email: account.email,
@@ -206,7 +204,6 @@ export default function AccountForm({ account }: { account: User }) {
           return null
         }
 
-        console.log("Contact updated:", updatedContact)
         return updatedContact[0].id
       } else {
         // Insert new contact
@@ -220,7 +217,6 @@ export default function AccountForm({ account }: { account: User }) {
           return null
         }
 
-        console.log("New contact created:", newContact)
         return newContact[0].id
       }
     } catch (error) {
@@ -230,8 +226,6 @@ export default function AccountForm({ account }: { account: User }) {
   }
 
   async function processFund(data: AccountFormValues, contactId: string | null): Promise<boolean> {
-    console.log("Processing fund:", data);
-
     const fundUpdates = {
       name: data.entity_name,
       byline: data.byline,
@@ -251,7 +245,6 @@ export default function AccountForm({ account }: { account: User }) {
     }
 
     if (existingFund && existingFund.length > 0) {
-      console.log("existingFund:", existingFund)
       form.setError("entity_name", {
         type: "manual",
         message: "A fund with this name already exists",
@@ -268,7 +261,6 @@ export default function AccountForm({ account }: { account: User }) {
       console.error("Error creating fund:", newFundError)
       return true
     } else {
-      console.log("Fund created successfully:", newFund);
       setEntities((prevEntities) => [
         ...prevEntities,
         {
@@ -287,8 +279,6 @@ export default function AccountForm({ account }: { account: User }) {
   }
 
   async function processCompany(data: AccountFormValues, contactId: string | null): Promise<boolean> {
-    console.log("Processing company:", data);
-
     const companyUpdates = {
       name: data.entity_name,
       street: data.street,
@@ -306,7 +296,6 @@ export default function AccountForm({ account }: { account: User }) {
     }
 
     if (existingCompany && existingCompany.length > 0) {
-      console.log("existingCompany:", existingCompany)
       form.setError("entity_name", {
         type: "manual",
         message: "A company with this name already exists",
@@ -323,7 +312,6 @@ export default function AccountForm({ account }: { account: User }) {
       console.error("Error creating company:", newCompanyError)
       return true
     } else {
-      console.log("Company created successfully:", newCompany);
       setEntities((prevEntities) => [
         ...prevEntities,
         {

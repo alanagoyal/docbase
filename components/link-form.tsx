@@ -177,7 +177,7 @@ export default function LinkForm({
         // Use RPC for updating
         result = await supabase.rpc("update_link", {
           link_id: link.id,
-          id: account.id,
+          user_id: account.id,
           url_arg: signedUrl,
           password_arg: passwordHash,
           expires_arg: data.protectWithExpiration ? data.expires?.toISOString() : null,

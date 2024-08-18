@@ -88,7 +88,6 @@ export default function Investments({
     string | null
   >(null)
 
-  console.log(investments)
   const handleShareClick = (investment: UserInvestment) => {
     setSelectedInvestment(investment)
     setIsShareDialogOpen(true)
@@ -118,9 +117,7 @@ export default function Investments({
   const formatInvestmentType = (
     type: "valuation-cap" | "discount" | "mfn" | string
   ): JSX.Element | string => {
-    console.log("formatInvestmentType called with type:", type);
     if (!type) {
-      console.log("Investment type is falsy, returning MissingInfoTooltip");
       return <MissingInfoTooltip message="Investment type not set" />
     }
     const investmentTypes: Record<
@@ -132,7 +129,6 @@ export default function Investments({
       mfn: "MFN",
     }
     const result = investmentTypes[type as "valuation-cap" | "discount" | "mfn"] || type;
-    console.log("Returning formatted investment type:", result);
     return result;
   }
 
@@ -144,7 +140,6 @@ export default function Investments({
     return investment.founder?.id === account.id
   }
   const MissingInfoTooltip = ({ message }: { message: string }) => {
-    console.log("Rendering MissingInfoTooltip with message:", message);
     return (
       <span className="text-red-500">
         <AlertCircle className="inline-block mr-2 h-4 w-4" />
@@ -793,7 +788,6 @@ export default function Investments({
         </TableHeader>
         <TableBody>
           {investments.map((investment: UserInvestment) => {
-            console.log("Rendering investment:", investment);
             const nextStep = getNextStep(investment)
             return (
               <TableRow key={investment.id}>

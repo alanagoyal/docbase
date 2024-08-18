@@ -228,7 +228,6 @@ export default function InvestmentForm({
       if (step === 1 && data.fund && data.fund.contact_id === account.id) {
         setSelectedEntity(data.fund.id)
         setHasFunds(true)
-        console.log("Has funds:", hasFunds)
       } else if (
         step === 2 &&
         data.company &&
@@ -236,7 +235,6 @@ export default function InvestmentForm({
       ) {
         setSelectedEntity(data.company.id)
         setHasCompanies(true)
-        console.log("Has companies:", hasCompanies)
       } else {
         setSelectedEntity(undefined)
       }
@@ -251,9 +249,7 @@ export default function InvestmentForm({
   }
 
   async function fetchEntities() {
-    console.log("Starting fetchEntities function")
     try {
-      console.log("Fetching user data for account ID:", account.id)
       const { data: userData, error: userError } = await supabase
         .from("users")
         .select("id")
@@ -264,9 +260,7 @@ export default function InvestmentForm({
         console.error("Error fetching user data:", userError)
         throw userError
       }
-      console.log("User data fetched:", userData)
 
-      console.log("Fetching contact data for user ID:", userData.id)
       const { data: contactData, error: contactError } = await supabase
         .from("contacts")
         .select("id")
@@ -277,9 +271,7 @@ export default function InvestmentForm({
         console.error("Error fetching contact data:", contactError)
         throw contactError
       }
-      console.log("Contact data fetched:", contactData)
 
-      console.log("Fetching funds data for contact ID:", contactData.id)
       const { data: fundsData, error: fundsError } = await supabase
         .from("funds")
         .select(
@@ -294,9 +286,7 @@ export default function InvestmentForm({
         console.error("Error fetching funds data:", fundsError)
         throw fundsError
       }
-      console.log("Funds data fetched:", fundsData)
 
-      console.log("Fetching companies data for contact ID:", contactData.id)
       const { data: companiesData, error: companiesError } = await supabase
         .from("companies")
         .select(
@@ -311,7 +301,6 @@ export default function InvestmentForm({
         console.error("Error fetching companies data:", companiesError)
         throw companiesError
       }
-      console.log("Companies data fetched:", companiesData)
 
       const fundEntities = fundsData.map((fund) => ({
         id: fund.id,
@@ -337,7 +326,6 @@ export default function InvestmentForm({
         contact_email: company.contact?.email,
       }))
 
-      console.log("Setting entities:", [...fundEntities, ...companyEntities])
       setEntities([...fundEntities, ...companyEntities])
 
       // Set hasFunds and hasCompanies based on the fetched data
@@ -360,14 +348,11 @@ export default function InvestmentForm({
   }
 
   async function processInvestorDetails(values: InvestmentFormValues) {
-    console.log("Processing investor details:", values)
-
     if (
       values.investorName === "" &&
       values.investorEmail === "" &&
       values.investorTitle === ""
     ) {
-      console.log("No investor details provided, skipping")
       return null
     }
 
@@ -381,7 +366,6 @@ export default function InvestmentForm({
         user_id: null,
       }
 
-      console.log("Checking for existing investor contact")
       const { data: existingInvestor, error: existingInvestorError } =
         await supabase
           .from("contacts")
@@ -398,10 +382,8 @@ export default function InvestmentForm({
       }
 
       if (existingInvestor) {
-        console.log("Existing investor found, updating:", existingInvestor)
         if (existingInvestor.user_id) {
           investorData.user_id = existingInvestor.user_id
-          console.log("Preserving existing user_id:", existingInvestor.user_id)
         }
         const { error: updateError } = await supabase
           .from("contacts")
@@ -411,10 +393,8 @@ export default function InvestmentForm({
           console.error("Error updating existing investor:", updateError)
           throw updateError
         }
-        console.log("Investor updated successfully")
         return existingInvestor.id
       } else {
-        console.log("No existing investor found, creating new contact")
         const { data: newInvestor, error: newInvestorError } = await supabase
           .from("contacts")
           .insert(investorData)
@@ -429,7 +409,6 @@ export default function InvestmentForm({
           })
           return null
         }
-        console.log("New investor created successfully:", newInvestor)
         return newInvestor ? newInvestor[0].id : null
       }
     } catch (error) {
@@ -491,14 +470,11 @@ export default function InvestmentForm({
   }
 
   async function processFounderDetails(values: InvestmentFormValues) {
-    console.log("Processing founder details:", values)
-
     if (
       values.founderName === "" &&
       values.founderEmail === "" &&
       values.founderTitle === ""
     ) {
-      console.log("No founder details provided, skipping")
       return null
     }
 
@@ -512,7 +488,6 @@ export default function InvestmentForm({
         user_id: null,
       }
 
-      console.log("Checking for existing founder contact")
       const { data: existingFounder, error: existingFounderError } =
         await supabase
           .from("contacts")
@@ -529,10 +504,8 @@ export default function InvestmentForm({
       }
 
       if (existingFounder) {
-        console.log("Existing founder found, updating:", existingFounder)
         if (existingFounder.user_id) {
           founderData.user_id = existingFounder.user_id
-          console.log("Preserving existing user_id:", existingFounder.user_id)
         }
         const { error: updateError } = await supabase
           .from("contacts")
@@ -542,10 +515,8 @@ export default function InvestmentForm({
           console.error("Error updating existing founder:", updateError)
           throw updateError
         }
-        console.log("Founder updated successfully")
         return existingFounder.id
       } else {
-        console.log("No existing founder found, creating new contact")
         const { data: newFounder, error: newFounderError } = await supabase
           .from("contacts")
           .insert(founderData)
@@ -557,7 +528,6 @@ export default function InvestmentForm({
           })
           return null
         }
-        console.log("New founder created successfully:", newFounder)
         return newFounder ? newFounder[0].id : null
       }
     } catch (error) {

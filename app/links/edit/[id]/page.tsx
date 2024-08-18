@@ -25,7 +25,7 @@ export default async function EditLink({ params }: { params: { id: string } }) {
     })
     .single()) as { data: Link | null }
 
-  const { data: account, error } = await supabase
+    const { data: account, error } = await supabase
     .from("users")
     .select()
     .eq("id", user?.id)
