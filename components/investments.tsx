@@ -350,8 +350,10 @@ export default function Investments({
         created_at_arg: investment.date,
         password_arg: null,
         expires_arg: null,
-        auth_id_arg: account.id,
+        user_id: account.id,
       })
+
+      console.log("upserted link")
 
       if (linkError) {
         console.error(linkError)
@@ -678,8 +680,10 @@ export default function Investments({
         created_at_arg: investment.date,
         password_arg: null,
         expires_arg: null,
-        auth_id_arg: account.id,
+        user_id: account.id,
       })
+
+      console.log("upserted link")
 
       if (linkError) {
         console.error(linkError)

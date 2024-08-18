@@ -541,6 +541,28 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.upsert_link_data(uuid, text, text, uuid, timestamp with time zone, text, timestamp with time zone, uuid);
+
+CREATE OR REPLACE FUNCTION public.upsert_link_data(id_arg uuid, filename_arg text, url_arg text, created_by_arg uuid, created_at_arg timestamp with time zone, password_arg text, expires_arg timestamp with time zone, user_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $$
+begin
+  insert into links (id, filename, url, created_by, created_at, password, expires)
+  values (id_arg, filename_arg, url_arg, created_by_arg, created_at_arg, password_arg, expires_arg)
+  on conflict (id)
+  do update set
+    filename = excluded.filename,
+    url = excluded.url,
+    created_by = excluded.created_by,
+    created_at = excluded.created_at,
+    password = excluded.password,
+    expires = excluded.expires
+  where links.created_by = user_id;
+end;
+$$;
+
 -- Drop the existing function
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
