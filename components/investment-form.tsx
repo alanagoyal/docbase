@@ -1565,6 +1565,7 @@ export default function InvestmentForm({
           onEmailSent={() => setStep(3)}
           isOpen={isShareDialogOpen}
           onOpenChange={setIsShareDialogOpen}
+          account={account}
         />
       )}
     </div>

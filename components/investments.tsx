@@ -691,14 +691,15 @@ export default function Investments({
   }
 
   const getNextStep = (investment: UserInvestment) => {
-    if (!investment.fund || !investment.investor) {
+    console.log(investment)
+    if (!investment.fund?.id || !investment.investor?.id) {
       return {
         text: "Complete",
         action: () => router.push(`/investments/${investment.id}?step=1`),
         className: "bg-[#74EBD5] text-white hover:bg-[#5ED1BB]",
         nonOwnerText: "Waiting for fund/investor info",
       }
-    } else if (!investment.company || !investment.founder) {
+    } else if (!investment.company?.id || !investment.founder?.id) {
       return {
         text: "Share",
         action: () => {
@@ -994,6 +995,7 @@ export default function Investments({
           onEmailSent={() => router.refresh()}
           isOpen={isShareDialogOpen}
           onOpenChange={setIsShareDialogOpen}
+          account={account}
         />
       )}
     </div>
