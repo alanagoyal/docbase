@@ -470,8 +470,6 @@ $$;
 
 DROP FUNCTION IF EXISTS public.select_link(uuid);
 
-DROP FUNCTION IF EXISTS public.update_link(uuid, uuid, text, timestamp with time zone);
-
 CREATE OR REPLACE FUNCTION public.select_link(link_id uuid) 
 RETURNS TABLE(
     id uuid,
@@ -502,6 +500,8 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.update_link(uuid, uuid, text, timestamp with time zone);
+
 CREATE OR REPLACE FUNCTION public.update_link(
     link_id uuid,
     user_id uuid,
@@ -525,6 +525,19 @@ BEGIN
     WHERE
         id = link_id
         AND created_by = user_id;
+END;
+$$;
+
+DROP FUNCTION IF EXISTS public.delete_link(uuid, uuid);
+
+CREATE OR REPLACE FUNCTION public.delete_link(link_id uuid, user_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    DELETE FROM public.links
+    WHERE id = link_id AND created_by = user_id;
 END;
 $$;
 

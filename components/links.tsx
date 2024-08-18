@@ -64,7 +64,7 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
   const deleteLink = async (linkId: string) => {
     await supabase.rpc("delete_link", {
       link_id: linkId,
-      id: account.id,
+      user_id: account.id,
     })
     toast({
       description: "Your link has been deleted",
