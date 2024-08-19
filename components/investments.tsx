@@ -4,7 +4,6 @@ import { useState } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
-
 import { Icons } from "./icons"
 import { Share } from "./share"
 import { Button } from "./ui/button"
@@ -30,7 +29,6 @@ import Docxtemplater from "docxtemplater"
 import { AlertCircle, Download, InfoIcon, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
-
 import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
@@ -128,22 +126,25 @@ export default function Investments({
       discount: "Discount",
       mfn: "MFN",
     }
-    return investmentTypes[type as "valuation-cap" | "discount" | "mfn"] || type
+    const result = investmentTypes[type as "valuation-cap" | "discount" | "mfn"] || type;
+    return result;
   }
 
   const isOwner = (investment: UserInvestment) => {
-    return investment.created_by === account.auth_id
+    return investment.created_by === account.id
   }
 
   const isFounder = (investment: UserInvestment) => {
-    return investment.founder?.id === account.id
+    return investment.founder?.user_id === account.id
   }
-  const MissingInfoTooltip = ({ message }: { message: string }) => (
-    <span className="text-red-500">
-      <AlertCircle className="inline-block mr-2 h-4 w-4" />
-      {message}
-    </span>
-  )
+  const MissingInfoTooltip = ({ message }: { message: string }) => {
+    return (
+      <span className="text-red-500">
+        <AlertCircle className="inline-block mr-2 h-4 w-4" />
+        {message}
+      </span>
+    );
+  }
 
   const editInvestment = (investment: UserInvestment) => {
     if (isOwner(investment)) {
@@ -341,11 +342,11 @@ export default function Investments({
             : "SAFE.docx"
         }`,
         url_arg: newSignedUrlData?.signedUrl,
-        created_by_arg: account.auth_id,
+        created_by_arg: account.id,
         created_at_arg: investment.date,
         password_arg: null,
         expires_arg: null,
-        auth_id_arg: account.auth_id,
+        user_id: account.id,
       })
 
       if (linkError) {
@@ -669,11 +670,11 @@ export default function Investments({
             : "Side Letter.docx"
         }`,
         url_arg: newSignedUrlData?.signedUrl,
-        created_by_arg: account.auth_id,
+        created_by_arg: account.id,
         created_at_arg: investment.date,
         password_arg: null,
         expires_arg: null,
-        auth_id_arg: account.auth_id,
+        user_id: account.id,
       })
 
       if (linkError) {
@@ -688,14 +689,14 @@ export default function Investments({
   }
 
   const getNextStep = (investment: UserInvestment) => {
-    if (!investment.fund || !investment.investor) {
+    if (!investment.fund?.id || !investment.investor?.id) {
       return {
         text: "Complete",
         action: () => router.push(`/investments/${investment.id}?step=1`),
         className: "bg-[#74EBD5] text-white hover:bg-[#5ED1BB]",
         nonOwnerText: "Waiting for fund/investor info",
       }
-    } else if (!investment.company || !investment.founder) {
+    } else if (!investment.company?.id || !investment.founder?.id) {
       return {
         text: "Share",
         action: () => {
@@ -790,15 +791,15 @@ export default function Investments({
               <TableRow key={investment.id}>
                 <TableCell className="font-medium">
                   {investment.company ? (
-                    investment.company.name
+                    investment.company.name || <MissingInfoTooltip message="Company name missing" />
                   ) : (
-                    <MissingInfoTooltip message="Company name missing" />
+                    <MissingInfoTooltip message="Company information missing" />
                   )}
                   {" <> "}
                   {investment.fund ? (
-                    `${investment.fund.name}`
+                    investment.fund.name || <MissingInfoTooltip message="Fund name missing" />
                   ) : (
-                    <MissingInfoTooltip message="Fund name missing" />
+                    <MissingInfoTooltip message="Fund information missing" />
                   )}
                 </TableCell>
                 <TableCell>
@@ -991,6 +992,7 @@ export default function Investments({
           onEmailSent={() => router.refresh()}
           isOpen={isShareDialogOpen}
           onOpenChange={setIsShareDialogOpen}
+          account={account}
         />
       )}
     </div>

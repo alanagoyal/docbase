@@ -15,7 +15,7 @@ export default async function AccountPage() {
   const { data: account } = await supabase
     .from("users")
     .select()
-    .eq("auth_id", user.id)
+    .eq("id", user.id)
     .single()
 
   return (

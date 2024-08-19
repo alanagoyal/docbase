@@ -4,7 +4,7 @@ import { useState } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { useForm } from "react-hook-form"
 
-import { UserInvestment } from "@/types/supabase"
+import { Database, UserInvestment } from "@/types/supabase"
 
 import { Icons } from "./icons"
 import { Button } from "./ui/button"
@@ -26,18 +26,21 @@ import { Input } from "./ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { toast } from "./ui/use-toast"
 
+type User = Database["public"]["Tables"]["users"]["Row"]
+
 export function Share({
   investment,
   onEmailSent,
   isOpen,
   onOpenChange,
+  account,
 }: {
   investment: UserInvestment
   onEmailSent: () => void
   isOpen: boolean
   onOpenChange: (open: boolean) => void
+  account: User
 }) {
-
   const form = useForm({
     defaultValues: {
       name: "",
@@ -71,46 +74,60 @@ export function Share({
   async function onSubmit(values: { name: string; email: string }) {
     setIsSending(true)
 
-    // Upsert founder information
-    const { data: founderData, error: founderError } = await supabase
-      .from("users")
-      .upsert(
-        { name: values.name, email: values.email },
-        { onConflict: "email" }
-      )
-      .select("id")
-      .single()
-
-    if (founderError) throw founderError
-
-    // Update investment with founder_id
-    const updateResponse = await supabase
-      .from("investments")
-      .update({ founder_id: founderData.id })
-      .eq("id", investment.id)
-
-    // Check if investment.investor and investment.fund are defined
-    if (!investment.investor || !investment.fund) {
-      toast({
-        description:
-          "Please add investor and fund information to the investment",
-      })
-      throw new Error("Investor or fund not found")
-    }
-
-    const body = {
-      name: values.name,
-      email: values.email,
-      url: idString,
-      investor: investment.investor,
-      fund: investment.fund,
-    }
-
     try {
+      // Upsert contact information
+      const { data: contactData, error: contactError } = await supabase
+        .from("contacts")
+        .upsert(
+          {
+            name: values.name,
+            email: values.email,
+            created_by: account.id,
+            is_founder: true,
+          },
+          {
+            onConflict: "email,created_by",
+          }
+        )
+        .select("id")
+        .single()
+
+      if (contactError) throw contactError
+
+      // Update investment with contact_id
+      const { error: updateError } = await supabase
+        .from("investments")
+        .update({ founder_contact_id: contactData.id })
+        .eq("id", investment.id)
+
+      if (updateError) throw updateError
+
+      // Check if investment.investor and investment.fund are defined
+      if (!investment.investor || !investment.fund) {
+        toast({
+          description:
+            "Please add investor and fund information to the investment",
+        })
+        throw new Error("Investor or fund not found")
+      }
+
+      const body = {
+        name: values.name,
+        email: values.email,
+        url: idString,
+        investor: investment.investor,
+        fund: investment.fund,
+      }
+
       const response = await fetch("/api/send-form-email", {
         method: "POST",
         body: JSON.stringify(body),
       })
+
+      if (!response.ok) {
+        throw new Error("Failed to send email")
+      }
+
       toast({
         title: "Email sent",
         description: `The email has been sent to ${values.email}`,
@@ -119,6 +136,11 @@ export function Share({
       onEmailSent()
     } catch (error) {
       console.error(error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to process your request. Please try again.",
+      })
     } finally {
       setIsSending(false)
     }

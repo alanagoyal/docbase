@@ -21,11 +21,11 @@ export default async function LinksPage() {
   const { data: account } = await supabase
     .from("users")
     .select()
-    .eq("auth_id", user.id)
+    .eq("id", user.id)
     .single()
 
   const { data: links } = await supabase.rpc("get_user_links_with_views", {
-    auth_id_arg: user.id,
+    id_arg: user.id,
   })
 
   return links && links.length > 0 ? (

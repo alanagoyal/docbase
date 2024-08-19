@@ -36,7 +36,6 @@ import {
   CardTitle,
 } from "./ui/card"
 import { Textarea } from "./ui/textarea"
-import { ToastAction } from "./ui/toast"
 
 const accountFormSchema = z.object({
   email: z.string().email(),
@@ -86,36 +85,40 @@ export default function AccountForm({ account }: { account: User }) {
   }, [account])
 
   async function fetchEntities() {
-    const { data: fundData, error: fundError } = await supabase
-      .from("funds")
-      .select()
-      .eq("investor_id", account.id)
+    const { data: contactData, error: contactError } = await supabase
+      .from("contacts")
+      .select(`
+        id,
+        name,
+        email,
+        title,
+        is_investor,
+        is_founder,
+        funds (id, name, byline, street, city_state_zip),
+        companies (id, name, street, city_state_zip, state_of_incorporation)
+      `)
+      .eq("user_id", account.id)
 
-    const { data: companyData, error: companyError } = await supabase
-      .from("companies")
-      .select()
-      .eq("founder_id", account.id)
+    if (contactError) {
+      console.error("Error fetching contact data:", contactError)
+      return
+    }
 
-    if (!fundError && !companyError) {
-      const typedFundData: Entity[] = fundData.map((fund) => ({
-        ...fund,
-        type: "fund" as const,
-        name: fund.name || null,
-        byline: fund.byline || null,
-        street: fund.street || null,
-        city_state_zip: fund.city_state_zip || null,
-      }))
-      const typedCompanyData: Entity[] = companyData.map((company) => ({
-        ...company,
-        type: "company" as const,
-        name: company.name || null,
-        street: company.street || null,
-        city_state_zip: company.city_state_zip || null,
-        state_of_incorporation: company.state_of_incorporation || null,
-      }))
-      setEntities([...typedFundData, ...typedCompanyData])
-    } else {
-      console.error(fundError || companyError)
+    if (contactData && contactData.length > 0) {
+      const contact = contactData[0]
+      const entities: Entity[] = [
+        ...contact.funds.map((fund: any) => ({
+          ...fund,
+          type: "fund" as const,
+          contact_id: contact.id,
+        })),
+        ...contact.companies.map((company: any) => ({
+          ...company,
+          type: "company" as const,
+          contact_id: contact.id,
+        })),
+      ]
+      setEntities(entities)
     }
   }
 
@@ -131,8 +134,11 @@ export default function AccountForm({ account }: { account: User }) {
       let { error: accountError } = await supabase
         .from("users")
         .update(accountUpdates)
-        .eq("auth_id", account.auth_id)
+        .eq("id", account.id)
       if (accountError) throw accountError
+
+      // Create or update contact
+      const contactId = await processContact(data)
 
       if (
         data.entity_name ||
@@ -142,10 +148,10 @@ export default function AccountForm({ account }: { account: User }) {
         data.state_of_incorporation
       ) {
         if (data.type === "fund") {
-          const isDuplicate = await processFund(data)
+          const isDuplicate = await processFund(data, contactId)
           if (isDuplicate) return
         } else if (data.type === "company") {
-          const isDuplicate = await processCompany(data)
+          const isDuplicate = await processCompany(data, contactId)
           if (isDuplicate) return
         }
       }
@@ -162,13 +168,71 @@ export default function AccountForm({ account }: { account: User }) {
     }
   }
 
-  async function processFund(data: AccountFormValues): Promise<boolean> {
+  async function processContact(data: AccountFormValues): Promise<string | null> {
+    const contactData = {
+      name: data.name,
+      email: account.email,
+      title: data.title,
+      is_investor: data.type === "fund",
+      is_founder: data.type === "company",
+      user_id: account.id,
+      created_by: account.id,
+    }
+
+    try {
+      // Check if contact already exists
+      const { data: existingContact, error: selectError } = await supabase
+        .from("contacts")
+        .select("id")
+        .eq("user_id", account.id)
+        .maybeSingle()
+
+      if (selectError) {
+        console.error("Error checking existing contact:", selectError)
+        return null
+      }
+
+      if (existingContact) {
+        // Update existing contact
+        const { data: updatedContact, error: updateError } = await supabase
+          .from("contacts")
+          .update(contactData)
+          .eq("id", existingContact.id)
+          .select()
+
+        if (updateError) {
+          console.error("Error updating contact:", updateError)
+          return null
+        }
+
+        return updatedContact[0].id
+      } else {
+        // Insert new contact
+        const { data: newContact, error: insertError } = await supabase
+          .from("contacts")
+          .insert(contactData)
+          .select()
+
+        if (insertError) {
+          console.error("Error creating new contact:", insertError)
+          return null
+        }
+
+        return newContact[0].id
+      }
+    } catch (error) {
+      console.error("Error processing contact:", error)
+      return null
+    }
+  }
+
+  async function processFund(data: AccountFormValues, contactId: string | null): Promise<boolean> {
     const fundUpdates = {
       name: data.entity_name,
       byline: data.byline,
       street: data.street,
       city_state_zip: data.city_state_zip,
-      investor_id: account.id,
+      contact_id: contactId,
     }
 
     const { data: existingFund, error: existingFundError } = await supabase
@@ -182,7 +246,6 @@ export default function AccountForm({ account }: { account: User }) {
     }
 
     if (existingFund && existingFund.length > 0) {
-      console.log("existingFund:", existingFund)
       form.setError("entity_name", {
         type: "manual",
         message: "A fund with this name already exists",
@@ -208,7 +271,7 @@ export default function AccountForm({ account }: { account: User }) {
           byline: data.byline || null,
           street: data.street || null,
           city_state_zip: data.city_state_zip || null,
-          investor_id: account.id,
+          contact_id: contactId,
         },
       ])
       setSelectedEntity(undefined)
@@ -216,13 +279,13 @@ export default function AccountForm({ account }: { account: User }) {
     }
   }
 
-  async function processCompany(data: AccountFormValues): Promise<boolean> {
+  async function processCompany(data: AccountFormValues, contactId: string | null): Promise<boolean> {
     const companyUpdates = {
       name: data.entity_name,
       street: data.street,
       city_state_zip: data.city_state_zip,
       state_of_incorporation: data.state_of_incorporation,
-      founder_id: account.id,
+      contact_id: contactId,
     }
 
     const { data: existingCompany, error: existingCompanyError } =
@@ -234,7 +297,6 @@ export default function AccountForm({ account }: { account: User }) {
     }
 
     if (existingCompany && existingCompany.length > 0) {
-      console.log("existingCompany:", existingCompany)
       form.setError("entity_name", {
         type: "manual",
         message: "A company with this name already exists",
@@ -260,7 +322,7 @@ export default function AccountForm({ account }: { account: User }) {
           street: data.street || null,
           city_state_zip: data.city_state_zip || null,
           state_of_incorporation: data.state_of_incorporation || null,
-          founder_id: account.id,
+          contact_id: contactId,
         },
       ])
       setSelectedEntity(undefined)

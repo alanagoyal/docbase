@@ -6,8 +6,10 @@ export type Entity = {
   city_state_zip?: string | null
   byline?: string | null
   state_of_incorporation?: string | null
-  investor_id?: string | null
-  founder_id?: string | null
+  contact_id: string | null
+  contact_name?: string | null
+  contact_email?: string | null
+  contact_title?: string | null  // Add this line
 }
 
 export type ViewerData = {
@@ -27,6 +29,7 @@ export type UserInvestment = {
     name: string | null
     title: string | null
     email: string | null
+    user_id: string | null  // Add this line
   } | null
   company: {
     id: string
@@ -34,12 +37,14 @@ export type UserInvestment = {
     street: string | null
     city_state_zip: string | null
     state_of_incorporation: string | null
+    contact_id: string | null
   } | null
   investor: {
     id: string
     name: string | null
     title: string | null
     email: string | null
+    user_id: string | null  // Add this line
   } | null
   fund: {
     id: string
@@ -47,7 +52,10 @@ export type UserInvestment = {
     byline: string | null
     street: string | null
     city_state_zip: string | null
+    contact_id: string | null
   } | null
+  investor_contact_id: string | null
+  founder_contact_id: string | null
   side_letter: {
     id: string
     side_letter_url: string | null
@@ -174,26 +182,53 @@ export type Database = {
           created_by: string | null
           email: string | null
           id: string
+          is_founder: boolean | null
+          is_investor: boolean | null
           name: string | null
+          title: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
           created_by?: string | null
           email?: string | null
           id?: string
+          is_founder?: boolean | null
+          is_investor?: boolean | null
           name?: string | null
+          title?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
           created_by?: string | null
           email?: string | null
           id?: string
+          is_founder?: boolean | null
+          is_investor?: boolean | null
           name?: string | null
+          title?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funds: {
         Row: {
@@ -323,7 +358,7 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["auth_id"]
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "investments_founder_id_fkey"
@@ -396,7 +431,7 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["auth_id"]
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -435,7 +470,6 @@ export type Database = {
       }
       users: {
         Row: {
-          auth_id: string | null
           created_at: string
           email: string | null
           id: string
@@ -444,7 +478,6 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          auth_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -453,7 +486,6 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          auth_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -461,15 +493,7 @@ export type Database = {
           title?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "users_auth_id_fkey"
-            columns: ["auth_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       viewers: {
         Row: {

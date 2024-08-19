@@ -79,7 +79,7 @@ export default function ContactForm({
     // Insert the new group into the database
     const { data: insertedGroup, error } = await supabase
       .from("groups")
-      .insert({ id: newGroupId, name: inputValue, color: newColor, created_by: account.auth_id })
+      .insert({ id: newGroupId, name: inputValue, color: newColor, created_by: account.id })
       .select()
       .single();
 
@@ -135,7 +135,7 @@ export default function ContactForm({
       const updates = {
         email: data.email,
         name: data.name,
-        created_by: account.auth_id,
+        created_by: account.id,
         updated_at: new Date().toISOString(),
       }
 

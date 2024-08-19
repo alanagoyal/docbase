@@ -25,7 +25,7 @@ export default async function EditContact({ params }: { params: { id: string } }
   const { data: account } = await supabase
     .from("users")
     .select()
-    .eq("auth_id", user.id)
+    .eq("id", user.id)
     .single()
 
   const { data: groups } = await supabase

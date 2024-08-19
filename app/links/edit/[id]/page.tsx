@@ -25,10 +25,10 @@ export default async function EditLink({ params }: { params: { id: string } }) {
     })
     .single()) as { data: Link | null }
 
-  const { data: account, error } = await supabase
+    const { data: account, error } = await supabase
     .from("users")
     .select()
-    .eq("auth_id", user?.id)
+    .eq("id", user?.id)
     .single()
 
   return (
