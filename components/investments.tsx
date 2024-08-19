@@ -4,7 +4,6 @@ import { useState } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
-
 import { Icons } from "./icons"
 import { Share } from "./share"
 import { Button } from "./ui/button"
@@ -30,7 +29,6 @@ import Docxtemplater from "docxtemplater"
 import { AlertCircle, Download, InfoIcon, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
-
 import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
@@ -149,11 +147,9 @@ export default function Investments({
   }
 
   const editInvestment = (investment: UserInvestment) => {
-    console.log("edit investment", investment)
     if (isOwner(investment)) {
       router.push(`/investments/${investment.id}`)
     } else if (isFounder(investment)) {
-      console.log("is founder")
       router.push(`/investments/${investment.id}?step=2`)
     }
   }
@@ -352,8 +348,6 @@ export default function Investments({
         expires_arg: null,
         user_id: account.id,
       })
-
-      console.log("upserted link")
 
       if (linkError) {
         console.error(linkError)
@@ -683,8 +677,6 @@ export default function Investments({
         user_id: account.id,
       })
 
-      console.log("upserted link")
-
       if (linkError) {
         console.error(linkError)
       }
@@ -697,7 +689,6 @@ export default function Investments({
   }
 
   const getNextStep = (investment: UserInvestment) => {
-    console.log(investment)
     if (!investment.fund?.id || !investment.investor?.id) {
       return {
         text: "Complete",

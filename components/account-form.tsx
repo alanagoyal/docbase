@@ -179,8 +179,6 @@ export default function AccountForm({ account }: { account: User }) {
       created_by: account.id,
     }
 
-    console.log(contactData)
-
     try {
       // Check if contact already exists
       const { data: existingContact, error: selectError } = await supabase

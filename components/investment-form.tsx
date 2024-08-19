@@ -149,7 +149,6 @@ export default function InvestmentForm({
   }, [account])
 
   useEffect(() => {
-    console.log("Entities updated:", entities)
     setHasFunds(entities.some((entity) => entity.type === "fund"))
     setHasCompanies(entities.some((entity) => entity.type === "company"))
   }, [entities])
@@ -233,11 +232,9 @@ export default function InvestmentForm({
 
       if (step === 1 && data.fund) {
         setSelectedEntity(data.fund.id)
-        console.log("Fund selected:", data.fund.id)
         setHasFunds(true)
       } else if (step === 2 && data.company) {
         setSelectedEntity(data.company.id)
-        console.log("Company selected:", data.company.id)
         setHasCompanies(true)
       } else {
         setSelectedEntity(undefined)
@@ -334,7 +331,6 @@ export default function InvestmentForm({
 
       const newEntities = [...fundEntities, ...companyEntities]
       setEntities(newEntities)
-      console.log("Entities fetched:", newEntities)
     } catch (error) {
       console.error("Error in fetchEntities:", error)
     }
@@ -1310,12 +1306,6 @@ export default function InvestmentForm({
                     </Button>
                   )}
               </div>
-              {console.log(
-                "Rendering step 2, hasCompanies:",
-                hasCompanies,
-                "entities:",
-                entities
-              )}
               {hasCompanies && (
                 <FormItem>
                   <FormLabel>Select Entity</FormLabel>
