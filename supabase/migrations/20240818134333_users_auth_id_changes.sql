@@ -638,3 +638,209 @@ AS PERMISSIVE
 FOR SELECT
 TO authenticated
 USING (true);
+
+DROP POLICY IF EXISTS "Authenticated users can insert" ON "public"."users";
+DROP POLICY IF EXISTS "Authenticated users can read" ON "public"."users";
+DROP POLICY IF EXISTS "Authenticated users can update" ON "public"."users";
+DROP POLICY IF EXISTS "Authenticated users can delete themselves" ON "public"."users";
+
+-- Allow authenticated users to insert
+CREATE POLICY "Authenticated users can insert"
+ON "public"."users"
+AS PERMISSIVE
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+-- Allow users to read their own account
+CREATE POLICY "Users can read own account"
+ON "public"."users"
+AS PERMISSIVE
+FOR SELECT
+TO authenticated
+USING (auth.uid() = id);
+
+-- Allow users to update their own account
+CREATE POLICY "Users can update own account"
+ON "public"."users"
+AS PERMISSIVE
+FOR UPDATE
+TO authenticated
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
+
+-- Allow users to delete their own account
+CREATE POLICY "Users can delete own account"
+ON "public"."users"
+AS PERMISSIVE
+FOR DELETE
+TO authenticated
+USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Authenticated users can insert" ON "public"."investments";
+DROP POLICY IF EXISTS "Authenticated users can read" ON "public"."investments";
+DROP POLICY IF EXISTS "Authenticated users can update" ON "public"."investments";
+DROP POLICY IF EXISTS "Founders or investors in investment can delete" ON "public"."investments";
+
+-- Allow any authenticated user to insert
+CREATE POLICY "Authenticated users can insert investments"
+ON "public"."investments"
+AS PERMISSIVE
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+-- Allow select and update for created_by, investor_contact, or founder_contact
+CREATE POLICY "Users can select and update their own investments"
+ON "public"."investments"
+AS PERMISSIVE
+FOR SELECT
+TO authenticated
+USING (
+  auth.uid() = created_by OR 
+  auth.uid() IN (
+    SELECT user_id FROM contacts WHERE id = investor_contact_id
+  ) OR 
+  auth.uid() IN (
+    SELECT user_id FROM contacts WHERE id = founder_contact_id
+  )
+);
+
+-- Duplicate the above policy for UPDATE
+CREATE POLICY "Users can update their own investments"
+ON "public"."investments"
+AS PERMISSIVE
+FOR UPDATE
+TO authenticated
+USING (
+  auth.uid() = created_by OR 
+  auth.uid() IN (
+    SELECT user_id FROM contacts WHERE id = investor_contact_id
+  ) OR 
+  auth.uid() IN (
+    SELECT user_id FROM contacts WHERE id = founder_contact_id
+  )
+);
+
+-- Only allow delete for created_by
+CREATE POLICY "Users can delete their own created investments"
+ON "public"."investments"
+AS PERMISSIVE
+FOR DELETE
+TO authenticated
+USING (auth.uid() = created_by);
+
+DROP POLICY IF EXISTS "Authenticated can do all" ON "public"."side_letters";
+
+CREATE POLICY "Authenticated users can insert side letters"
+ON "public"."side_letters"
+AS PERMISSIVE
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+-- Allow select for users who created the side letter or are associated with the investment
+CREATE POLICY "Authenticated users can select side letters"
+ON "public"."side_letters"
+AS PERMISSIVE
+FOR SELECT
+TO authenticated
+USING (true);
+
+-- Allow update for users who created the side letter
+CREATE POLICY "Users can update their own side letters"
+ON "public"."side_letters"
+AS PERMISSIVE
+FOR UPDATE
+TO authenticated
+USING (
+  auth.uid() IN (
+    SELECT created_by 
+    FROM investments 
+    WHERE side_letter_id = side_letters.id
+  )
+);
+
+-- Allow delete for users who created the side letter
+CREATE POLICY "Users can delete their own side letters"
+ON "public"."side_letters"
+AS PERMISSIVE
+FOR DELETE
+TO authenticated
+USING (
+  auth.uid() IN (
+    SELECT created_by 
+    FROM investments 
+    WHERE side_letter_id = side_letters.id
+  )
+);
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Authenticated users can insert" ON "public"."companies";
+DROP POLICY IF EXISTS "Authenticated users can read" ON "public"."companies";
+DROP POLICY IF EXISTS "Investors and founders in investment with fund can delete" ON "public"."companies";
+DROP POLICY IF EXISTS "Investors and founders in investment with fund can update" ON "public"."companies";
+
+-- Create new policies
+CREATE POLICY "Authenticated users can insert companies"
+ON "public"."companies"
+AS PERMISSIVE
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can select companies"
+ON "public"."companies"
+AS PERMISSIVE
+FOR SELECT
+TO authenticated
+USING (true);
+
+CREATE POLICY "Users can update their own companies"
+ON "public"."companies"
+AS PERMISSIVE
+FOR UPDATE
+TO authenticated
+USING (auth.uid() = (SELECT user_id FROM contacts WHERE id = companies.contact_id));
+
+CREATE POLICY "Users can delete their own companies"
+ON "public"."companies"
+AS PERMISSIVE
+FOR DELETE
+TO authenticated
+USING (auth.uid() = (SELECT user_id FROM contacts WHERE id = companies.contact_id));
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Authenticated users can insert" ON "public"."funds";
+DROP POLICY IF EXISTS "Authenticated users can read" ON "public"."funds";
+DROP POLICY IF EXISTS "Founders and investors of investment with company can delete" ON "public"."funds";
+DROP POLICY IF EXISTS "Founders and investors of investment with company can update" ON "public"."funds";
+
+-- Create new policies
+CREATE POLICY "Authenticated users can insert funds"
+ON "public"."funds"
+AS PERMISSIVE
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can select funds"
+ON "public"."funds"
+AS PERMISSIVE
+FOR SELECT
+TO authenticated
+USING (true);
+
+CREATE POLICY "Users can update their own funds"
+ON "public"."funds"
+AS PERMISSIVE
+FOR UPDATE
+TO authenticated
+USING (auth.uid() = (SELECT user_id FROM contacts WHERE id = funds.contact_id));
+
+CREATE POLICY "Users can delete their own funds"
+ON "public"."funds"
+AS PERMISSIVE
+FOR DELETE
+TO authenticated
+USING (auth.uid() = (SELECT user_id FROM contacts WHERE id = funds.contact_id));
