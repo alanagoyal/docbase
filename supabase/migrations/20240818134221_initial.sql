@@ -1244,21 +1244,77 @@ alter table "auth"."mfa_factors" alter column factor_type type "auth"."factor_ty
 
 drop type "auth"."factor_type__old_version_to_be_dropped";
 
-alter table "auth"."mfa_challenges" add column "otp_code" text;
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_schema = 'auth' AND table_name = 'mfa_challenges' 
+                 AND column_name = 'otp_code') THEN
+    ALTER TABLE "auth"."mfa_challenges" ADD COLUMN "otp_code" text;
+  END IF;
+END $$;
 
-alter table "auth"."mfa_factors" add column "last_challenged_at" timestamp with time zone;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_schema = 'auth' AND table_name = 'mfa_factors' 
+                 AND column_name = 'last_challenged_at') THEN
+    ALTER TABLE "auth"."mfa_factors" ADD COLUMN "last_challenged_at" timestamp with time zone;
+  END IF;
+END $$;
 
-alter table "auth"."mfa_factors" add column "phone" text;
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                 WHERE table_schema = 'auth' AND table_name = 'mfa_factors' 
+                 AND column_name = 'phone') THEN
+    ALTER TABLE "auth"."mfa_factors" ADD COLUMN "phone" text;
+  END IF;
+END $$;
 
-CREATE UNIQUE INDEX mfa_factors_last_challenged_at_key ON auth.mfa_factors USING btree (last_challenged_at);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes 
+                 WHERE schemaname = 'auth' AND tablename = 'mfa_factors' 
+                 AND indexname = 'mfa_factors_last_challenged_at_key') THEN
+    CREATE UNIQUE INDEX mfa_factors_last_challenged_at_key ON auth.mfa_factors USING btree (last_challenged_at);
+  END IF;
+END $$;
 
-CREATE UNIQUE INDEX mfa_factors_phone_key ON auth.mfa_factors USING btree (phone);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes 
+                 WHERE schemaname = 'auth' AND tablename = 'mfa_factors' 
+                 AND indexname = 'mfa_factors_phone_key') THEN
+    CREATE UNIQUE INDEX mfa_factors_phone_key ON auth.mfa_factors USING btree (phone);
+  END IF;
+END $$;
 
-CREATE UNIQUE INDEX unique_verified_phone_factor ON auth.mfa_factors USING btree (user_id, phone);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes 
+                 WHERE schemaname = 'auth' AND tablename = 'mfa_factors' 
+                 AND indexname = 'unique_verified_phone_factor') THEN
+    CREATE UNIQUE INDEX unique_verified_phone_factor ON auth.mfa_factors USING btree (user_id, phone);
+  END IF;
+END $$;
 
-alter table "auth"."mfa_factors" add constraint "mfa_factors_last_challenged_at_key" UNIQUE using index "mfa_factors_last_challenged_at_key";
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                 WHERE constraint_schema = 'auth' AND table_name = 'mfa_factors' 
+                 AND constraint_name = 'mfa_factors_last_challenged_at_key') THEN
+    ALTER TABLE "auth"."mfa_factors" ADD CONSTRAINT "mfa_factors_last_challenged_at_key" UNIQUE USING INDEX "mfa_factors_last_challenged_at_key";
+  END IF;
+END $$;
 
-alter table "auth"."mfa_factors" add constraint "mfa_factors_phone_key" UNIQUE using index "mfa_factors_phone_key";
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                 WHERE constraint_schema = 'auth' AND table_name = 'mfa_factors' 
+                 AND constraint_name = 'mfa_factors_phone_key') THEN
+    ALTER TABLE "auth"."mfa_factors" ADD CONSTRAINT "mfa_factors_phone_key" UNIQUE USING INDEX "mfa_factors_phone_key";
+  END IF;
+END $$;
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
