@@ -782,12 +782,14 @@ export default function Investments({
             <TableHead className="w-1/6">Date</TableHead>
             <TableHead className="w-1/6">
               Next Steps
-              <Popover>
-                <PopoverTrigger asChild>
-                  <InfoIcon className="h-4 w-4 ml-2 inline-block cursor-pointer" />
-                </PopoverTrigger>
-                <NextStepsPopoverContent />
-              </Popover>
+              {investments.every(investment => isOwner(investment)) && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <InfoIcon className="h-4 w-4 ml-2 inline-block cursor-pointer" />
+                  </PopoverTrigger>
+                  <NextStepsPopoverContent />
+                </Popover>
+              )}
             </TableHead>
             <TableHead className="w-1/6">Actions</TableHead>
           </TableRow>
