@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { MenuIcon } from "lucide-react"
-import { Database } from "@/types/supabase"
+import { Download, MenuIcon } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -25,6 +25,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+import { toast } from "./ui/use-toast"
+
 type Document = {
   id: string
   document_type: string
@@ -32,27 +34,40 @@ type Document = {
   document_name: string
   created_at: string
 }
-export function Documents({
-  documents,
-}: {
-  documents: Document[]
-}) {
-
-
+export function Documents({ documents }: { documents: Document[] }) {
   const getEditLink = (document: Document) => {
-    const fileName = document.document_name.toLowerCase();
-    if (fileName.includes('safe') || fileName.includes('side letter')) {
-      return `/investments/${document.id}${fileName.includes('side letter') ? '?step=3' : ''}`;
+    const fileName = document.document_name.toLowerCase()
+    if (fileName.includes("safe") || fileName.includes("side letter")) {
+      return `/investments/${document.id}${
+        fileName.includes("side letter") ? "?step=3" : ""
+      }`
     }
-    return `/links/edit/${document.id}`;
+    return `/links/edit/${document.id}`
   }
 
-  const getViewLink = (document: Document) => {
-    const fileName = document.document_name.toLowerCase();
-    if (fileName.includes('safe') || fileName.includes('side letter')) {
-      return `/investments/${document.id}`;
-    }
-    return `/links/view/${document.id}`;
+  const downloadDocument = (url: string) => {
+    window.open(url, "_blank")
+    toast({ description: "Document downloaded" })
+  }
+
+  const handleCopyLink = (documentId: string) => {
+    const link = `${process.env.NEXT_PUBLIC_SITE_URL}/links/view/${documentId}`
+    navigator.clipboard
+      .writeText(link)
+      .then(() => {
+        toast({
+          description: "Your link has been copied",
+        })
+      })
+      .catch((error) => {
+        toast({
+          description: "There was an error copying your link",
+        })
+      })
+  }
+
+  const linkUrl = (document: Document) => {
+    return `${process.env.NEXT_PUBLIC_SITE_URL}/links/view/${document.id}`
   }
 
   const formatDate = (dateString: string | null) => {
@@ -62,7 +77,7 @@ export function Documents({
       month: "2-digit",
       day: "2-digit",
       year: "2-digit",
-      timeZone: "UTC"
+      timeZone: "UTC",
     })
   }
 
@@ -89,37 +104,40 @@ export function Documents({
                 <TableCell>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <a
-                        href={document.document_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <span
                         className="cursor-pointer hover:text-blue-500"
+                        onClick={() => handleCopyLink(document.id)}
                       >
-                        {document.document_url.substring(0, 18)}...
-                      </a>
+                        {`${linkUrl(document).substring(0, 18)}...`}
+                      </span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Open document</p>
+                      <p>Copy link</p>
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
                 <TableCell>{formatDate(document.created_at)}</TableCell>
                 <TableCell className="whitespace-nowrap">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MenuIcon className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Link href={getViewLink(document)}>View</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Link href={getEditLink(document)}>Edit</Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => downloadDocument(document.document_url)}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MenuIcon className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Link href={getEditLink(document)}>Edit</Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

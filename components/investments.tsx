@@ -4,6 +4,7 @@ import { useState } from "react"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
+
 import { Icons } from "./icons"
 import { Share } from "./share"
 import { Button } from "./ui/button"
@@ -29,6 +30,7 @@ import Docxtemplater from "docxtemplater"
 import { AlertCircle, Download, InfoIcon, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
+
 import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
@@ -40,6 +42,7 @@ const ReactQuill = dynamic(() => import("react-quill"), { ssr: false })
 
 const downloadDocument = (url: string) => {
   window.open(url, "_blank")
+  toast({ description: "Document downloaded" })
 }
 
 const NextStepsPopoverContent = () => (
@@ -126,8 +129,9 @@ export default function Investments({
       discount: "Discount",
       mfn: "MFN",
     }
-    const result = investmentTypes[type as "valuation-cap" | "discount" | "mfn"] || type;
-    return result;
+    const result =
+      investmentTypes[type as "valuation-cap" | "discount" | "mfn"] || type
+    return result
   }
 
   const isOwner = (investment: UserInvestment) => {
@@ -143,7 +147,7 @@ export default function Investments({
         <AlertCircle className="inline-block mr-2 h-4 w-4" />
         {message}
       </span>
-    );
+    )
   }
 
   const editInvestment = (investment: UserInvestment) => {
@@ -325,7 +329,9 @@ export default function Investments({
       }
 
       const { data: newSignedUrlData, error: newSignedUrlError } =
-        await supabase.storage.from("documents").createSignedUrl(filepath, 2592000)
+        await supabase.storage
+          .from("documents")
+          .createSignedUrl(filepath, 2592000)
       if (newSignedUrlError) {
         console.error(
           "Failed to create signed URL after upload:",
@@ -653,7 +659,9 @@ export default function Investments({
       }
 
       const { data: newSignedUrlData, error: newSignedUrlError } =
-        await supabase.storage.from("documents").createSignedUrl(filepath, 2592000)
+        await supabase.storage
+          .from("documents")
+          .createSignedUrl(filepath, 2592000)
       if (newSignedUrlError) {
         console.error(
           "Failed to create signed URL after upload:",
@@ -791,13 +799,17 @@ export default function Investments({
               <TableRow key={investment.id}>
                 <TableCell className="font-medium">
                   {investment.company ? (
-                    investment.company.name || <MissingInfoTooltip message="Company name missing" />
+                    investment.company.name || (
+                      <MissingInfoTooltip message="Company name missing" />
+                    )
                   ) : (
                     <MissingInfoTooltip message="Company information missing" />
                   )}
                   {" <> "}
                   {investment.fund ? (
-                    investment.fund.name || <MissingInfoTooltip message="Fund name missing" />
+                    investment.fund.name || (
+                      <MissingInfoTooltip message="Fund name missing" />
+                    )
                   ) : (
                     <MissingInfoTooltip message="Fund information missing" />
                   )}
