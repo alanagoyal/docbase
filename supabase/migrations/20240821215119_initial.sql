@@ -5,7 +5,7 @@ create table "public"."companies" (
     "street" text,
     "city_state_zip" text,
     "state_of_incorporation" text,
-    "founder_id" uuid
+    "contact_id" uuid
 );
 
 
@@ -25,7 +25,11 @@ create table "public"."contacts" (
     "created_by" uuid,
     "name" text,
     "email" text,
-    "updated_at" timestamp with time zone default now()
+    "updated_at" timestamp with time zone default now(),
+    "title" text,
+    "is_investor" boolean default false,
+    "is_founder" boolean default false,
+    "user_id" uuid
 );
 
 
@@ -38,7 +42,7 @@ create table "public"."funds" (
     "street" text,
     "city_state_zip" text,
     "byline" text,
-    "investor_id" uuid
+    "contact_id" uuid
 );
 
 
@@ -58,9 +62,9 @@ alter table "public"."groups" enable row level security;
 create table "public"."investments" (
     "id" uuid not null default gen_random_uuid(),
     "created_at" timestamp with time zone not null default now(),
-    "founder_id" uuid,
+    "founder_contact_id" uuid,
     "company_id" uuid,
-    "investor_id" uuid,
+    "investor_contact_id" uuid,
     "fund_id" uuid,
     "purchase_amount" text,
     "investment_type" text,
@@ -109,8 +113,7 @@ create table "public"."users" (
     "name" text,
     "updated_at" timestamp without time zone,
     "title" text,
-    "id" uuid not null default gen_random_uuid(),
-    "auth_id" uuid
+    "id" uuid not null default gen_random_uuid()
 );
 
 
@@ -133,6 +136,8 @@ CREATE UNIQUE INDEX companies_pkey ON public.companies USING btree (id);
 
 CREATE UNIQUE INDEX contact_groups_pkey ON public.contact_groups USING btree (contact_id, group_id);
 
+CREATE UNIQUE INDEX contacts_email_created_by_unique ON public.contacts USING btree (email, created_by);
+
 CREATE UNIQUE INDEX contacts_pkey ON public.contacts USING btree (id);
 
 CREATE UNIQUE INDEX funds_name_unique ON public.funds USING btree (name);
@@ -146,8 +151,6 @@ CREATE UNIQUE INDEX investments_pkey ON public.investments USING btree (id);
 CREATE UNIQUE INDEX links_pkey ON public.links USING btree (id);
 
 CREATE UNIQUE INDEX side_letters_pkey ON public.side_letters USING btree (id);
-
-CREATE UNIQUE INDEX users_auth_id_key ON public.users USING btree (auth_id);
 
 CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email);
 
@@ -177,9 +180,9 @@ alter table "public"."users" add constraint "users_pkey" PRIMARY KEY using index
 
 alter table "public"."viewers" add constraint "viewers_pkey" PRIMARY KEY using index "viewers_pkey";
 
-alter table "public"."companies" add constraint "companies_founder_id_fkey" FOREIGN KEY (founder_id) REFERENCES users(id) not valid;
+alter table "public"."companies" add constraint "companies_contact_id_fkey" FOREIGN KEY (contact_id) REFERENCES contacts(id) not valid;
 
-alter table "public"."companies" validate constraint "companies_founder_id_fkey";
+alter table "public"."companies" validate constraint "companies_contact_id_fkey";
 
 alter table "public"."companies" add constraint "companies_name_unique" UNIQUE using index "companies_name_unique";
 
@@ -191,27 +194,37 @@ alter table "public"."contact_groups" add constraint "contact_groups_group_id_fk
 
 alter table "public"."contact_groups" validate constraint "contact_groups_group_id_fkey";
 
-alter table "public"."funds" add constraint "funds_investor_id_fkey" FOREIGN KEY (investor_id) REFERENCES users(id) not valid;
+alter table "public"."contacts" add constraint "contacts_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(id) not valid;
 
-alter table "public"."funds" validate constraint "funds_investor_id_fkey";
+alter table "public"."contacts" validate constraint "contacts_created_by_fkey";
+
+alter table "public"."contacts" add constraint "contacts_email_created_by_unique" UNIQUE using index "contacts_email_created_by_unique";
+
+alter table "public"."contacts" add constraint "contacts_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) not valid;
+
+alter table "public"."contacts" validate constraint "contacts_user_id_fkey";
+
+alter table "public"."funds" add constraint "funds_contact_id_fkey" FOREIGN KEY (contact_id) REFERENCES contacts(id) not valid;
+
+alter table "public"."funds" validate constraint "funds_contact_id_fkey";
 
 alter table "public"."funds" add constraint "funds_name_unique" UNIQUE using index "funds_name_unique";
 
-alter table "public"."groups" add constraint "groups_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) not valid;
+alter table "public"."groups" add constraint "groups_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(id) not valid;
 
 alter table "public"."groups" validate constraint "groups_created_by_fkey";
 
-alter table "public"."investments" add constraint "investments_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(auth_id) not valid;
+alter table "public"."investments" add constraint "investments_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(id) not valid;
 
 alter table "public"."investments" validate constraint "investments_created_by_fkey";
 
-alter table "public"."investments" add constraint "investments_founder_id_fkey" FOREIGN KEY (founder_id) REFERENCES users(id) not valid;
+alter table "public"."investments" add constraint "investments_founder_contact_id_fkey" FOREIGN KEY (founder_contact_id) REFERENCES contacts(id) not valid;
 
-alter table "public"."investments" validate constraint "investments_founder_id_fkey";
+alter table "public"."investments" validate constraint "investments_founder_contact_id_fkey";
 
-alter table "public"."investments" add constraint "investments_investor_id_fkey" FOREIGN KEY (investor_id) REFERENCES users(id) not valid;
+alter table "public"."investments" add constraint "investments_investor_contact_id_fkey" FOREIGN KEY (investor_contact_id) REFERENCES contacts(id) not valid;
 
-alter table "public"."investments" validate constraint "investments_investor_id_fkey";
+alter table "public"."investments" validate constraint "investments_investor_contact_id_fkey";
 
 alter table "public"."investments" add constraint "investments_side_letter_id_fkey" FOREIGN KEY (side_letter_id) REFERENCES side_letters(id) not valid;
 
@@ -225,15 +238,9 @@ alter table "public"."investments" add constraint "public_investments_fund_id_fk
 
 alter table "public"."investments" validate constraint "public_investments_fund_id_fkey";
 
-alter table "public"."links" add constraint "links_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(auth_id) not valid;
+alter table "public"."links" add constraint "links_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(id) not valid;
 
 alter table "public"."links" validate constraint "links_created_by_fkey";
-
-alter table "public"."users" add constraint "users_auth_id_fkey" FOREIGN KEY (auth_id) REFERENCES auth.users(id) not valid;
-
-alter table "public"."users" validate constraint "users_auth_id_fkey";
-
-alter table "public"."users" add constraint "users_auth_id_key" UNIQUE using index "users_auth_id_key";
 
 alter table "public"."users" add constraint "users_email_key" UNIQUE using index "users_email_key";
 
@@ -254,14 +261,14 @@ AS $function$BEGIN
 END;$function$
 ;
 
-CREATE OR REPLACE FUNCTION public.delete_link(link_id uuid, auth_id uuid)
+CREATE OR REPLACE FUNCTION public.delete_link(link_id uuid, user_id uuid)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
 AS $function$
 BEGIN
     DELETE FROM public.links
-    WHERE id = link_id AND created_by = auth_id;
+    WHERE id = link_id AND created_by = user_id;
 END;
 $function$
 ;
@@ -297,174 +304,332 @@ END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_user_documents(auth_id_arg uuid)
+CREATE OR REPLACE FUNCTION public.get_user_documents(id_arg uuid)
  RETURNS TABLE(id uuid, document_type text, document_url text, document_name text, created_at timestamp with time zone)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-BEGIN
+BEGIN 
     RETURN QUERY
-    SELECT 
+    SELECT
         l.id,
         CASE
             WHEN lower(l.filename) LIKE '%.pdf' THEN 'PDF'
-            WHEN lower(l.filename) LIKE '%.doc' OR lower(l.filename) LIKE '%.docx' THEN 'Word'
-            WHEN lower(l.filename) LIKE '%.xls' OR lower(l.filename) LIKE '%.xlsx' THEN 'Excel'
-            WHEN lower(l.filename) LIKE '%.jpg' OR lower(l.filename) LIKE '%.jpeg' OR lower(l.filename) LIKE '%.png' THEN 'Image'
+            WHEN lower(l.filename) LIKE '%.doc'
+            OR lower(l.filename) LIKE '%.docx' THEN 'Word'
+            WHEN lower(l.filename) LIKE '%.xls'
+            OR lower(l.filename) LIKE '%.xlsx' THEN 'Excel'
+            WHEN lower(l.filename) LIKE '%.jpg'
+            OR lower(l.filename) LIKE '%.jpeg'
+            OR lower(l.filename) LIKE '%.png' THEN 'Image'
             ELSE 'Other'
         END as document_type,
         l.url as document_url,
         l.filename as document_name,
         l.created_at
-    FROM links l
-    WHERE l.created_by = auth_id_arg
-    ORDER BY l.created_at DESC;
+    FROM
+        links l
+    WHERE
+        l.created_by = id_arg
+    ORDER BY
+        l.created_at DESC;
 END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_user_investments(auth_id_arg uuid)
+CREATE OR REPLACE FUNCTION public.get_user_investments(id_arg uuid)
  RETURNS TABLE(id uuid, purchase_amount text, investment_type text, valuation_cap text, discount text, date timestamp with time zone, founder json, company json, investor json, fund json, side_letter json, side_letter_id uuid, safe_url text, summary text, created_by uuid, created_at timestamp with time zone)
  LANGUAGE sql
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  WITH user_investments AS (
-    SELECT DISTINCT ON (i.id) i.*
-    FROM investments i
-    LEFT JOIN users u ON i.investor_id = u.id OR i.founder_id = u.id
-    WHERE u.auth_id = auth_id_arg OR i.created_by = auth_id_arg
-  )
-  SELECT
+WITH user_contacts AS (
+    SELECT
+        id
+    FROM
+        contacts
+    WHERE
+        user_id = id_arg
+        OR created_by = id_arg
+)
+SELECT
     i.id,
     i.purchase_amount,
     i.investment_type,
     i.valuation_cap,
     i.discount,
     i.date,
-    CASE WHEN f.id IS NOT NULL THEN
-      json_build_object('id', f.id, 'name', f.name, 'title', f.title, 'email', f.email)
-    ELSE NULL END AS founder,
-    CASE WHEN c.id IS NOT NULL THEN
-      json_build_object('id', c.id, 'name', c.name, 'street', c.street, 'city_state_zip', c.city_state_zip, 'state_of_incorporation', c.state_of_incorporation)
-    ELSE NULL END AS company,
-    CASE WHEN inv.id IS NOT NULL THEN
-      json_build_object('id', inv.id, 'name', inv.name, 'title', inv.title, 'email', inv.email)
-    ELSE NULL END AS investor,
-    CASE WHEN fd.id IS NOT NULL THEN
-      json_build_object('id', fd.id, 'name', fd.name, 'byline', fd.byline, 'street', fd.street, 'city_state_zip', fd.city_state_zip)
-    ELSE NULL END AS fund,
-    CASE WHEN sl.id IS NOT NULL THEN
-      json_build_object('id', sl.id, 'side_letter_url', sl.side_letter_url, 'info_rights', sl.info_rights, 'pro_rata_rights', sl.pro_rata_rights, 'major_investor_rights', sl.major_investor_rights, 'termination', sl.termination, 'miscellaneous', sl.miscellaneous)
-    ELSE NULL END AS side_letter,
+    json_build_object(
+        'id',
+        fc.id,
+        'name',
+        fc.name,
+        'title',
+        fc.title,
+        'email',
+        fc.email,
+        'user_id',
+        fc.user_id
+    ) AS founder,
+    json_build_object(
+        'id',
+        c.id,
+        'name',
+        c.name,
+        'street',
+        c.street,
+        'city_state_zip',
+        c.city_state_zip,
+        'state_of_incorporation',
+        c.state_of_incorporation
+    ) AS company,
+    json_build_object(
+        'id',
+        ic.id,
+        'name',
+        ic.name,
+        'title',
+        ic.title,
+        'email',
+        ic.email,
+        'user_id',
+        ic.user_id
+    ) AS investor,
+    json_build_object(
+        'id',
+        f.id,
+        'name',
+        f.name,
+        'byline',
+        f.byline,
+        'street',
+        f.street,
+        'city_state_zip',
+        f.city_state_zip
+    ) AS fund,
+    CASE
+        WHEN sl.id IS NOT NULL THEN json_build_object(
+            'id',
+            sl.id,
+            'side_letter_url',
+            sl.side_letter_url,
+            'info_rights',
+            sl.info_rights,
+            'pro_rata_rights',
+            sl.pro_rata_rights,
+            'major_investor_rights',
+            sl.major_investor_rights,
+            'termination',
+            sl.termination,
+            'miscellaneous',
+            sl.miscellaneous
+        )
+        ELSE NULL
+    END AS side_letter,
     i.side_letter_id,
     i.safe_url,
     i.summary,
     i.created_by,
     i.created_at
-  FROM
-    user_investments i
-    LEFT JOIN users f ON i.founder_id = f.id
+FROM
+    investments i
+    LEFT JOIN contacts fc ON i.founder_contact_id = fc.id
     LEFT JOIN companies c ON i.company_id = c.id
-    LEFT JOIN users inv ON i.investor_id = inv.id
-    LEFT JOIN funds fd ON i.fund_id = fd.id
+    LEFT JOIN contacts ic ON i.investor_contact_id = ic.id
+    LEFT JOIN funds f ON i.fund_id = f.id
     LEFT JOIN side_letters sl ON i.side_letter_id = sl.id
-  ORDER BY
+WHERE
+    i.founder_contact_id IN (
+        SELECT
+            id
+        FROM
+            user_contacts
+    )
+    OR i.investor_contact_id IN (
+        SELECT
+            id
+        FROM
+            user_contacts
+    )
+    OR i.created_by = id_arg
+ORDER BY
     i.created_at DESC;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_user_investments_by_id(id_arg uuid, auth_id_arg uuid)
+CREATE OR REPLACE FUNCTION public.get_user_investments_by_id(id_arg uuid, investment_id_arg uuid)
  RETURNS TABLE(id uuid, purchase_amount text, investment_type text, valuation_cap text, discount text, date timestamp with time zone, founder json, company json, investor json, fund json, side_letter json, side_letter_id uuid, safe_url text, summary text, created_by uuid, created_at timestamp with time zone)
  LANGUAGE sql
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  SELECT
+WITH user_contacts AS (
+    SELECT
+        id
+    FROM
+        contacts
+    WHERE
+        user_id = id_arg
+        OR created_by = id_arg
+)
+SELECT
     i.id,
     i.purchase_amount,
     i.investment_type,
     i.valuation_cap,
     i.discount,
     i.date,
-    CASE WHEN f.id IS NOT NULL THEN
-      json_build_object('id', f.id, 'name', f.name, 'title', f.title, 'email', f.email)
-    ELSE NULL END AS founder,
-    CASE WHEN c.id IS NOT NULL THEN
-      json_build_object('id', c.id, 'name', c.name, 'street', c.street, 'city_state_zip', c.city_state_zip, 'state_of_incorporation', c.state_of_incorporation)
-    ELSE NULL END AS company,
-    CASE WHEN inv.id IS NOT NULL THEN
-      json_build_object('id', inv.id, 'name', inv.name, 'title', inv.title, 'email', inv.email)
-    ELSE NULL END AS investor,
-    CASE WHEN fd.id IS NOT NULL THEN
-      json_build_object('id', fd.id, 'name', fd.name, 'byline', fd.byline, 'street', fd.street, 'city_state_zip', fd.city_state_zip)
-    ELSE NULL END AS fund,
-    CASE WHEN sl.id IS NOT NULL THEN
-      json_build_object('id', sl.id, 'side_letter_url', sl.side_letter_url, 'info_rights', sl.info_rights, 'pro_rata_rights', sl.pro_rata_rights, 'major_investor_rights', sl.major_investor_rights, 'termination', sl.termination, 'miscellaneous', sl.miscellaneous)
-    ELSE NULL END AS side_letter,
+    json_build_object(
+        'id',
+        fc.id,
+        'name',
+        fc.name,
+        'title',
+        fc.title,
+        'email',
+        fc.email,
+        'user_id',
+        fc.user_id
+    ) AS founder,
+    json_build_object(
+        'id',
+        c.id,
+        'name',
+        c.name,
+        'street',
+        c.street,
+        'city_state_zip',
+        c.city_state_zip,
+        'state_of_incorporation',
+        c.state_of_incorporation
+    ) AS company,
+    json_build_object(
+        'id',
+        ic.id,
+        'name',
+        ic.name,
+        'title',
+        ic.title,
+        'email',
+        ic.email,
+        'user_id',
+        ic.user_id
+    ) AS investor,
+    json_build_object(
+        'id',
+        f.id,
+        'name',
+        f.name,
+        'byline',
+        f.byline,
+        'street',
+        f.street,
+        'city_state_zip',
+        f.city_state_zip
+    ) AS fund,
+    CASE
+        WHEN sl.id IS NOT NULL THEN json_build_object(
+            'id',
+            sl.id,
+            'side_letter_url',
+            sl.side_letter_url,
+            'info_rights',
+            sl.info_rights,
+            'pro_rata_rights',
+            sl.pro_rata_rights,
+            'major_investor_rights',
+            sl.major_investor_rights,
+            'termination',
+            sl.termination,
+            'miscellaneous',
+            sl.miscellaneous
+        )
+        ELSE NULL
+    END AS side_letter,
     i.side_letter_id,
     i.safe_url,
     i.summary,
     i.created_by,
     i.created_at
-  FROM
+FROM
     investments i
-    LEFT JOIN users f ON i.founder_id = f.id
+    LEFT JOIN contacts fc ON i.founder_contact_id = fc.id
     LEFT JOIN companies c ON i.company_id = c.id
-    LEFT JOIN users inv ON i.investor_id = inv.id
-    LEFT JOIN funds fd ON i.fund_id = fd.id
+    LEFT JOIN contacts ic ON i.investor_contact_id = ic.id
+    LEFT JOIN funds f ON i.fund_id = f.id
     LEFT JOIN side_letters sl ON i.side_letter_id = sl.id
-  WHERE
-    i.id = id_arg
-    AND (i.created_by = auth_id_arg
-         OR i.founder_id IN (SELECT id FROM users WHERE auth_id = auth_id_arg)
-         OR i.investor_id IN (SELECT id FROM users WHERE auth_id = auth_id_arg));
+WHERE
+    i.id = investment_id_arg
+    AND (
+        i.founder_contact_id IN (
+            SELECT
+                id
+            FROM
+                user_contacts
+        )
+        OR i.investor_contact_id IN (
+            SELECT
+                id
+            FROM
+                user_contacts
+        )
+        OR i.created_by = id_arg
+    );
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_user_links(auth_id uuid)
+CREATE OR REPLACE FUNCTION public.get_user_links(id_arg uuid)
  RETURNS SETOF links
  LANGUAGE plpgsql
  SECURITY DEFINER
 AS $function$
-BEGIN
-  RETURN QUERY
-  SELECT *
-  FROM links
-  WHERE created_by = auth_id;
+BEGIN 
+    RETURN QUERY
+    SELECT
+        *
+    FROM
+        links
+    WHERE
+        created_by = id_arg;
 END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.get_user_links_with_views(auth_id_arg uuid)
+CREATE OR REPLACE FUNCTION public.get_user_links_with_views(id_arg uuid)
  RETURNS TABLE(id uuid, created_at timestamp with time zone, created_by uuid, url text, password text, expires timestamp with time zone, filename text, view_count bigint)
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$BEGIN
-  RETURN QUERY
-  SELECT 
-    l.id,
-    l.created_at,
-    l.created_by,
-    l.url,
-    l.password,
-    l.expires,
-    l.filename,
-    COALESCE(v.view_count, 0) AS view_count
-  FROM 
-    links l
-  LEFT JOIN (
-    SELECT link_id, COUNT(*) AS view_count
-    FROM viewers
-    GROUP BY link_id
-  ) v ON l.id = v.link_id
-  WHERE 
-    l.created_by = auth_id_arg
-  ORDER BY 
-    l.created_at DESC;
-END;$function$
+AS $function$
+BEGIN 
+    RETURN QUERY
+    SELECT
+        l.id,
+        l.created_at,
+        l.created_by,
+        l.url,
+        l.password,
+        l.expires,
+        l.filename,
+        COALESCE(v.view_count, 0) AS view_count
+    FROM
+        links l
+        LEFT JOIN (
+            SELECT
+                link_id,
+                COUNT(*) AS view_count
+            FROM
+                viewers
+            GROUP BY
+                link_id
+        ) v ON l.id = v.link_id
+    WHERE
+        l.created_by = id_arg
+    ORDER BY
+        l.created_at DESC;
+END;
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -476,44 +641,68 @@ AS $function$
 BEGIN
   -- Check if a user with this email already exists
   IF EXISTS (SELECT 1 FROM public.users WHERE email = new.email) THEN
-    -- Update the existing user's auth_id
+    -- Update the existing user's id
     UPDATE public.users
-    SET auth_id = new.id,
+    SET id = new.id,
         updated_at = now()
     WHERE email = new.email;
   ELSE
     -- Insert a new user if no existing user is found
-    INSERT INTO public.users (auth_id, email, created_at)
+    INSERT INTO public.users (id, email, created_at)
     VALUES (new.id, new.email, now());
   END IF;
+
+  -- Update contacts with the same email to have the new user's id as user_id
+  UPDATE public.contacts
+  SET user_id = new.id
+  WHERE email = new.email;
+
   RETURN new;
 END;
 $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.select_investment_entities(investment_id uuid)
- RETURNS TABLE(fund_name text, company_name text, investor_name text)
+ RETURNS TABLE(fund_name text, company_name text, investor_name text, founder_name text)
  LANGUAGE sql
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  select
-    fd.name as fund_name,
+  SELECT
+    f.name as fund_name,
     c.name as company_name,
-    i.name as investor_name
-  from investments inv
-  left join companies c on inv.company_id = c.id
-  left join users i on inv.investor_id = i.id
-  left join funds fd on inv.fund_id = fd.id
-  where inv.id = investment_id;
+    ic.name as investor_name,
+    fc.name as founder_name
+  FROM investments i
+  LEFT JOIN companies c ON i.company_id = c.id
+  LEFT JOIN contacts ic ON i.investor_contact_id = ic.id
+  LEFT JOIN contacts fc ON i.founder_contact_id = fc.id
+  LEFT JOIN funds f ON i.fund_id = f.id
+  WHERE i.id = investment_id;
 $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.select_link(link_id uuid)
- RETURNS TABLE(id uuid, created_at timestamp with time zone, url text, password text, expires timestamp with time zone, filename text, created_by uuid, creator_name text)
- LANGUAGE sql
- STABLE SECURITY DEFINER
-AS $function$ SELECT l.id, l.created_at, l.url, l.password, l.expires, l.filename, l.created_by, u.name as creator_name FROM links l LEFT JOIN users u ON l.created_by = u.auth_id WHERE l.id = link_id LIMIT 1; $function$
+ RETURNS TABLE(id uuid, created_at timestamp with time zone, url text, password text, expires timestamp with time zone, filename text, created_by uuid)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN 
+    RETURN QUERY
+    SELECT
+        l.id,
+        l.created_at,
+        l.url,
+        l.password,
+        l.expires,
+        l.filename,
+        l.created_by
+    FROM
+        links l
+    WHERE
+        l.id = link_id;
+END;
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.update_link(link_id uuid, auth_id uuid, url_arg text, password_arg text, expires_arg timestamp without time zone, filename_arg text)
@@ -532,7 +721,27 @@ END;
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.upsert_link_data(id_arg uuid, filename_arg text, url_arg text, created_by_arg uuid, created_at_arg timestamp with time zone, password_arg text, expires_arg timestamp with time zone, auth_id_arg uuid)
+CREATE OR REPLACE FUNCTION public.update_link(link_id uuid, user_id uuid, url_arg text, password_arg text, expires_arg timestamp with time zone, filename_arg text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+    UPDATE
+        public.links
+    SET
+        url = COALESCE(url_arg, url),
+        password = COALESCE(password_arg, password),
+        expires = expires_arg,
+        filename = COALESCE(filename_arg, filename)
+    WHERE
+        id = link_id
+        AND created_by = user_id;
+END;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.upsert_link_data(id_arg uuid, filename_arg text, url_arg text, created_by_arg uuid, created_at_arg timestamp with time zone, password_arg text, expires_arg timestamp with time zone, user_id uuid)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -548,7 +757,7 @@ begin
     created_at = excluded.created_at,
     password = excluded.password,
     expires = excluded.expires
-  where links.created_by = auth_id_arg;
+  where links.created_by = user_id;
 end;
 $function$
 ;
@@ -973,7 +1182,7 @@ grant truncate on table "public"."viewers" to "service_role";
 
 grant update on table "public"."viewers" to "service_role";
 
-create policy "Authenticated users can insert"
+create policy "Authenticated users can insert companies"
 on "public"."companies"
 as permissive
 for insert
@@ -981,7 +1190,7 @@ to authenticated
 with check (true);
 
 
-create policy "Authenticated users can read"
+create policy "Authenticated users can select companies"
 on "public"."companies"
 as permissive
 for select
@@ -989,30 +1198,24 @@ to authenticated
 using (true);
 
 
-create policy "Investors and founders in investment with fund can delete"
+create policy "Users can delete their own companies"
 on "public"."companies"
 as permissive
 for delete
-to public
-using (((auth.uid() = ( SELECT users.auth_id
-   FROM users
-  WHERE (users.id = companies.founder_id))) OR (EXISTS ( SELECT 1
-   FROM (investments i
-     JOIN users u ON ((u.id = i.investor_id)))
-  WHERE ((i.company_id = companies.id) AND (u.auth_id = auth.uid()))))));
+to authenticated
+using ((auth.uid() = ( SELECT contacts.user_id
+   FROM contacts
+  WHERE (contacts.id = companies.contact_id))));
 
 
-create policy "Investors and founders in investment with fund can update"
+create policy "Users can update their own companies"
 on "public"."companies"
 as permissive
 for update
-to public
-using (((auth.uid() = ( SELECT users.auth_id
-   FROM users
-  WHERE (users.id = companies.founder_id))) OR (EXISTS ( SELECT 1
-   FROM (investments i
-     JOIN users u ON ((u.id = i.investor_id)))
-  WHERE ((i.company_id = companies.id) AND (u.auth_id = auth.uid()))))));
+to authenticated
+using ((auth.uid() = ( SELECT contacts.user_id
+   FROM contacts
+  WHERE (contacts.id = companies.contact_id))));
 
 
 create policy "Users can manage their own contact_groups"
@@ -1037,22 +1240,6 @@ to authenticated
 with check (true);
 
 
-create policy "Users can delete their own contacts"
-on "public"."contacts"
-as permissive
-for delete
-to authenticated
-using ((auth.uid() = created_by));
-
-
-create policy "Users can update their own contacts"
-on "public"."contacts"
-as permissive
-for update
-to authenticated
-using ((auth.uid() = created_by));
-
-
 create policy "Authenticated users can view all contacts"
 on "public"."contacts"
 as permissive
@@ -1061,7 +1248,23 @@ to authenticated
 using (true);
 
 
-create policy "Authenticated users can insert"
+create policy "Users can delete their own contacts"
+on "public"."contacts"
+as permissive
+for delete
+to authenticated
+using (((auth.uid() = created_by) OR (auth.uid() = user_id)));
+
+
+create policy "Users can update their own contacts"
+on "public"."contacts"
+as permissive
+for update
+to authenticated
+using (((auth.uid() = created_by) OR (auth.uid() = user_id)));
+
+
+create policy "Authenticated users can insert funds"
 on "public"."funds"
 as permissive
 for insert
@@ -1069,7 +1272,7 @@ to authenticated
 with check (true);
 
 
-create policy "Authenticated users can read"
+create policy "Authenticated users can select funds"
 on "public"."funds"
 as permissive
 for select
@@ -1077,30 +1280,24 @@ to authenticated
 using (true);
 
 
-create policy "Founders and investors of investment with company can delete"
+create policy "Users can delete their own funds"
 on "public"."funds"
 as permissive
 for delete
-to public
-using (((auth.uid() = ( SELECT users.auth_id
-   FROM users
-  WHERE (users.id = funds.investor_id))) OR (EXISTS ( SELECT 1
-   FROM (investments i
-     JOIN users u ON ((u.id = i.founder_id)))
-  WHERE ((i.fund_id = funds.id) AND (u.auth_id = auth.uid()))))));
+to authenticated
+using ((auth.uid() = ( SELECT contacts.user_id
+   FROM contacts
+  WHERE (contacts.id = funds.contact_id))));
 
 
-create policy "Founders and investors of investment with company can update"
+create policy "Users can update their own funds"
 on "public"."funds"
 as permissive
 for update
-to public
-using (((auth.uid() = ( SELECT users.auth_id
-   FROM users
-  WHERE (users.id = funds.investor_id))) OR (EXISTS ( SELECT 1
-   FROM (investments i
-     JOIN users u ON ((u.id = i.founder_id)))
-  WHERE ((i.fund_id = funds.id) AND (u.auth_id = auth.uid()))))));
+to authenticated
+using ((auth.uid() = ( SELECT contacts.user_id
+   FROM contacts
+  WHERE (contacts.id = funds.contact_id))));
 
 
 create policy "Users can create their own groups"
@@ -1135,48 +1332,44 @@ to authenticated
 using ((auth.uid() = created_by));
 
 
-create policy "Authenticated users can insert"
+create policy "Authenticated users can insert investments"
 on "public"."investments"
 as permissive
 for insert
-to public
+to authenticated
 with check (true);
 
 
-create policy "Authenticated users can read"
+create policy "Users can delete their own created investments"
+on "public"."investments"
+as permissive
+for delete
+to authenticated
+using ((auth.uid() = created_by));
+
+
+create policy "Users can select and update their own investments"
 on "public"."investments"
 as permissive
 for select
 to authenticated
-using (true);
+using (((auth.uid() = created_by) OR (auth.uid() IN ( SELECT contacts.user_id
+   FROM contacts
+  WHERE (contacts.id = investments.investor_contact_id))) OR (auth.uid() IN ( SELECT contacts.user_id
+   FROM contacts
+  WHERE (contacts.id = investments.founder_contact_id)))));
 
 
-create policy "Authenticated users can update"
+create policy "Users can update their own investments"
 on "public"."investments"
 as permissive
 for update
 to authenticated
-using (true);
-
-
-create policy "Founders or investors in investment can delete"
-on "public"."investments"
-as permissive
-for delete
-to public
-using (((auth.uid() = created_by) OR ((auth.uid() = ( SELECT users.auth_id
-   FROM users
-  WHERE (users.id = investments.founder_id))) OR (auth.uid() = ( SELECT users.auth_id
-   FROM users
-  WHERE (users.id = investments.investor_id))) OR (auth.uid() IN ( SELECT users.auth_id
-   FROM users
-  WHERE (users.id IN ( SELECT funds.investor_id
-           FROM funds
-          WHERE (funds.id = investments.fund_id))))) OR (auth.uid() IN ( SELECT users.auth_id
-   FROM users
-  WHERE (users.id IN ( SELECT companies.founder_id
-           FROM companies
-          WHERE (companies.id = investments.company_id))))))));
+using (((auth.uid() = created_by) OR (auth.uid() IN ( SELECT contacts.user_id
+   FROM contacts
+  WHERE (contacts.id = investments.investor_contact_id))) OR (auth.uid() IN ( SELECT contacts.user_id
+   FROM contacts
+  WHERE (contacts.id = investments.founder_contact_id)))));
 
 
 create policy "Authenticated users can insert"
@@ -1187,20 +1380,40 @@ to authenticated
 with check (true);
 
 
-create policy "Authenticated can do all"
+create policy "Authenticated users can insert side letters"
 on "public"."side_letters"
 as permissive
-for all
+for insert
+to authenticated
+with check (true);
+
+
+create policy "Authenticated users can select side letters"
+on "public"."side_letters"
+as permissive
+for select
 to authenticated
 using (true);
 
 
-create policy "Authenticated users can delete themselves"
-on "public"."users"
+create policy "Users can delete their own side letters"
+on "public"."side_letters"
 as permissive
 for delete
-to public
-using ((( SELECT auth.uid() AS uid) = auth_id));
+to authenticated
+using ((auth.uid() IN ( SELECT investments.created_by
+   FROM investments
+  WHERE (investments.side_letter_id = side_letters.id))));
+
+
+create policy "Users can update their own side letters"
+on "public"."side_letters"
+as permissive
+for update
+to authenticated
+using ((auth.uid() IN ( SELECT investments.created_by
+   FROM investments
+  WHERE (investments.side_letter_id = side_letters.id))));
 
 
 create policy "Authenticated users can insert"
@@ -1211,20 +1424,29 @@ to authenticated
 with check (true);
 
 
-create policy "Authenticated users can read"
+create policy "Users can delete own account"
+on "public"."users"
+as permissive
+for delete
+to authenticated
+using ((auth.uid() = id));
+
+
+create policy "Users can read own account"
 on "public"."users"
 as permissive
 for select
 to authenticated
-using (true);
+using ((auth.uid() = id));
 
 
-create policy "Authenticated users can update"
+create policy "Users can update own account"
 on "public"."users"
 as permissive
 for update
 to authenticated
-using (true);
+using ((auth.uid() = id))
+with check ((auth.uid() = id));
 
 
 create policy "Anyone can insert"
@@ -1244,80 +1466,28 @@ alter table "auth"."mfa_factors" alter column factor_type type "auth"."factor_ty
 
 drop type "auth"."factor_type__old_version_to_be_dropped";
 
-DO $$ 
-BEGIN 
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                 WHERE table_schema = 'auth' AND table_name = 'mfa_challenges' 
-                 AND column_name = 'otp_code') THEN
-    ALTER TABLE "auth"."mfa_challenges" ADD COLUMN "otp_code" text;
-  END IF;
-END $$;
+alter table "auth"."mfa_challenges" add column "otp_code" text;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                 WHERE table_schema = 'auth' AND table_name = 'mfa_factors' 
-                 AND column_name = 'last_challenged_at') THEN
-    ALTER TABLE "auth"."mfa_factors" ADD COLUMN "last_challenged_at" timestamp with time zone;
-  END IF;
-END $$;
+alter table "auth"."mfa_factors" add column "last_challenged_at" timestamp with time zone;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                 WHERE table_schema = 'auth' AND table_name = 'mfa_factors' 
-                 AND column_name = 'phone') THEN
-    ALTER TABLE "auth"."mfa_factors" ADD COLUMN "phone" text;
-  END IF;
-END $$;
+alter table "auth"."mfa_factors" add column "phone" text;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_indexes 
-                 WHERE schemaname = 'auth' AND tablename = 'mfa_factors' 
-                 AND indexname = 'mfa_factors_last_challenged_at_key') THEN
-    CREATE UNIQUE INDEX mfa_factors_last_challenged_at_key ON auth.mfa_factors USING btree (last_challenged_at);
-  END IF;
-END $$;
+CREATE UNIQUE INDEX mfa_factors_last_challenged_at_key ON auth.mfa_factors USING btree (last_challenged_at);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_indexes 
-                 WHERE schemaname = 'auth' AND tablename = 'mfa_factors' 
-                 AND indexname = 'mfa_factors_phone_key') THEN
-    CREATE UNIQUE INDEX mfa_factors_phone_key ON auth.mfa_factors USING btree (phone);
-  END IF;
-END $$;
+CREATE UNIQUE INDEX mfa_factors_phone_key ON auth.mfa_factors USING btree (phone);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_indexes 
-                 WHERE schemaname = 'auth' AND tablename = 'mfa_factors' 
-                 AND indexname = 'unique_verified_phone_factor') THEN
-    CREATE UNIQUE INDEX unique_verified_phone_factor ON auth.mfa_factors USING btree (user_id, phone);
-  END IF;
-END $$;
+CREATE UNIQUE INDEX unique_verified_phone_factor ON auth.mfa_factors USING btree (user_id, phone);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
-                 WHERE constraint_schema = 'auth' AND table_name = 'mfa_factors' 
-                 AND constraint_name = 'mfa_factors_last_challenged_at_key') THEN
-    ALTER TABLE "auth"."mfa_factors" ADD CONSTRAINT "mfa_factors_last_challenged_at_key" UNIQUE USING INDEX "mfa_factors_last_challenged_at_key";
-  END IF;
-END $$;
+alter table "auth"."mfa_factors" add constraint "mfa_factors_last_challenged_at_key" UNIQUE using index "mfa_factors_last_challenged_at_key";
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints 
-                 WHERE constraint_schema = 'auth' AND table_name = 'mfa_factors' 
-                 AND constraint_name = 'mfa_factors_phone_key') THEN
-    ALTER TABLE "auth"."mfa_factors" ADD CONSTRAINT "mfa_factors_phone_key" UNIQUE USING INDEX "mfa_factors_phone_key";
-  END IF;
-END $$;
+alter table "auth"."mfa_factors" add constraint "mfa_factors_phone_key" UNIQUE using index "mfa_factors_phone_key";
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
+
+alter table "storage"."objects" add column "user_metadata" jsonb;
+
+alter table "storage"."s3_multipart_uploads" add column "user_metadata" jsonb;
 
 create policy "Authenticated users can do all flreew_0"
 on "storage"."objects"
