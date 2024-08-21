@@ -12,6 +12,7 @@ import { z } from "zod"
 
 import { Database, Entity, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
+import { founderColor, investorColor } from '@/utils/group-colors';
 
 import AuthRefresh from "./auth-refresh"
 import { EntitySelector } from "./entity-selector"
@@ -378,6 +379,8 @@ export default function InvestmentForm({
         )
       }
 
+      let investorId: string | null = null;
+
       if (existingInvestor) {
         // Update existing investor
         const updateData = {
@@ -405,7 +408,7 @@ export default function InvestmentForm({
           }
         }
 
-        return existingInvestor.id
+        investorId = existingInvestor.id;
       } else {
         // Create new investor
         const newInvestorData = {
@@ -436,8 +439,45 @@ export default function InvestmentForm({
           }
         }
 
-        return newInvestor ? newInvestor[0].id : null
+        investorId = newInvestor ? newInvestor[0].id : null;
       }
+
+      if (investorId) {
+        // Check if Investors group exists for this user
+        const { data: existingGroup, error: groupError } = await supabase
+          .from("groups")
+          .select("id")
+          .eq("name", "investors")
+          .eq("created_by", account.id)
+          .maybeSingle();
+
+        if (groupError) throw groupError;
+
+        let groupId: string;
+
+        if (!existingGroup) {
+          // Create Investors group if it doesn't exist
+          const { data: newGroup, error: insertError } = await supabase
+            .from("groups")
+            .insert({ name: "investors", color: investorColor, created_by: account.id })
+            .select("id")
+            .single();
+
+          if (insertError) throw insertError;
+          groupId = newGroup.id;
+        } else {
+          groupId = existingGroup.id;
+        }
+
+        // Associate investor with the Investors group
+        const { error: upsertError } = await supabase
+          .from("contact_groups")
+          .upsert({ contact_id: investorId, group_id: groupId });
+
+        if (upsertError) throw upsertError;
+      }
+
+      return investorId;
     } catch (error) {
       console.error("Error processing investor details:", error)
       return null
@@ -528,6 +568,8 @@ export default function InvestmentForm({
         )
       }
 
+      let founderId: string | null = null;
+
       if (existingFounder) {
         // Update existing founder
         const updateData = {
@@ -555,7 +597,7 @@ export default function InvestmentForm({
           }
         }
 
-        return existingFounder.id
+        founderId = existingFounder.id;
       } else {
         // Create new founder
         const newFounderData = {
@@ -586,8 +628,45 @@ export default function InvestmentForm({
           }
         }
 
-        return newFounder ? newFounder[0].id : null
+        founderId = newFounder ? newFounder[0].id : null;
       }
+
+      if (founderId) {
+        // Check if Founders group exists for this user
+        const { data: existingGroup, error: groupError } = await supabase
+          .from("groups")
+          .select("id")
+          .eq("name", "founders")
+          .eq("created_by", account.id)
+          .maybeSingle();
+
+        if (groupError) throw groupError;
+
+        let groupId: string;
+
+        if (!existingGroup) {
+          // Create Founders group if it doesn't exist
+          const { data: newGroup, error: insertError } = await supabase
+            .from("groups")
+            .insert({ name: "founders", color: founderColor, created_by: account.id })
+            .select("id")
+            .single();
+
+          if (insertError) throw insertError;
+          groupId = newGroup.id;
+        } else {
+          groupId = existingGroup.id;
+        }
+
+        // Associate founder with the Founders group
+        const { error: upsertError } = await supabase
+          .from("contact_groups")
+          .upsert({ contact_id: founderId, group_id: groupId });
+
+        if (upsertError) throw upsertError;
+      }
+
+      return founderId;
     } catch (error) {
       console.error("Error processing founder details:", error)
       return null
