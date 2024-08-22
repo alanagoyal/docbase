@@ -146,6 +146,8 @@ CREATE UNIQUE INDEX funds_pkey ON public.funds USING btree (id);
 
 CREATE UNIQUE INDEX groups_pkey ON public.groups USING btree (id);
 
+CREATE UNIQUE INDEX groups_name_created_by_unique ON public.groups USING btree (name, created_by);
+
 CREATE UNIQUE INDEX investments_pkey ON public.investments USING btree (id);
 
 CREATE UNIQUE INDEX links_pkey ON public.links USING btree (id);
@@ -169,6 +171,8 @@ alter table "public"."contacts" add constraint "contacts_pkey" PRIMARY KEY using
 alter table "public"."funds" add constraint "funds_pkey" PRIMARY KEY using index "funds_pkey";
 
 alter table "public"."groups" add constraint "groups_pkey" PRIMARY KEY using index "groups_pkey";
+
+alter table "public"."groups" add constraint "groups_name_created_by_unique" UNIQUE using index "groups_name_created_by_unique";
 
 alter table "public"."investments" add constraint "investments_pkey" PRIMARY KEY using index "investments_pkey";
 
