@@ -9,7 +9,10 @@ const generateColorPalette = (count: number): string[] => {
   return palette;
 };
 
-const colorPalette = generateColorPalette(24);
+export const founderColor = 'hsl(0, 70.6818392529035%, 67.44471516240027%)';
+export const investorColor = 'hsl(15, 70.5924786664382%, 67.37069136026506%)';
+
+const colorPalette = generateColorPalette(22); // Reduced by 2 to account for Founders and Investors groups
 
 export const getColorForGroup = (index: number): string => {
   return colorPalette[index % colorPalette.length];
