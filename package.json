@@ -37,7 +37,7 @@
     "@vercel/og": "^0.5.6",
     "ai": "^3.3.3",
     "bcryptjs": "^2.4.3",
-    "braintrust": "^0.0.148",
+    "braintrust": "^0.0.159",
     "class-variance-authority": "^0.4.0",
     "clsx": "^1.2.1",
     "cmdk": "^1.0.0",
