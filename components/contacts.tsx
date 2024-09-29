@@ -197,7 +197,7 @@ export function ContactsTable({
         setIsEmailDialogOpen(false)
         router.refresh()
       }}>
-        <DialogContent className="flex flex-col">
+        <DialogContent className="flex flex-col max-w-2xl w-full">
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
           </DialogHeader>
