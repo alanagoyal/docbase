@@ -1,11 +1,9 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
-import dynamic from "next/dynamic"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { getColorForGroup } from "@/utils/group-colors"
 import { createClient } from "@/utils/supabase/client"
-import { MenuIcon, Trash, X } from "lucide-react"
+import { MailPlus, MenuIcon } from "lucide-react"
 
 import { Database } from "@/types/supabase"
 import {
@@ -30,8 +28,8 @@ import { Input } from "./ui/input"
 import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
 import "@/styles/quill-custom.css"
-import { StyledQuillEditor } from "./quill-editor"
 import { Icons } from "./icons"
+import { StyledQuillEditor } from "./quill-editor"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -53,7 +51,6 @@ export function ContactsTable({
   const [emailBody, setEmailBody] = useState("")
   const [selectedContactEmail, setSelectedContactEmail] = useState("")
   const [isSendingEmail, setIsSendingEmail] = useState(false)
-  const dropdownRef = useRef<HTMLButtonElement>(null)
 
   async function onDelete(id: string) {
     try {
@@ -76,16 +73,6 @@ export function ContactsTable({
       timeZone: "UTC",
     })
   }
-
-  const handleNewMessage = useCallback((contactEmail: string) => {
-    setSelectedContactEmail(contactEmail)
-    // Close the dropdown menu
-    if (dropdownRef.current) {
-      dropdownRef.current.click()
-    }
-    // Open the email dialog after a short delay
-    setTimeout(() => setIsEmailDialogOpen(true), 100)
-  }, [])
 
   const handleSendEmail = async () => {
     setIsSendingEmail(true)
@@ -158,45 +145,55 @@ export function ContactsTable({
                 </div>
               </TableCell>
               <TableCell>{formatDate(contact.created_at)}</TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      ref={dropdownRef}
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                    >
-                      <span className="sr-only">Open menu</span>
-                      <MenuIcon className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        router.push(`/contacts/edit/${contact.id}`)
-                      }
-                    >
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onDelete(contact.id)}>
-                      Delete
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() => handleNewMessage(contact.email)}
-                    >
-                      New Message
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <TableCell className="whitespace-nowrap">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setSelectedContactEmail(contact.email)
+                      setIsEmailDialogOpen(true)
+                    }}
+                  >
+                    <MailPlus className="h-4 w-4" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MenuIcon className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          router.push(`/contacts/edit/${contact.id}`)
+                        }
+                      >
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onDelete(contact.id)}>
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <Dialog open={isEmailDialogOpen} onOpenChange={() => {
-        setIsEmailDialogOpen(false)
-        router.refresh()
-      }}>
+      <Dialog
+        open={isEmailDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsEmailDialogOpen(false)
+            setEmailSubject("")
+            setEmailBody("")
+            setSelectedContactEmail("")
+          }
+          router.refresh()
+        }}
+      >
         <DialogContent className="flex flex-col max-w-2xl w-full">
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
@@ -214,21 +211,19 @@ export function ContactsTable({
                 placeholder="Compose your email..."
               />
             </div>
-            {selectedContactEmail && (
-              <div>
-                <Button
-                  onClick={handleSendEmail}
-                  disabled={isSendingEmail}
-                  className="w-full"
-                >
-                  {isSendingEmail ? (
-                    <Icons.spinner className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Send Email"
-                  )}
-                </Button>
-              </div>
-            )}
+            <div>
+              <Button
+                onClick={handleSendEmail}
+                disabled={isSendingEmail}
+                className="w-full"
+              >
+                {isSendingEmail ? (
+                  <Icons.spinner className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Send Email"
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
