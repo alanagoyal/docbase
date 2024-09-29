@@ -35,6 +35,8 @@ import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { StyledQuillEditor } from "@/components/quill-editor"
+import "@/styles/quill-custom.css"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -976,10 +978,9 @@ export default function Investments({
           </DialogHeader>
           <div className="flex flex-col gap-4 flex-grow">
             <div className="flex flex-col gap-2 flex-grow">
-              <ReactQuill
+              <StyledQuillEditor
                 value={editableEmailContent}
                 onChange={setEditableEmailContent}
-                className="flex-grow"
               />
             </div>
             {selectedInvestment && (
