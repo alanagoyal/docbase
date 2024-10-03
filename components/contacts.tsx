@@ -17,7 +17,7 @@ import {
 
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -241,6 +241,7 @@ export function ContactsTable({
             <DialogContent className="flex flex-col max-w-2xl w-full">
               <DialogHeader>
                 <DialogTitle>Send Email</DialogTitle>
+                <DialogDescription>Compose and send an email to the selected contact</DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-4 flex-grow">
                 <Input
@@ -282,6 +283,7 @@ export function ContactsTable({
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Edit Contact</DialogTitle>
+                <DialogDescription>Update the details of the selected contact</DialogDescription>
               </DialogHeader>
               {selectedContact && (
                 <ContactForm
@@ -306,6 +308,7 @@ export function ContactsTable({
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>New Contact</DialogTitle>
+                <DialogDescription>Add a new contact to your list</DialogDescription>
               </DialogHeader>
               <ContactForm
                 account={account}
