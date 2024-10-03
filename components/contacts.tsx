@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
-import { MailPlus, MenuIcon } from "lucide-react"
+import { MailPlus, MenuIcon, Plus } from "lucide-react"
 
 import { Database } from "@/types/supabase"
 import {
@@ -28,8 +28,10 @@ import { Input } from "./ui/input"
 import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
 import "@/styles/quill-custom.css"
+import ContactForm from "./contact-form"
 import { Icons } from "./icons"
 import { StyledQuillEditor } from "./quill-editor"
+import Link from "next/link"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -51,6 +53,29 @@ export function ContactsTable({
   const [emailBody, setEmailBody] = useState("")
   const [selectedContactEmail, setSelectedContactEmail] = useState("")
   const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [selectedContact, setSelectedContact] = useState<
+    (Contact & { groups: Group[] }) | null
+  >(null)
+  const [isNewContactDialogOpen, setIsNewContactDialogOpen] = useState(false)
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      document.body.style.pointerEvents = "auto"
+    }
+
+    document.addEventListener("click", handleGlobalClick)
+
+    return () => {
+      document.removeEventListener("click", handleGlobalClick)
+    }
+  }, [])
+
+  const handleEditDialogClose = useCallback(() => {
+    setIsEditDialogOpen(false)
+    setSelectedContact(null)
+    document.body.focus()
+  }, [])
 
   async function onDelete(id: string) {
     try {
@@ -113,120 +138,197 @@ export function ContactsTable({
   }
 
   return (
-    <div className="container mx-auto py-10">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-1/4">Name</TableHead>
-            <TableHead className="w-1/4">Email</TableHead>
-            <TableHead className="w-1/4">Groups</TableHead>
-            <TableHead className="w-1/4">Created</TableHead>
-            <TableHead className="w-1/4">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {contacts.map((contact: any) => (
-            <TableRow key={contact.id}>
-              <TableCell>{contact.name}</TableCell>
-              <TableCell>{contact.email}</TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {contact.groups.map((group: Group) => (
-                    <Badge
-                      key={group.value}
-                      style={{
-                        backgroundColor: group.color,
-                        color: "white",
-                      }}
-                    >
-                      {group.label}
-                    </Badge>
-                  ))}
-                </div>
-              </TableCell>
-              <TableCell>{formatDate(contact.created_at)}</TableCell>
-              <TableCell className="whitespace-nowrap">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setSelectedContactEmail(contact.email)
-                      setIsEmailDialogOpen(true)
-                    }}
-                  >
-                    <MailPlus className="h-4 w-4" />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MenuIcon className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onSelect={() =>
-                          router.push(`/contacts/edit/${contact.id}`)
-                        }
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center max-w-5xl mx-auto py-4 relative">
+        <div className="w-[150px]" />
+        <h1 className="text-2xl font-bold absolute left-1/2 transform -translate-x-1/2">
+          Contacts
+        </h1>
+        <Button
+          variant="ghost"
+          className="w-[150px]"
+          onClick={() => setIsNewContactDialogOpen(true)}
+        >
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline-block ml-2">New</span>
+        </Button>
+      </div>
+      <div className="max-w-5xl mx-auto">
+        <div className="container mx-auto py-10">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-1/4">Name</TableHead>
+                <TableHead className="w-1/4">Email</TableHead>
+                <TableHead className="w-1/4">Groups</TableHead>
+                <TableHead className="w-1/4">Created</TableHead>
+                <TableHead className="w-1/4">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {contacts.map((contact: any) => (
+                <TableRow key={contact.id}>
+                  <TableCell>{contact.name}</TableCell>
+                  <TableCell>{contact.email}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {contact.groups.map((group: Group) => (
+                        <Badge
+                          key={group.value}
+                          style={{
+                            backgroundColor: group.color,
+                            color: "white",
+                          }}
+                        >
+                          {group.label}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>{formatDate(contact.created_at)}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          console.log(
+                            "Email button clicked for contact:",
+                            contact.id
+                          )
+                          setSelectedContactEmail(contact.email)
+                          setIsEmailDialogOpen(true)
+                        }}
                       >
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onDelete(contact.id)}>
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <MailPlus className="h-4 w-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MenuIcon className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onSelect={() => {
+                              console.log(
+                                "Edit menu item selected for contact:",
+                                contact.id
+                              )
+                              setSelectedContact(contact)
+                              setIsEditDialogOpen(true)
+                            }}
+                          >
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onDelete(contact.id)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <Dialog
+            open={isEmailDialogOpen}
+            onOpenChange={(open) => {
+              console.log("Dialog onOpenChange called with:", open)
+              if (!open) {
+                setIsEmailDialogOpen(false)
+                setEmailSubject("")
+                setEmailBody("")
+                setSelectedContactEmail("")
+              }
+              router.refresh()
+            }}
+          >
+            <DialogContent className="flex flex-col max-w-2xl w-full">
+              <DialogHeader>
+                <DialogTitle>Send Email</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col gap-4 flex-grow">
+                <Input
+                  placeholder="Subject"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                />
+                <div className="flex flex-col gap-2 flex-grow">
+                  <StyledQuillEditor
+                    value={emailBody}
+                    onChange={setEmailBody}
+                    placeholder="Compose your email..."
+                  />
                 </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Dialog
-        open={isEmailDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsEmailDialogOpen(false)
-            setEmailSubject("")
-            setEmailBody("")
-            setSelectedContactEmail("")
-          }
-          router.refresh()
-        }}
-      >
-        <DialogContent className="flex flex-col max-w-2xl w-full">
-          <DialogHeader>
-            <DialogTitle>Send Email</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 flex-grow">
-            <Input
-              placeholder="Subject"
-              value={emailSubject}
-              onChange={(e) => setEmailSubject(e.target.value)}
-            />
-            <div className="flex flex-col gap-2 flex-grow">
-              <StyledQuillEditor
-                value={emailBody}
-                onChange={setEmailBody}
-                placeholder="Compose your email..."
+                <div>
+                  <Button
+                    onClick={handleSendEmail}
+                    disabled={isSendingEmail}
+                    className="w-full"
+                  >
+                    {isSendingEmail ? (
+                      <Icons.spinner className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Send Email"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Dialog
+            open={isEditDialogOpen}
+            onOpenChange={(open) => {
+              console.log("Dialog onOpenChange called with:", open)
+              if (!open) {
+                handleEditDialogClose()
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Edit Contact</DialogTitle>
+              </DialogHeader>
+              {selectedContact && (
+                <ContactForm
+                  existingContact={selectedContact}
+                  account={account}
+                  groups={groups}
+                  onSuccess={() => {
+                    handleEditDialogClose()
+                  }}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+          <Dialog
+            open={isNewContactDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsNewContactDialogOpen(false)
+              }
+            }}
+          >
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>New Contact</DialogTitle>
+              </DialogHeader>
+              <ContactForm
+                account={account}
+                groups={groups}
+                onSuccess={() => {
+                  setIsNewContactDialogOpen(false)
+                  router.refresh()
+                }}
               />
-            </div>
-            <div>
-              <Button
-                onClick={handleSendEmail}
-                disabled={isSendingEmail}
-                className="w-full"
-              >
-                {isSendingEmail ? (
-                  <Icons.spinner className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Send Email"
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
     </div>
   )
 }
