@@ -191,10 +191,6 @@ export function ContactsTable({
                       <Button
                         variant="ghost"
                         onClick={() => {
-                          console.log(
-                            "Email button clicked for contact:",
-                            contact.id
-                          )
                           setSelectedContactEmail(contact.email)
                           setIsEmailDialogOpen(true)
                         }}
@@ -211,10 +207,6 @@ export function ContactsTable({
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onSelect={() => {
-                              console.log(
-                                "Edit menu item selected for contact:",
-                                contact.id
-                              )
                               setSelectedContact(contact)
                               setIsEditDialogOpen(true)
                             }}
@@ -237,7 +229,6 @@ export function ContactsTable({
           <Dialog
             open={isEmailDialogOpen}
             onOpenChange={(open) => {
-              console.log("Dialog onOpenChange called with:", open)
               if (!open) {
                 setIsEmailDialogOpen(false)
                 setEmailSubject("")
@@ -283,7 +274,6 @@ export function ContactsTable({
           <Dialog
             open={isEditDialogOpen}
             onOpenChange={(open) => {
-              console.log("Dialog onOpenChange called with:", open)
               if (!open) {
                 handleEditDialogClose()
               }
