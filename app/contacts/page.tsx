@@ -48,7 +48,7 @@ export default async function Contacts() {
   if (contactsError || groupsError || contactGroupsError || domainError) {
     console.error(
       "Error fetching data:",
-      contactsError || groupsError || contactGroupsError
+      contactsError || groupsError || contactGroupsError || domainError
     )
     // Handle the error appropriately
   }
