@@ -111,8 +111,8 @@ export type Database = {
       companies: {
         Row: {
           city_state_zip: string | null
+          contact_id: string | null
           created_at: string
-          founder_id: string | null
           id: string
           name: string | null
           state_of_incorporation: string | null
@@ -120,8 +120,8 @@ export type Database = {
         }
         Insert: {
           city_state_zip?: string | null
+          contact_id?: string | null
           created_at?: string
-          founder_id?: string | null
           id?: string
           name?: string | null
           state_of_incorporation?: string | null
@@ -129,8 +129,8 @@ export type Database = {
         }
         Update: {
           city_state_zip?: string | null
+          contact_id?: string | null
           created_at?: string
-          founder_id?: string | null
           id?: string
           name?: string | null
           state_of_incorporation?: string | null
@@ -138,10 +138,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "companies_founder_id_fkey"
-            columns: ["founder_id"]
+            foreignKeyName: "companies_contact_id_fkey"
+            columns: ["contact_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
         ]
@@ -230,40 +230,75 @@ export type Database = {
           },
         ]
       }
+      domains: {
+        Row: {
+          api_key: string | null
+          created_at: string
+          domain_name: string
+          id: string
+          sender_name: string | null
+          user_id: string
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string
+          domain_name: string
+          id: string
+          sender_name?: string | null
+          user_id: string
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string
+          domain_name?: string
+          id?: string
+          sender_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "domains_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funds: {
         Row: {
           byline: string | null
           city_state_zip: string | null
+          contact_id: string | null
           created_at: string
           id: string
-          investor_id: string | null
           name: string | null
           street: string | null
         }
         Insert: {
           byline?: string | null
           city_state_zip?: string | null
+          contact_id?: string | null
           created_at?: string
           id?: string
-          investor_id?: string | null
           name?: string | null
           street?: string | null
         }
         Update: {
           byline?: string | null
           city_state_zip?: string | null
+          contact_id?: string | null
           created_at?: string
           id?: string
-          investor_id?: string | null
           name?: string | null
           street?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "funds_investor_id_fkey"
-            columns: ["investor_id"]
+            foreignKeyName: "funds_contact_id_fkey"
+            columns: ["contact_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
         ]
@@ -307,11 +342,11 @@ export type Database = {
           created_by: string | null
           date: string | null
           discount: string | null
-          founder_id: string | null
+          founder_contact_id: string | null
           fund_id: string | null
           id: string
           investment_type: string | null
-          investor_id: string | null
+          investor_contact_id: string | null
           purchase_amount: string | null
           safe_url: string | null
           side_letter_id: string | null
@@ -324,11 +359,11 @@ export type Database = {
           created_by?: string | null
           date?: string | null
           discount?: string | null
-          founder_id?: string | null
+          founder_contact_id?: string | null
           fund_id?: string | null
           id?: string
           investment_type?: string | null
-          investor_id?: string | null
+          investor_contact_id?: string | null
           purchase_amount?: string | null
           safe_url?: string | null
           side_letter_id?: string | null
@@ -341,11 +376,11 @@ export type Database = {
           created_by?: string | null
           date?: string | null
           discount?: string | null
-          founder_id?: string | null
+          founder_contact_id?: string | null
           fund_id?: string | null
           id?: string
           investment_type?: string | null
-          investor_id?: string | null
+          investor_contact_id?: string | null
           purchase_amount?: string | null
           safe_url?: string | null
           side_letter_id?: string | null
@@ -361,17 +396,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "investments_founder_id_fkey"
-            columns: ["founder_id"]
+            foreignKeyName: "investments_founder_contact_id_fkey"
+            columns: ["founder_contact_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "investments_investor_id_fkey"
-            columns: ["investor_id"]
+            foreignKeyName: "investments_investor_contact_id_fkey"
+            columns: ["investor_contact_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "contacts"
             referencedColumns: ["id"]
           },
           {
@@ -541,7 +576,7 @@ export type Database = {
       delete_link: {
         Args: {
           link_id: string
-          auth_id: string
+          user_id: string
         }
         Returns: undefined
       }
@@ -571,7 +606,7 @@ export type Database = {
       }
       get_user_documents: {
         Args: {
-          auth_id_arg: string
+          id_arg: string
         }
         Returns: {
           id: string
@@ -583,7 +618,7 @@ export type Database = {
       }
       get_user_investments: {
         Args: {
-          auth_id_arg: string
+          id_arg: string
         }
         Returns: {
           id: string
@@ -607,7 +642,7 @@ export type Database = {
       get_user_investments_by_id: {
         Args: {
           id_arg: string
-          auth_id_arg: string
+          investment_id_arg: string
         }
         Returns: {
           id: string
@@ -630,7 +665,7 @@ export type Database = {
       }
       get_user_links: {
         Args: {
-          auth_id: string
+          id_arg: string
         }
         Returns: {
           created_at: string | null
@@ -644,7 +679,7 @@ export type Database = {
       }
       get_user_links_with_views: {
         Args: {
-          auth_id_arg: string
+          id_arg: string
         }
         Returns: {
           id: string
@@ -665,6 +700,7 @@ export type Database = {
           fund_name: string
           company_name: string
           investor_name: string
+          founder_name: string
         }[]
       }
       select_link: {
@@ -679,20 +715,31 @@ export type Database = {
           expires: string
           filename: string
           created_by: string
-          creator_name: string
         }[]
       }
-      update_link: {
-        Args: {
-          link_id: string
-          auth_id: string
-          url_arg: string
-          password_arg: string
-          expires_arg: string
-          filename_arg: string
-        }
-        Returns: undefined
-      }
+      update_link:
+        | {
+            Args: {
+              link_id: string
+              auth_id: string
+              url_arg: string
+              password_arg: string
+              expires_arg: string
+              filename_arg: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              link_id: string
+              user_id: string
+              url_arg: string
+              password_arg: string
+              expires_arg: string
+              filename_arg: string
+            }
+            Returns: undefined
+          }
       upsert_link_data: {
         Args: {
           id_arg: string
@@ -702,7 +749,7 @@ export type Database = {
           created_at_arg: string
           password_arg: string
           expires_arg: string
-          auth_id_arg: string
+          user_id: string
         }
         Returns: undefined
       }
@@ -788,6 +835,7 @@ export type Database = {
           owner_id: string | null
           path_tokens: string[] | null
           updated_at: string | null
+          user_metadata: Json | null
           version: string | null
         }
         Insert: {
@@ -801,6 +849,7 @@ export type Database = {
           owner_id?: string | null
           path_tokens?: string[] | null
           updated_at?: string | null
+          user_metadata?: Json | null
           version?: string | null
         }
         Update: {
@@ -814,6 +863,7 @@ export type Database = {
           owner_id?: string | null
           path_tokens?: string[] | null
           updated_at?: string | null
+          user_metadata?: Json | null
           version?: string | null
         }
         Relationships: [
@@ -835,6 +885,7 @@ export type Database = {
           key: string
           owner_id: string | null
           upload_signature: string
+          user_metadata: Json | null
           version: string
         }
         Insert: {
@@ -845,6 +896,7 @@ export type Database = {
           key: string
           owner_id?: string | null
           upload_signature: string
+          user_metadata?: Json | null
           version: string
         }
         Update: {
@@ -855,6 +907,7 @@ export type Database = {
           key?: string
           owner_id?: string | null
           upload_signature?: string
+          user_metadata?: Json | null
           version?: string
         }
         Relationships: [

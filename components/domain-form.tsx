@@ -1,16 +1,21 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { createClient } from "@/utils/supabase/client";
-import { Database } from "@/types/supabase";
-import { InfoIcon } from "lucide-react";
+import { useState } from "react"
+import { createClient } from "@/utils/supabase/client"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { InfoIcon } from "lucide-react"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/components/ui/use-toast";
+import { Database } from "@/types/supabase"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Form,
   FormControl,
@@ -19,96 +24,126 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"
+import { toast } from "@/components/ui/use-toast"
 
 const domainFormSchema = z.object({
-  name: z.string().min(1, "Domain name is required"),
+  domainName: z.string().min(1, "Domain name is required"),
   apiKey: z.string().min(1, "API key is required"),
-});
+  senderName: z.string().min(1, "Sender name is required"),
+})
 
-type DomainFormValues = z.infer<typeof domainFormSchema>;
-type User = Database["public"]["Tables"]["users"]["Row"];
+type DomainFormValues = z.infer<typeof domainFormSchema>
+type User = Database["public"]["Tables"]["users"]["Row"]
+type Domain = Database["public"]["Tables"]["domains"]["Row"]
 
-export default function DomainForm({ account }: { account: User }) {
-  const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
+export default function DomainForm({
+  account,
+  domain,
+}: {
+  account: User
+  domain: Domain | null
+}) {
+  const [isLoading, setIsLoading] = useState(false)
+  const supabase = createClient()
 
   const form = useForm<DomainFormValues>({
     resolver: zodResolver(domainFormSchema),
     defaultValues: {
-      name: "",
-      apiKey: "",
+      domainName: domain?.domain_name || "",
+      apiKey: domain?.api_key || "",
+      senderName: domain?.sender_name || "",
     },
-  });
+  })
 
   const onSubmit = async (data: DomainFormValues) => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      // First, create the domain using the Resend API
-      const response = await fetch('/api/create-domain', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      let domainId = domain?.id
 
-      if (!response.ok) {
-        throw new Error('Failed to create domain');
+      if (!domain) {
+        // Create the domain using the Resend API only if it doesn't exist
+        const response = await fetch("/api/create-domain", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        })
+
+        const result = await response.json()
+        console.log(result)
+
+        if (result.error) {
+          throw new Error(result.error || "Failed to create domain")
+        }
+
+        if (!result.id) {
+          throw new Error("Invalid domain data received from API")
+        }
+
+        domainId = result.id
       }
 
-      const domain = await response.json();
-      console.log(domain);
-
-      // If domain creation is successful, update the user's domain in the database
-      const { error } = await supabase
-        .from('domains')
-        .insert({
-          id: domain.id,
-          created_at: new Date().toISOString(),
-          name: data.name,
-          user_id: account.id,
-        });
+      // Update or insert the domain in the database
+      const { error } = domain
+        ? await supabase
+            .from("domains")
+            .update({
+              domain_name: data.domainName,
+              sender_name: data.senderName,
+              api_key: data.apiKey,
+            })
+            .eq("id", domain.id)
+        : await supabase.from("domains").insert({
+            id: domainId,
+            created_at: new Date().toISOString(),
+            domain_name: data.domainName,
+            user_id: account.id,
+            sender_name: data.senderName,
+            api_key: data.apiKey,
+          })
 
       if (error) {
-        throw error;
+        throw error
       }
 
       toast({
-        title: "Domain created and saved",
-        description: "Your domain has been successfully created and saved to your profile.",
-      });
+        title: domain ? "Domain updated" : "Domain created and saved",
+        description: domain
+          ? "Your domain has been successfully updated."
+          : "Your domain has been successfully created and saved to your profile.",
+      })
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error)
       toast({
-        title: "Error",
-        description: "Failed to create or save domain. Please try again.",
+        title: "Error creating domain",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Domain Settings</CardTitle>
         <CardDescription>
-          Configure your domain for sending emails
+          {domain
+            ? "Update your domain settings"
+            : "Configure your domain for sending emails"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -116,7 +151,7 @@ export default function DomainForm({ account }: { account: User }) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="name"
+              name="domainName"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Domain Name</FormLabel>
@@ -130,7 +165,22 @@ export default function DomainForm({ account }: { account: User }) {
                 </FormItem>
               )}
             />
-
+            <FormField
+              control={form.control}
+              name="senderName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sender Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Enter the name you want to use for sending emails
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="apiKey"
@@ -146,7 +196,18 @@ export default function DomainForm({ account }: { account: User }) {
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="max-w-xs font-normal">
-                              Docbase uses <a href="https://www.resend.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Resend</a> to power emails from the platform. Please sign up for an account, grab your API key, and paste it here to start sending emails from your domain.
+                              Docbase uses{" "}
+                              <a
+                                href="https://www.resend.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-500 hover:underline"
+                              >
+                                Resend
+                              </a>{" "}
+                              to power emails from the platform. Please sign up
+                              for an account, grab your API key, and paste it
+                              here to start sending emails from your domain.
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -156,20 +217,21 @@ export default function DomainForm({ account }: { account: User }) {
                   <FormControl>
                     <Input type="password" {...field} />
                   </FormControl>
-                  <FormDescription>
-                    Enter your Resend API key
-                  </FormDescription>
+                  <FormDescription>Enter your Resend API key</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Domain"}
+              {isLoading
+                ? "Saving..."
+                : domain
+                ? "Update Domain"
+                : "Create Domain"}
             </Button>
           </form>
         </Form>
       </CardContent>
     </Card>
-  );
+  )
 }

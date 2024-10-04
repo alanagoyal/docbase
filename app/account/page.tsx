@@ -1,5 +1,6 @@
-import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
+import { createClient } from "@/utils/supabase/server"
+
 import Account from "@/components/account"
 
 export default async function AccountPage() {
@@ -18,10 +19,16 @@ export default async function AccountPage() {
     .eq("id", user.id)
     .single()
 
+  const { data: domain } = await supabase
+    .from("domains")
+    .select()
+    .eq("user_id", user.id)
+    .single()
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6 text-center">Your Account</h1>
-      <Account account={account}/>
+      <Account account={account} domain={domain} />
     </div>
   )
 }

@@ -1,15 +1,15 @@
 import { Resend } from "resend"
 import { NewEmailTemplate } from "@/components/templates/new-email"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function POST(req: Request) {
   const body = await req.json()
-  const { to, subject, emailBody } = body
+  const { to, subject, emailBody, domainName, senderName, apiKey } = body
 
   try {
+    const resend = new Resend(apiKey)
+
     const { data, error } = await resend.emails.send({
-      from: "Docbase <hi@basecase.vc>",
+      from: `${senderName} <hi@${domainName}>`,
       to: to,
       subject: subject,
       react: NewEmailTemplate({ emailBody }),

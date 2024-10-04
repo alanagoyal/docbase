@@ -7,8 +7,9 @@ import PasswordTabContent from "./password-form";
 import DomainTabContent from "./domain-form";
 
 type User = Database["public"]["Tables"]["users"]["Row"];
+type Domain = Database["public"]["Tables"]["domains"]["Row"];
 
-export default function Account({ account }: { account: User }) {
+export default function Account({ account, domain }: { account: User, domain: Domain }) {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -25,7 +26,7 @@ export default function Account({ account }: { account: User }) {
           <PasswordTabContent />
         </TabsContent>
         <TabsContent value="domain">
-          <DomainTabContent account={account} />
+          <DomainTabContent account={account} domain={domain} />
         </TabsContent>
       </Tabs>
     </div>
