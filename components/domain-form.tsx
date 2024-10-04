@@ -68,8 +68,9 @@ export default function DomainForm({
     try {
       let domainId = domain?.id
 
-      if (!domain) {
-        // Create the domain using the Resend API only if it doesn't exist
+      // Check if the domain name is being changed
+      if (!domain || data.domainName !== domain.domain_name) {
+        // Create the domain using the Resend API only if it's new or the name has changed
         const response = await fetch("/api/create-domain", {
           method: "POST",
           headers: {
@@ -79,7 +80,6 @@ export default function DomainForm({
         })
 
         const result = await response.json()
-        console.log(result)
 
         if (result.error) {
           throw new Error(result.error || "Failed to create domain")
