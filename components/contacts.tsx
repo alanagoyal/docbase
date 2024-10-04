@@ -85,7 +85,7 @@ export function ContactsTable({
         title: "Domain required",
         description: "Please add a domain to your account to start sending emails",
         action: (
-          <Button variant="outline" onClick={() => router.push('/account')}>
+          <Button variant="outline" onClick={() => router.push('/account?tab=domain')}>
             Account
           </Button>
         ),
