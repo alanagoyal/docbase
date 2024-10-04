@@ -30,11 +30,15 @@ import Docxtemplater from "docxtemplater"
 import { AlertCircle, Download, InfoIcon, MenuIcon } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip"
 
 import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
-
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -45,25 +49,21 @@ const downloadDocument = (url: string) => {
   toast({ description: "Document downloaded" })
 }
 
-const NextStepsPopoverContent = () => (
-  <PopoverContent className="w-80 text-xs text-muted-foreground">
+const NextStepsTooltipContent = () => (
+  <div className="w-80 text-xs">
     <p>
-      <strong className="text-foreground">Complete:</strong> Complete the
-      required fund and investor form fields
+      <strong>Complete:</strong> Complete the required fund and investor form fields
     </p>
     <p>
-      <strong className="text-foreground">Share:</strong> Complete or share the
-      investment to complete the company and founder form fields
+      <strong>Share:</strong> Complete or share the investment to complete the company and founder form fields
     </p>
     <p>
-      <strong className="text-foreground">Generate:</strong> Generate documents
-      and shareable links
+      <strong>Generate:</strong> Generate documents and shareable links
     </p>
     <p>
-      <strong className="text-foreground">Send:</strong> Send documents to
-      founder to review and sign
+      <strong>Send:</strong> Send documents to founder to review and sign
     </p>
-  </PopoverContent>
+  </div>
 )
 
 export default function Investments({
@@ -783,12 +783,16 @@ export default function Investments({
             <TableHead className="w-1/6">
               Next Steps
               {investments.every(investment => isOwner(investment)) && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <InfoIcon className="h-4 w-4 ml-2 inline-block cursor-pointer" />
-                  </PopoverTrigger>
-                  <NextStepsPopoverContent />
-                </Popover>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoIcon className="h-4 w-4 ml-2 inline-block cursor-pointer" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <NextStepsTooltipContent />
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </TableHead>
             <TableHead className="w-1/6">Actions</TableHead>
