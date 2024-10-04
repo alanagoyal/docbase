@@ -1,0 +1,71 @@
+.styled-quill-wrapper .quill {
+  font-size: 0.875rem;
+  border: 1px solid hsl(var(--input));
+  border-radius: 0.375rem;
+}
+
+.styled-quill-wrapper .ql-container {
+  min-height: 40px;
+  border: none;
+  border-radius: 0 0 0.375rem 0.375rem;
+  border-color: hsl(var(--input));
+  border-width: 0px;
+  background-color: transparent;
+  font-family: inherit;
+}
+
+.styled-quill-wrapper .ql-toolbar {
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid hsl(var(--input));
+  border-radius: 0.375rem 0.375rem 0 0;
+  border-color: hsl(var(--input));
+  border-width: 0 0 1px 0;
+  background-color: transparent;
+}
+
+.styled-quill-wrapper .ql-editor {
+  min-height: 40px;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-family: inherit;
+}
+
+.styled-quill-wrapper .ql-editor.ql-blank::before {
+  color: hsl(var(--muted-foreground));
+  font-style: normal;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border-width: 0px;
+}
+
+.styled-quill-wrapper .quill:hover .ql-container,
+.styled-quill-wrapper .quill:hover .ql-toolbar {
+  border-color: hsl(var(--input));
+}
+
+.styled-quill-wrapper .quill:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+}
+
+.styled-quill-wrapper .quill:focus-within .ql-toolbar {
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+}
+
+.styled-quill-wrapper .quill:focus-within .ql-container {
+  border-bottom-left-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
+.styled-quill-wrapper .ql-toolbar button,
+.styled-quill-wrapper .ql-toolbar .ql-picker {
+  opacity: 0.8;
+}
+
+.styled-quill-wrapper .ql-toolbar button:hover,
+.styled-quill-wrapper .ql-toolbar .ql-picker:hover {
+  opacity: 1;
+}

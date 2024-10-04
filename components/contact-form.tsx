@@ -46,12 +46,14 @@ type ContactFormProps = {
   existingContact?: Contact & { groups: { value: string, label: string, color: string }[] }
   account: User
   groups: { value: string, label: string, color: string }[]
+  onSuccess?: () => void  
 }
 
 export default function ContactForm({
   existingContact,
   account,
   groups,
+  onSuccess,  
 }: ContactFormProps) {
   const supabase = createClient()
   const [isLoading, setIsLoading] = React.useState(false)
@@ -181,7 +183,7 @@ export default function ContactForm({
           ? "Contact updated successfully"
           : "New contact added",
       })
-      router.push("/contacts")
+      if (onSuccess) onSuccess() 
       router.refresh()
     } catch (error) {
       console.error("Error adding/updating contact:", error)

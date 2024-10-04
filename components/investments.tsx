@@ -40,6 +40,10 @@ import {
 import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
 
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { StyledQuillEditor } from "@/components/quill-editor"
+import "@/styles/quill-custom.css"
+
 type User = Database["public"]["Tables"]["users"]["Row"]
 
 const ReactQuill = dynamic(() => import("react-quill"), { ssr: false })
@@ -974,16 +978,15 @@ export default function Investments({
           router.refresh()
         }}
       >
-        <DialogContent className="flex flex-col">
+        <DialogContent className="flex flex-col max-w-2xl w-full">
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-4 flex-grow">
             <div className="flex flex-col gap-2 flex-grow">
-              <ReactQuill
+              <StyledQuillEditor
                 value={editableEmailContent}
                 onChange={setEditableEmailContent}
-                className="flex-grow"
               />
             </div>
             {selectedInvestment && (
