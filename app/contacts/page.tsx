@@ -39,7 +39,13 @@ export default async function Contacts() {
     .select("contact_id, group_id")
     .in("contact_id", contacts?.map((c) => c.id) || [])
 
-  if (contactsError || groupsError || contactGroupsError) {
+  const { data: domain, error: domainError } = await supabase
+    .from("domains")
+    .select("*")
+    .eq("user_id", user.id)
+    .single()
+
+  if (contactsError || groupsError || contactGroupsError || domainError) {
     console.error(
       "Error fetching data:",
       contactsError || groupsError || contactGroupsError
@@ -74,6 +80,7 @@ export default async function Contacts() {
     <ContactsTable
       contacts={contactsWithGroups}
       account={account}
+      domain={domain}
       groups={formattedGroups}
     />
   ) : (

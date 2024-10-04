@@ -31,19 +31,21 @@ import "@/styles/quill-custom.css"
 import ContactForm from "./contact-form"
 import { Icons } from "./icons"
 import { StyledQuillEditor } from "./quill-editor"
-import Link from "next/link"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
 type User = Database["public"]["Tables"]["users"]["Row"]
+type Domain = Database["public"]["Tables"]["domains"]["Row"]
 type Group = { value: string; label: string; color: string }
 
 export function ContactsTable({
   contacts,
   account,
+  domain,
   groups,
 }: {
   contacts: (Contact & { groups: Group[] })[]
   account: User
+  domain: Domain | null
   groups: Group[]
 }) {
   const supabase = createClient()
@@ -76,6 +78,23 @@ export function ContactsTable({
     setSelectedContact(null)
     document.body.focus()
   }, [])
+
+  const handleEmailButtonClick = useCallback((contactEmail: string) => {
+    if (!domain) {
+      toast({
+        title: "Domain required",
+        description: "Please add a domain to your account to start sending emails",
+        action: (
+          <Button variant="outline" onClick={() => router.push('/account')}>
+            Account
+          </Button>
+        ),
+      })
+    } else {
+      setSelectedContactEmail(contactEmail)
+      setIsEmailDialogOpen(true)
+    }
+  }, [domain, router])
 
   async function onDelete(id: string) {
     try {
@@ -214,10 +233,7 @@ export function ContactsTable({
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="ghost"
-                        onClick={() => {
-                          setSelectedContactEmail(contact.email)
-                          setIsEmailDialogOpen(true)
-                        }}
+                        onClick={() => handleEmailButtonClick(contact.email)}
                       >
                         <MailPlus className="h-4 w-4" />
                       </Button>
