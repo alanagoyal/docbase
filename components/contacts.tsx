@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { selectStyles } from "@/utils/select-styles"
 import { createClient } from "@/utils/supabase/client"
-import { Mail, MailPlus, MenuIcon, Plus, X } from "lucide-react"
+import { Mail, MailPlus, MenuIcon, Plus, X, UserPlus } from "lucide-react"
 import CreatableSelect from "react-select/creatable"
 
 import { Database } from "@/types/supabase"
@@ -256,20 +256,24 @@ export function ContactsTable({
           Contacts
         </h1>
         <div className="flex space-x-2">
-          <Button
-            variant="ghost"
-            onClick={() => setIsNewMessageDialogOpen(true)}
-          >
-            <Mail className="w-4 h-4" />
-            <span className="hidden sm:inline-block ml-2">New Message</span>
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => setIsNewContactDialogOpen(true)}
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline-block ml-2">New Contact</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="w-[150px]">
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline-block ml-2">New</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onSelect={() => setIsNewMessageDialogOpen(true)}>
+                <Mail className="w-4 h-4 mr-2" />
+                Message
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setIsNewContactDialogOpen(true)}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Contact
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       <div className="max-w-5xl mx-auto">
