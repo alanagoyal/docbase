@@ -35,6 +35,18 @@ create table "public"."contacts" (
 
 alter table "public"."contacts" enable row level security;
 
+create table "public"."domains" (
+    "id" uuid not null,
+    "created_at" timestamp with time zone not null default now(),
+    "domain_name" text not null,
+    "user_id" uuid not null,
+    "sender_name" text,
+    "api_key" text
+);
+
+
+alter table "public"."domains" enable row level security;
+
 create table "public"."funds" (
     "id" uuid not null default gen_random_uuid(),
     "created_at" timestamp with time zone not null default now(),
@@ -140,13 +152,17 @@ CREATE UNIQUE INDEX contacts_email_created_by_unique ON public.contacts USING bt
 
 CREATE UNIQUE INDEX contacts_pkey ON public.contacts USING btree (id);
 
+CREATE UNIQUE INDEX domains_name_user_id_key ON public.domains USING btree (domain_name, user_id);
+
+CREATE UNIQUE INDEX domains_pkey ON public.domains USING btree (id);
+
+CREATE UNIQUE INDEX domains_user_id_key ON public.domains USING btree (user_id);
+
 CREATE UNIQUE INDEX funds_name_unique ON public.funds USING btree (name);
 
 CREATE UNIQUE INDEX funds_pkey ON public.funds USING btree (id);
 
 CREATE UNIQUE INDEX groups_pkey ON public.groups USING btree (id);
-
-CREATE UNIQUE INDEX groups_name_created_by_unique ON public.groups USING btree (name, created_by);
 
 CREATE UNIQUE INDEX investments_pkey ON public.investments USING btree (id);
 
@@ -168,11 +184,11 @@ alter table "public"."contact_groups" add constraint "contact_groups_pkey" PRIMA
 
 alter table "public"."contacts" add constraint "contacts_pkey" PRIMARY KEY using index "contacts_pkey";
 
+alter table "public"."domains" add constraint "domains_pkey" PRIMARY KEY using index "domains_pkey";
+
 alter table "public"."funds" add constraint "funds_pkey" PRIMARY KEY using index "funds_pkey";
 
 alter table "public"."groups" add constraint "groups_pkey" PRIMARY KEY using index "groups_pkey";
-
-alter table "public"."groups" add constraint "groups_name_created_by_unique" UNIQUE using index "groups_name_created_by_unique";
 
 alter table "public"."investments" add constraint "investments_pkey" PRIMARY KEY using index "investments_pkey";
 
@@ -207,6 +223,16 @@ alter table "public"."contacts" add constraint "contacts_email_created_by_unique
 alter table "public"."contacts" add constraint "contacts_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) not valid;
 
 alter table "public"."contacts" validate constraint "contacts_user_id_fkey";
+
+alter table "public"."domains" add constraint "domains_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE not valid;
+
+alter table "public"."domains" validate constraint "domains_user_id_fkey";
+
+alter table "public"."domains" add constraint "domains_user_id_fkey1" FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
+
+alter table "public"."domains" validate constraint "domains_user_id_fkey1";
+
+alter table "public"."domains" add constraint "domains_user_id_key" UNIQUE using index "domains_user_id_key";
 
 alter table "public"."funds" add constraint "funds_contact_id_fkey" FOREIGN KEY (contact_id) REFERENCES contacts(id) not valid;
 
@@ -892,6 +918,48 @@ grant truncate on table "public"."contacts" to "service_role";
 
 grant update on table "public"."contacts" to "service_role";
 
+grant delete on table "public"."domains" to "anon";
+
+grant insert on table "public"."domains" to "anon";
+
+grant references on table "public"."domains" to "anon";
+
+grant select on table "public"."domains" to "anon";
+
+grant trigger on table "public"."domains" to "anon";
+
+grant truncate on table "public"."domains" to "anon";
+
+grant update on table "public"."domains" to "anon";
+
+grant delete on table "public"."domains" to "authenticated";
+
+grant insert on table "public"."domains" to "authenticated";
+
+grant references on table "public"."domains" to "authenticated";
+
+grant select on table "public"."domains" to "authenticated";
+
+grant trigger on table "public"."domains" to "authenticated";
+
+grant truncate on table "public"."domains" to "authenticated";
+
+grant update on table "public"."domains" to "authenticated";
+
+grant delete on table "public"."domains" to "service_role";
+
+grant insert on table "public"."domains" to "service_role";
+
+grant references on table "public"."domains" to "service_role";
+
+grant select on table "public"."domains" to "service_role";
+
+grant trigger on table "public"."domains" to "service_role";
+
+grant truncate on table "public"."domains" to "service_role";
+
+grant update on table "public"."domains" to "service_role";
+
 grant delete on table "public"."funds" to "anon";
 
 grant insert on table "public"."funds" to "anon";
@@ -1268,6 +1336,14 @@ to authenticated
 using (((auth.uid() = created_by) OR (auth.uid() = user_id)));
 
 
+create policy "Users can manage their own domains"
+on "public"."domains"
+as permissive
+for all
+to authenticated
+using ((auth.uid() = user_id));
+
+
 create policy "Authenticated users can insert funds"
 on "public"."funds"
 as permissive
@@ -1478,13 +1554,9 @@ alter table "auth"."mfa_factors" add column "phone" text;
 
 CREATE UNIQUE INDEX mfa_factors_last_challenged_at_key ON auth.mfa_factors USING btree (last_challenged_at);
 
-CREATE UNIQUE INDEX mfa_factors_phone_key ON auth.mfa_factors USING btree (phone);
-
-CREATE UNIQUE INDEX unique_verified_phone_factor ON auth.mfa_factors USING btree (user_id, phone);
+CREATE UNIQUE INDEX unique_phone_factor_per_user ON auth.mfa_factors USING btree (user_id, phone);
 
 alter table "auth"."mfa_factors" add constraint "mfa_factors_last_challenged_at_key" UNIQUE using index "mfa_factors_last_challenged_at_key";
-
-alter table "auth"."mfa_factors" add constraint "mfa_factors_phone_key" UNIQUE using index "mfa_factors_phone_key";
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
