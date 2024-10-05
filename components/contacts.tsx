@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
-import { MailPlus, MenuIcon, Plus } from "lucide-react"
+import { MailPlus, MenuIcon, Plus, Mail } from "lucide-react"
 
 import { Database } from "@/types/supabase"
 import {
@@ -60,6 +60,10 @@ export function ContactsTable({
     (Contact & { groups: Group[] }) | null
   >(null)
   const [isNewContactDialogOpen, setIsNewContactDialogOpen] = useState(false)
+  const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false)
+  const [newMessageTo, setNewMessageTo] = useState("")
+  const [newMessageSubject, setNewMessageSubject] = useState("")
+  const [newMessageBody, setNewMessageBody] = useState("")
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -142,15 +146,19 @@ export function ContactsTable({
         throw new Error("Failed to fetch domain information")
       }
 
+      const to = newMessageTo || selectedContactEmail
+      const subject = newMessageSubject || emailSubject
+      const body = newMessageBody || emailBody
+
       const response = await fetch("/api/send-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          to: selectedContactEmail,
-          subject: emailSubject,
-          emailBody: emailBody,
+          to,
+          subject,
+          emailBody: body,
           domainName: domainInfo.domain_name,
           senderName: domainInfo.sender_name,
           apiKey: domainInfo.api_key,
@@ -162,8 +170,13 @@ export function ContactsTable({
           description: "Email sent successfully",
         })
         setIsEmailDialogOpen(false)
+        setIsNewMessageDialogOpen(false)
         setEmailSubject("")
         setEmailBody("")
+        setNewMessageTo("")
+        setNewMessageSubject("")
+        setNewMessageBody("")
+        setSelectedContactEmail("")
       } else {
         const errorData = await response.json()
         console.error("Failed to send email:", errorData)
@@ -187,14 +200,22 @@ export function ContactsTable({
         <h1 className="text-2xl font-bold absolute left-1/2 transform -translate-x-1/2">
           Contacts
         </h1>
-        <Button
-          variant="ghost"
-          className="w-[150px]"
-          onClick={() => setIsNewContactDialogOpen(true)}
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline-block ml-2">New</span>
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            onClick={() => setIsNewMessageDialogOpen(true)}
+          >
+            <Mail className="w-4 h-4" />
+            <span className="hidden sm:inline-block ml-2">New Message</span>
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setIsNewContactDialogOpen(true)}
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline-block ml-2">New Contact</span>
+          </Button>
+        </div>
       </div>
       <div className="max-w-5xl mx-auto">
         <div className="container mx-auto py-10">
@@ -358,6 +379,56 @@ export function ContactsTable({
                   router.refresh()
                 }}
               />
+            </DialogContent>
+          </Dialog>
+          <Dialog
+            open={isNewMessageDialogOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsNewMessageDialogOpen(false)
+                setNewMessageTo("")
+                setNewMessageSubject("")
+                setNewMessageBody("")
+              }
+            }}
+          >
+            <DialogContent className="flex flex-col max-w-2xl w-full">
+              <DialogHeader>
+                <DialogTitle>New Message</DialogTitle>
+                <DialogDescription>Compose and send a new email</DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-4 flex-grow">
+                <Input
+                  placeholder="To"
+                  value={newMessageTo}
+                  onChange={(e) => setNewMessageTo(e.target.value)}
+                />
+                <Input
+                  placeholder="Subject"
+                  value={newMessageSubject}
+                  onChange={(e) => setNewMessageSubject(e.target.value)}
+                />
+                <div className="flex flex-col gap-2 flex-grow">
+                  <StyledQuillEditor
+                    value={newMessageBody}
+                    onChange={setNewMessageBody}
+                    placeholder="Compose your email..."
+                  />
+                </div>
+                <div>
+                  <Button
+                    onClick={handleSendEmail}
+                    disabled={isSendingEmail}
+                    className="w-full"
+                  >
+                    {isSendingEmail ? (
+                      <Icons.spinner className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Send Email"
+                    )}
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         </div>

@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server';
 import { Resend } from "resend"
 import { NewEmailTemplate } from "@/components/templates/new-email"
 
@@ -17,19 +18,11 @@ export async function POST(req: Request) {
 
     if (error) {
       console.error("Resend API error:", error)
-      return new Response(JSON.stringify({ error }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      })
+      return NextResponse.json({ error }, { status: 500 })
     }
-    return new Response(JSON.stringify(data), {
-      headers: { "Content-Type": "application/json" },
-    })
+    return NextResponse.json(data)
   } catch (error) {
     console.error("Unexpected error in send-email route:", error)
-    return new Response(JSON.stringify({ error: "Unexpected error occurred" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    })
+    return NextResponse.json({ error: "Unexpected error occurred" }, { status: 500 })
   }
 }
