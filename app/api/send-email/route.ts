@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error }, { status: 500 })
     }
     return NextResponse.json(data)
+    
   } catch (error) {
     console.error("Unexpected error in send-email route:", error)
     return NextResponse.json({ error: "Unexpected error occurred" }, { status: 500 })

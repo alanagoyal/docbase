@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { selectStyles } from "@/utils/select-styles"
 import { createClient } from "@/utils/supabase/client"
-import { MailPlus, MenuIcon, Plus, Mail } from "lucide-react"
+import { Mail, MailPlus, MenuIcon, Plus, X } from "lucide-react"
+import CreatableSelect from "react-select/creatable"
 
 import { Database } from "@/types/supabase"
 import {
@@ -17,7 +19,13 @@ import {
 
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +72,7 @@ export function ContactsTable({
   const [newMessageTo, setNewMessageTo] = useState("")
   const [newMessageSubject, setNewMessageSubject] = useState("")
   const [newMessageBody, setNewMessageBody] = useState("")
+  const [selectedGroups, setSelectedGroups] = useState<Group[]>([])
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -83,22 +92,29 @@ export function ContactsTable({
     document.body.focus()
   }, [])
 
-  const handleEmailButtonClick = useCallback((contactEmail: string) => {
-    if (!domain) {
-      toast({
-        title: "Domain required",
-        description: "Please add a domain to your account to start sending emails",
-        action: (
-          <Button variant="outline" onClick={() => router.push('/account?tab=domain')}>
-            Account
-          </Button>
-        ),
-      })
-    } else {
-      setSelectedContactEmail(contactEmail)
-      setIsEmailDialogOpen(true)
-    }
-  }, [domain, router])
+  const handleEmailButtonClick = useCallback(
+    (contactEmail: string) => {
+      if (!domain) {
+        toast({
+          title: "Domain required",
+          description:
+            "Please add a domain to your account to start sending emails",
+          action: (
+            <Button
+              variant="outline"
+              onClick={() => router.push("/account?tab=domain")}
+            >
+              Account
+            </Button>
+          ),
+        })
+      } else {
+        setSelectedContactEmail(contactEmail)
+        setIsEmailDialogOpen(true)
+      }
+    },
+    [domain, router]
+  )
 
   async function onDelete(id: string) {
     try {
@@ -138,6 +154,25 @@ export function ContactsTable({
     }
   }
 
+  const customComponents = {
+    MultiValue: ({ children, removeProps, ...props }: any) => {
+      return (
+        <Badge
+          className="flex items-center gap-1 m-1"
+          style={{
+            backgroundColor: props.data.color,
+            color: "white",
+          }}
+        >
+          {children}
+          <span {...removeProps} className="cursor-pointer hover:opacity-75">
+            <X size={14} />
+          </span>
+        </Badge>
+      )
+    },
+  }
+
   const handleSendEmail = async () => {
     setIsSendingEmail(true)
     try {
@@ -146,9 +181,27 @@ export function ContactsTable({
         throw new Error("Failed to fetch domain information")
       }
 
-      const to = newMessageTo || selectedContactEmail
-      const subject = newMessageSubject || emailSubject
-      const body = newMessageBody || emailBody
+      let to
+      if (selectedContactEmail) {
+        // Single contact email
+        to = selectedContactEmail
+      } else {
+        // Group email
+        const selectedContactEmails = contacts
+          .filter((contact) =>
+            contact.groups.some((group) =>
+              selectedGroups.some((sg) => sg.value === group.value)
+            )
+          )
+          .map((contact) => contact.email)
+
+        to = selectedContactEmails
+          .map((email) => {
+            const contact = contacts.find((c) => c.email === email)
+            return contact?.name ? `${contact.name} <${email}>` : email
+          })
+          .slice(0, 50)
+      }
 
       const response = await fetch("/api/send-email", {
         method: "POST",
@@ -157,33 +210,35 @@ export function ContactsTable({
         },
         body: JSON.stringify({
           to,
-          subject,
-          emailBody: body,
+          subject: selectedContactEmail ? emailSubject : newMessageSubject,
+          emailBody: selectedContactEmail ? emailBody : newMessageBody,
           domainName: domainInfo.domain_name,
           senderName: domainInfo.sender_name,
           apiKey: domainInfo.api_key,
         }),
       })
 
-      if (response.ok) {
-        toast({
-          description: "Email sent successfully",
-        })
-        setIsEmailDialogOpen(false)
-        setIsNewMessageDialogOpen(false)
-        setEmailSubject("")
-        setEmailBody("")
-        setNewMessageTo("")
-        setNewMessageSubject("")
-        setNewMessageBody("")
-        setSelectedContactEmail("")
-      } else {
+      if (!response.ok) {
         const errorData = await response.json()
-        console.error("Failed to send email:", errorData)
-        throw new Error(`Failed to send email: ${JSON.stringify(errorData)}`)
+        console.error("Error response:", errorData)
+        throw new Error(errorData.error || "Failed to send email")
       }
+
+      toast({
+        description: "Email sent successfully",
+      })
+
+      setIsEmailDialogOpen(false)
+      setIsNewMessageDialogOpen(false)
+      setEmailSubject("")
+      setEmailBody("")
+      setNewMessageSubject("")
+      setNewMessageBody("")
+      setSelectedContactEmail("")
+      setSelectedGroups([])
+      
     } catch (error) {
-      console.error("Error in handleSendEmail:", error)
+      console.error("Error sending email:", error)
       toast({
         variant: "destructive",
         description: `Failed to send email: ${error}`,
@@ -302,7 +357,9 @@ export function ContactsTable({
             <DialogContent className="flex flex-col max-w-2xl w-full">
               <DialogHeader>
                 <DialogTitle>Send Email</DialogTitle>
-                <DialogDescription>Compose and send an email to the selected contact</DialogDescription>
+                <DialogDescription>
+                  Compose and send an email to the selected contact
+                </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-4 flex-grow">
                 <Input
@@ -344,7 +401,9 @@ export function ContactsTable({
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Edit Contact</DialogTitle>
-                <DialogDescription>Update the details of the selected contact</DialogDescription>
+                <DialogDescription>
+                  Update the details of the selected contact
+                </DialogDescription>
               </DialogHeader>
               {selectedContact && (
                 <ContactForm
@@ -369,7 +428,9 @@ export function ContactsTable({
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>New Contact</DialogTitle>
-                <DialogDescription>Add a new contact to your list</DialogDescription>
+                <DialogDescription>
+                  Add a new contact to your list
+                </DialogDescription>
               </DialogHeader>
               <ContactForm
                 account={account}
@@ -389,20 +450,33 @@ export function ContactsTable({
                 setNewMessageTo("")
                 setNewMessageSubject("")
                 setNewMessageBody("")
+                setSelectedGroups([])
               }
             }}
           >
             <DialogContent className="flex flex-col max-w-2xl w-full">
               <DialogHeader>
                 <DialogTitle>New Message</DialogTitle>
-                <DialogDescription>Compose and send a new email</DialogDescription>
+                <DialogDescription>
+                  Compose and send a new email to selected groups
+                </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-4 flex-grow">
-                <Input
-                  placeholder="To"
-                  value={newMessageTo}
-                  onChange={(e) => setNewMessageTo(e.target.value)}
-                />
+                <div className="overflow-visible">
+                  <CreatableSelect
+                    isMulti
+                    options={groups}
+                    value={selectedGroups}
+                    onChange={(newValue) =>
+                      setSelectedGroups(newValue as Group[])
+                    }
+                    className="basic-multi-select"
+                    classNamePrefix="select"
+                    placeholder="Select groups..."
+                    styles={selectStyles}
+                    components={customComponents}
+                  />
+                </div>
                 <Input
                   placeholder="Subject"
                   value={newMessageSubject}
