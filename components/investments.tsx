@@ -1,10 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
-
 import { Icons } from "./icons"
 import { Share } from "./share"
 import { Button } from "./ui/button"
@@ -27,7 +25,7 @@ import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
 import { useCompletion } from "ai/react"
 import Docxtemplater from "docxtemplater"
-import { AlertCircle, Download, InfoIcon, MenuIcon } from "lucide-react"
+import { AlertCircle, Download, InfoIcon, MenuIcon, RefreshCw } from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
 import {
@@ -36,17 +34,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip"
-
 import { Database, UserInvestment } from "@/types/supabase"
 import { cn } from "@/lib/utils"
-
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { StyledQuillEditor } from "@/components/quill-editor"
 import "@/styles/quill-custom.css"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
-
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false })
 
 const downloadDocument = (url: string) => {
   window.open(url, "_blank")
@@ -879,15 +872,15 @@ export default function Investments({
                 <TableCell className="whitespace-nowrap">
                   <div className="flex items-center space-x-2">
                     {isOwner(investment) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {investment.safe_url ? (
-                            <>
+                      <>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {investment.safe_url && (
                               <DropdownMenuItem
                                 onClick={() => {
                                   if (investment.safe_url) {
@@ -897,51 +890,48 @@ export default function Investments({
                               >
                                 Download SAFE Agreement
                               </DropdownMenuItem>
+                            )}
+                            {investment.side_letter?.side_letter_url && (
                               <DropdownMenuItem
-                                onClick={() => processSafe(investment)}
+                                onClick={() => {
+                                  if (investment.side_letter?.side_letter_url) {
+                                    downloadDocument(
+                                      investment.side_letter.side_letter_url
+                                    )
+                                  }
+                                }}
                               >
-                                Update SAFE Agreement
+                                Download Side Letter
                               </DropdownMenuItem>
-                            </>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={() => processSafe(investment)}
-                            >
-                              Generate SAFE Agreement
-                            </DropdownMenuItem>
-                          )}
-                          {investment.side_letter_id ? (
-                            investment.side_letter?.side_letter_url ? (
-                              <>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        {(investment.safe_url || investment.side_letter?.side_letter_url) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost">
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {investment.safe_url && (
                                 <DropdownMenuItem
-                                  onClick={() => {
-                                    if (
-                                      investment.side_letter?.side_letter_url
-                                    ) {
-                                      downloadDocument(
-                                        investment.side_letter.side_letter_url
-                                      )
-                                    }
-                                  }}
+                                  onClick={() => processSafe(investment)}
                                 >
-                                  Download Side Letter
+                                  Update SAFE Agreement
                                 </DropdownMenuItem>
+                              )}
+                              {investment.side_letter?.side_letter_url && (
                                 <DropdownMenuItem
                                   onClick={() => processSideLetter(investment)}
                                 >
                                   Update Side Letter
                                 </DropdownMenuItem>
-                              </>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={() => processSideLetter(investment)}
-                              >
-                                Generate Side Letter
-                              </DropdownMenuItem>
-                            )
-                          ) : null}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </>
                     )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
