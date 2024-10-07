@@ -22,7 +22,7 @@ export default async function DocumentsPage() {
           <div className="flex justify-between items-center max-w-5xl mx-auto py-4 relative">
             <div className="w-[150px]" />
             <h1 className="text-2xl font-bold absolute left-1/2 transform -translate-x-1/2">
-              Links
+              Documents
             </h1>
             <Link href="/links/new">
               <Button variant="ghost" className="w-[150px]">
