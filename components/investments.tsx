@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
+
 import { Icons } from "./icons"
 import { Share } from "./share"
 import { Button } from "./ui/button"
@@ -25,19 +26,29 @@ import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
 import { useCompletion } from "ai/react"
 import Docxtemplater from "docxtemplater"
-import { AlertCircle, Download, InfoIcon, MenuIcon, RefreshCw } from "lucide-react"
+import {
+  AlertCircle,
+  Download,
+  InfoIcon,
+  MenuIcon,
+  RefreshCw,
+} from "lucide-react"
 import mammoth from "mammoth"
 import PizZip from "pizzip"
+
+import { Database, UserInvestment } from "@/types/supabase"
+import { cn } from "@/lib/utils"
+import { StyledQuillEditor } from "@/components/quill-editor"
+
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip"
-import { Database, UserInvestment } from "@/types/supabase"
-import { cn } from "@/lib/utils"
-import { StyledQuillEditor } from "@/components/quill-editor"
 import "@/styles/quill-custom.css"
+import { Input } from "./ui/input"
+import { Label } from "./ui/label"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -49,10 +60,12 @@ const downloadDocument = (url: string) => {
 const NextStepsTooltipContent = () => (
   <div className="w-80 text-xs">
     <p>
-      <strong>Complete:</strong> Complete the required fund and investor form fields
+      <strong>Complete:</strong> Complete the required fund and investor form
+      fields
     </p>
     <p>
-      <strong>Share:</strong> Complete or share the investment to complete the company and founder form fields
+      <strong>Share:</strong> Complete or share the investment to complete the
+      company and founder form fields
     </p>
     <p>
       <strong>Generate:</strong> Generate documents and shareable links
@@ -85,6 +98,9 @@ export default function Investments({
   const [generatingEmailForId, setGeneratingEmailForId] = useState<
     string | null
   >(null)
+  const [emailTo, setEmailTo] = useState("")
+  const [emailCc, setEmailCc] = useState("")
+  const [emailSubject, setEmailSubject] = useState("")
 
   const handleShareClick = (investment: UserInvestment) => {
     setSelectedInvestment(investment)
@@ -253,6 +269,11 @@ export default function Investments({
     setSelectedInvestment(investment)
     const content = await emailContent(investment)
     setEditableEmailContent(content)
+    setEmailTo(investment.founder?.email || "")
+    setEmailCc(investment.investor?.email || "")
+    setEmailSubject(
+      `${investment.company?.name || ""} <> ${investment.fund?.name || ""}`
+    )
     setGeneratingEmailForId(null)
     setDialogOpen(true)
   }
@@ -268,6 +289,9 @@ export default function Investments({
       const body = {
         investmentData: investment,
         emailContent: emailContentToSend,
+        to: emailTo,
+        cc: emailCc,
+        subject: emailSubject,
       }
 
       const response = await fetch("/api/send-investment-email", {
@@ -779,7 +803,7 @@ export default function Investments({
             <TableHead className="w-1/6">Date</TableHead>
             <TableHead className="w-1/6">
               Next Steps
-              {investments.every(investment => isOwner(investment)) && (
+              {investments.every((investment) => isOwner(investment)) && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -906,7 +930,8 @@ export default function Investments({
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        {(investment.safe_url || investment.side_letter?.side_letter_url) && (
+                        {(investment.safe_url ||
+                          investment.side_letter?.side_letter_url) && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost">
@@ -965,6 +990,10 @@ export default function Investments({
         open={dialogOpen}
         onOpenChange={() => {
           setDialogOpen(false)
+          setEmailTo("")
+          setEmailCc("")
+          setEmailSubject("")
+          setEditableEmailContent("")
           router.refresh()
         }}
       >
@@ -972,8 +1001,25 @@ export default function Investments({
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-4 flex-grow">
-            <div className="flex flex-col gap-2 flex-grow">
+          <div className="flex flex-col gap-2 flex-grow">
+            <div className="space-y-2">
+              <Label>To</Label>
+              <Input
+                placeholder="To email"
+                value={emailTo}
+                onChange={(e) => setEmailTo(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Subject</Label>
+              <Input
+                placeholder="Subject"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 flex-grow">
+              <Label>Body</Label>
               <StyledQuillEditor
                 value={editableEmailContent}
                 onChange={setEditableEmailContent}

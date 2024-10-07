@@ -39,6 +39,7 @@ import "@/styles/quill-custom.css"
 import ContactForm from "./contact-form"
 import { Icons } from "./icons"
 import { StyledQuillEditor } from "./quill-editor"
+import { Label } from "./ui/label"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -365,13 +366,17 @@ export function ContactsTable({
                   Compose and send an email to the selected contact
                 </DialogDescription>
               </DialogHeader>
-              <div className="flex flex-col gap-4 flex-grow">
-                <Input
-                  placeholder="Subject"
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                />
-                <div className="flex flex-col gap-2 flex-grow">
+              <div className="flex flex-col gap-2 flex-grow">
+                <div className="space-y-2">
+                  <Label>Subject</Label>
+                  <Input
+                    placeholder="Subject"
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2 flex-grow">
+                  <Label>Body</Label>
                   <StyledQuillEditor
                     value={emailBody}
                     onChange={setEmailBody}
@@ -465,8 +470,9 @@ export function ContactsTable({
                   Compose and send a new email to selected groups
                 </DialogDescription>
               </DialogHeader>
-              <div className="flex flex-col gap-4 flex-grow">
-                <div className="overflow-visible">
+              <div className="flex flex-col gap-2 flex-grow">
+                <div className="space-y-2">
+                  <Label>To</Label>
                   <CreatableSelect
                     isMulti
                     options={groups}
@@ -481,12 +487,16 @@ export function ContactsTable({
                     components={customComponents}
                   />
                 </div>
-                <Input
-                  placeholder="Subject"
-                  value={newMessageSubject}
-                  onChange={(e) => setNewMessageSubject(e.target.value)}
-                />
-                <div className="flex flex-col gap-2 flex-grow">
+                <div className="space-y-2">
+                  <Label>Subject</Label>
+                  <Input
+                    placeholder="Subject"
+                    value={newMessageSubject}
+                    onChange={(e) => setNewMessageSubject(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2 flex-grow">
+                  <Label>Body</Label>
                   <StyledQuillEditor
                     value={newMessageBody}
                     onChange={setNewMessageBody}
