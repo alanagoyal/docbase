@@ -264,7 +264,7 @@ export function ContactsTable({
                 <span className="hidden sm:inline-block ml-2">New</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent className="w-[150px]">
               <DropdownMenuItem onSelect={() => setIsNewMessageDialogOpen(true)}>
                 <Mail className="w-4 h-4 mr-2" />
                 Message
