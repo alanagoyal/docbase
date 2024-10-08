@@ -40,6 +40,7 @@ import ContactForm from "./contact-form"
 import { Icons } from "./icons"
 import { StyledQuillEditor } from "./quill-editor"
 import { Label } from "./ui/label"
+import { GroupsDialog } from "./groups-form"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"]
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -74,6 +75,7 @@ export function ContactsTable({
   const [newMessageSubject, setNewMessageSubject] = useState("")
   const [newMessageBody, setNewMessageBody] = useState("")
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([])
+  const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false)
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -284,7 +286,9 @@ export function ContactsTable({
               <TableRow>
                 <TableHead className="w-1/4">Name</TableHead>
                 <TableHead className="w-1/4">Email</TableHead>
-                <TableHead className="w-1/4">Groups</TableHead>
+                <TableHead className="w-1/4 cursor-pointer" onClick={() => setIsGroupsDialogOpen(true)}>
+                  Groups
+                </TableHead>
                 <TableHead className="w-1/4">Created</TableHead>
                 <TableHead className="w-1/4">Actions</TableHead>
               </TableRow>
@@ -519,6 +523,11 @@ export function ContactsTable({
               </div>
             </DialogContent>
           </Dialog>
+          <GroupsDialog
+            isOpen={isGroupsDialogOpen}
+            onClose={() => setIsGroupsDialogOpen(false)}
+            userId={account.id}
+          />
         </div>
       </div>
     </div>
