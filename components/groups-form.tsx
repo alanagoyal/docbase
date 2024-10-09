@@ -4,11 +4,13 @@ import { getColorForGroup } from "@/utils/group-colors"
 import { createClient } from "@/utils/supabase/client"
 import { Plus, X } from "lucide-react"
 import debounce from "lodash/debounce"
+import { HslColorPicker, HslColor } from "react-colorful"
 
 import { Button } from "./ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { Input } from "./ui/input"
 import { toast } from "./ui/use-toast"
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 
 type Group = { id: string; name: string; color: string }
 
@@ -18,12 +20,26 @@ interface GroupsDialogProps {
   userId: string
 }
 
+// Add this helper function to convert HSL string to HslColor object
+const hslStringToObject = (hslString: string): HslColor => {
+  const match = hslString.match(/hsl\((\d+),\s*([\d.]+)%,\s*([\d.]+)%\)/)
+  if (match) {
+    return {
+      h: parseInt(match[1]),
+      s: parseFloat(match[2]),
+      l: parseFloat(match[3])
+    }
+  }
+  return { h: 0, s: 0, l: 0 } // Default color if parsing fails
+}
+
 export function GroupsDialog({ isOpen, onClose, userId }: GroupsDialogProps) {
   const [groups, setGroups] = useState<Group[]>([])
   const supabase = createClient()
   const router = useRouter()
   const [newGroupId, setNewGroupId] = useState<string | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
+  const [openColorPicker, setOpenColorPicker] = useState<string | null>(null)
 
   const saveGroups = useCallback(async (groupsToSave: Group[]) => {
     const { error } = await supabase.from("groups").upsert(groupsToSave)
@@ -102,6 +118,15 @@ export function GroupsDialog({ isOpen, onClose, userId }: GroupsDialogProps) {
     }
   }
 
+  const handleColorChange = (id: string, color: HslColor) => {
+    const hslString = `hsl(${color.h}, ${color.s}%, ${color.l}%)`
+    const newGroups = groups.map(group =>
+      group.id === id ? { ...group, color: hslString } : group
+    )
+    setGroups(newGroups)
+    debouncedSave(newGroups)
+  }
+
   const handleClose = () => {
     debouncedSave.flush()
     if (hasChanges) {
@@ -118,16 +143,26 @@ export function GroupsDialog({ isOpen, onClose, userId }: GroupsDialogProps) {
           <DialogTitle>Edit Groups</DialogTitle>
         </DialogHeader>
         <div className="space-y-2">
-          {groups.map((group, index) => (
+          {groups.map((group) => (
             <div key={group.id} className="flex items-center space-x-2">
-              <div
-                className="w-8 h-8 rounded-full flex-shrink-0"
-                style={{ backgroundColor: group.color }}
-              ></div>
+              <Popover open={openColorPicker === group.id} onOpenChange={(open) => setOpenColorPicker(open ? group.id : null)}>
+                <PopoverTrigger asChild>
+                  <Button
+                    className="w-8 h-8 rounded-full p-0 flex-shrink-0"
+                    style={{ backgroundColor: group.color }}
+                  />
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <HslColorPicker
+                    color={hslStringToObject(group.color)}
+                    onChange={(color) => handleColorChange(group.id, color)}
+                  />
+                </PopoverContent>
+              </Popover>
               <Input
                 value={group.name}
                 onChange={(e) =>
-                  handleGroupChange(index, "name", e.target.value)
+                  handleGroupChange(groups.indexOf(group), "name", e.target.value)
                 }
                 placeholder="Group name"
                 autoFocus={group.id === newGroupId}
