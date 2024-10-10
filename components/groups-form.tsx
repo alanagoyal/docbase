@@ -7,7 +7,7 @@ import debounce from "lodash/debounce"
 import { HslColorPicker, HslColor } from "react-colorful"
 
 import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog"
 import { Input } from "./ui/input"
 import { toast } from "./ui/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
@@ -141,6 +141,9 @@ export function GroupsDialog({ isOpen, onClose, userId }: GroupsDialogProps) {
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Edit Groups</DialogTitle>
+          <DialogDescription>
+            Add, edit, and remove groups for your contacts
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
           {groups.map((group) => (
@@ -150,6 +153,7 @@ export function GroupsDialog({ isOpen, onClose, userId }: GroupsDialogProps) {
                   <Button
                     className="w-8 h-8 rounded-full p-0 flex-shrink-0"
                     style={{ backgroundColor: group.color }}
+                    aria-label={`Change color for ${group.name || 'Unnamed group'}`}
                   />
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -167,10 +171,12 @@ export function GroupsDialog({ isOpen, onClose, userId }: GroupsDialogProps) {
                 placeholder="Group name"
                 autoFocus={group.id === newGroupId}
                 onFocus={() => setNewGroupId(null)}
+                aria-label={`Name for ${group.name || 'Unnamed group'}`}
               />
               <Button
                 variant="ghost"
                 onClick={() => handleRemoveGroup(group.id)}
+                aria-label={`Remove ${group.name || 'Unnamed group'}`}
               >
                 <X className="h-4 w-4" />
               </Button>
