@@ -15,9 +15,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 type Group = { id: string; name: string; color: string }
 
 interface GroupsDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  userId: string
+  isOpen: boolean;
+  onClose: () => void;
+  userId: string;
+  onGroupsChange?: () => void; // Add this new prop
 }
 
 // Add this helper function to convert HSL string to HslColor object
@@ -33,7 +34,7 @@ const hslStringToObject = (hslString: string): HslColor => {
   return { h: 0, s: 0, l: 0 } // Default color if parsing fails
 }
 
-export function GroupsDialog({ isOpen, onClose, userId }: GroupsDialogProps) {
+export function GroupsDialog({ isOpen, onClose, userId, onGroupsChange }: GroupsDialogProps) {
   const [groups, setGroups] = useState<Group[]>([])
   const supabase = createClient()
   const router = useRouter()
@@ -132,6 +133,9 @@ export function GroupsDialog({ isOpen, onClose, userId }: GroupsDialogProps) {
     if (hasChanges) {
       toast({ description: "Groups changes saved successfully" })
       setHasChanges(false)
+      if (onGroupsChange) {
+        onGroupsChange() // Call this function to notify parent component of changes
+      }
     }
     onClose()
   }

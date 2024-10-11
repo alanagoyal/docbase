@@ -306,7 +306,9 @@ export function ContactsTable({
                           style={{
                             backgroundColor: group.color,
                             color: "white",
+                            cursor: "pointer",
                           }}
+                          onClick={() => setIsGroupsDialogOpen(true)}
                         >
                           {group.label}
                         </Badge>
@@ -527,6 +529,7 @@ export function ContactsTable({
             isOpen={isGroupsDialogOpen}
             onClose={() => setIsGroupsDialogOpen(false)}
             userId={account.id}
+            onGroupsChange={() => router.refresh()}
           />
         </div>
       </div>
