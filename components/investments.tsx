@@ -7,7 +7,7 @@ import { createClient } from "@/utils/supabase/client"
 import { Icons } from "./icons"
 import { Share } from "./share"
 import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1000,6 +1000,9 @@ export default function Investments({
         <DialogContent className="flex flex-col max-w-2xl w-full">
           <DialogHeader>
             <DialogTitle>Send Email</DialogTitle>
+            <DialogDescription>
+              Send a summary of the investment terms and documents
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2 flex-grow">
             <div className="space-y-2">
