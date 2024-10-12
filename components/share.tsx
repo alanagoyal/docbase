@@ -149,17 +149,12 @@ export function Share({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogTitle className="sr-only">
+        <DialogTitle>
           Request Founder Information
         </DialogTitle>
-        <DialogDescription className="sr-only">
-          Share investment details with a founder via email or link
+        <DialogDescription>
+          Share investment with a founder via email or link to enter founder and company details
         </DialogDescription>
-        <div className="flex flex-col space-y-2 text-center sm:text-left">
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight">
-            Request Founder Information
-          </h1>
-        </div>
         <Tabs defaultValue="email">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="email">Email</TabsTrigger>
