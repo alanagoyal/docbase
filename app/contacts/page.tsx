@@ -6,6 +6,7 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import ContactForm from "@/components/contact-form"
 import { ContactsTable } from "@/components/contacts"
+import { NewContactButton } from "@/components/new-contact"
 
 export default async function Contacts() {
   const supabase = createClient()
@@ -88,9 +89,7 @@ export default async function Contacts() {
       <h1 className="text-2xl text-center font-bold mb-6">
         You haven&apos;t created <br /> any contacts yet
       </h1>
-      <Link href="/contacts/new">
-        <Button variant="outline">Get Started</Button>
-      </Link>
+      <NewContactButton account={account} groups={formattedGroups} />
     </div>
   )
 }
