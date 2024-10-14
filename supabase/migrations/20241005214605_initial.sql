@@ -24,7 +24,7 @@ create table "public"."contacts" (
     "created_at" timestamp with time zone default now(),
     "created_by" uuid,
     "name" text,
-    "email" text,
+    "email" text not null,
     "updated_at" timestamp with time zone default now(),
     "title" text,
     "is_investor" boolean default false,
