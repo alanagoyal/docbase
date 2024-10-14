@@ -71,7 +71,6 @@ export function ContactsTable({
   >(null)
   const [isNewContactDialogOpen, setIsNewContactDialogOpen] = useState(false)
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false)
-  const [newMessageTo, setNewMessageTo] = useState("")
   const [newMessageSubject, setNewMessageSubject] = useState("")
   const [newMessageBody, setNewMessageBody] = useState("")
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([])
@@ -462,7 +461,6 @@ export function ContactsTable({
             onOpenChange={(open) => {
               if (!open) {
                 setIsNewMessageDialogOpen(false)
-                setNewMessageTo("")
                 setNewMessageSubject("")
                 setNewMessageBody("")
                 setSelectedGroups([])
