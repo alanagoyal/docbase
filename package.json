@@ -46,6 +46,7 @@
     "dompurify": "^3.1.7",
     "encoding": "^0.1.13",
     "html-react-parser": "^5.1.12",
+    "isomorphic-dompurify": "^2.16.0",
     "lucide-react": "^0.221.0",
     "mammoth": "^1.8.0",
     "next": "^14.2.5",
