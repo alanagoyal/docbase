@@ -38,3 +38,21 @@ grant all privileges on all sequences in schema public to postgres, anon, authen
 
 -- Update public.users to include a messages relation
 alter table "public"."users" add column "messages" uuid[];
+
+create or replace function append_message_to_user(user_id uuid, message_id uuid)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  update public.users
+  set messages = array_append(messages, message_id)
+  where id = user_id;
+end;
+$$;
+
+create policy "Users can execute append_message_to_user"
+on public.users
+for all
+to authenticated
+using (true);

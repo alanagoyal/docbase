@@ -3,33 +3,36 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { ContactForm } from "@/components/contact-form"
+import { MessageForm } from "@/components/message-form"
 
-type NewContactButtonProps = {
+type NewMessageButtonProps = {
   account: any
   groups: any[]
+  contacts: any[]
 }
 
-export function NewContactButton({ account, groups }: NewContactButtonProps) {
+export function NewMessageButton({ account, groups, contacts }: NewMessageButtonProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   return (
     <>
       <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
-        Get Started
+        New Message
       </Button>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[625px]">
           <DialogHeader>
-            <DialogTitle>New Contact</DialogTitle>
+            <DialogTitle>New Message</DialogTitle>
             <DialogDescription>
-              Add a new contact to your list
+              Compose and send a new message
             </DialogDescription>
           </DialogHeader>
-          <ContactForm
-            account={account}
+          <MessageForm
+            selectedContactEmail=""
             groups={groups}
-            onSuccess={() => setIsDialogOpen(false)}
+            contacts={contacts}
+            account={account}
+            onClose={() => setIsDialogOpen(false)}
           />
         </DialogContent>
       </Dialog>

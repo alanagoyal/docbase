@@ -2,11 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { selectStyles } from "@/utils/select-styles"
 import { createClient } from "@/utils/supabase/client"
 import { Mail, MailPlus, MenuIcon, Plus, X, UserPlus } from "lucide-react"
-import CreatableSelect from "react-select/creatable"
-
 import { Database } from "@/types/supabase"
 import {
   Table,
@@ -32,17 +29,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
-import { Input } from "./ui/input"
 import { toast } from "./ui/use-toast"
-import "react-quill/dist/quill.snow.css"
-import "@/styles/quill-custom.css"
-import ContactForm from "./contact-form"
-import { Icons } from "./icons"
-import { StyledQuillEditor } from "./quill-editor"
-import { Label } from "./ui/label"
 import { GroupsDialog } from "./groups-form"
+import { MessageForm } from "./message-form"
+import { ContactForm } from "./contact-form"
 
-type Contact = Database["public"]["Tables"]["contacts"]["Row"]
+type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
 type User = Database["public"]["Tables"]["users"]["Row"]
 type Domain = Database["public"]["Tables"]["domains"]["Row"]
 type Group = { value: string; label: string; color: string }
@@ -53,7 +45,7 @@ export function ContactsTable({
   domain,
   groups,
 }: {
-  contacts: (Contact & { groups: Group[] })[]
+  contacts: Contact[]
   account: User
   domain: Domain | null
   groups: Group[]
@@ -61,18 +53,13 @@ export function ContactsTable({
   const supabase = createClient()
   const router = useRouter()
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false)
-  const [emailSubject, setEmailSubject] = useState("")
-  const [emailBody, setEmailBody] = useState("")
   const [selectedContactEmail, setSelectedContactEmail] = useState("")
-  const [isSendingEmail, setIsSendingEmail] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedContact, setSelectedContact] = useState<
     (Contact & { groups: Group[] }) | null
   >(null)
   const [isNewContactDialogOpen, setIsNewContactDialogOpen] = useState(false)
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false)
-  const [newMessageSubject, setNewMessageSubject] = useState("")
-  const [newMessageBody, setNewMessageBody] = useState("")
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([])
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false)
 
@@ -140,22 +127,6 @@ export function ContactsTable({
     })
   }
 
-  const fetchDomainInfo = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("domains")
-        .select("domain_name, sender_name, api_key")
-        .eq("user_id", userId)
-        .single()
-
-      if (error) throw error
-      return data
-    } catch (error) {
-      console.error("Error fetching domain information:", error)
-      return null
-    }
-  }
-
   const customComponents = {
     MultiValue: ({ children, removeProps, ...props }: any) => {
       return (
@@ -173,81 +144,6 @@ export function ContactsTable({
         </Badge>
       )
     },
-  }
-
-  const handleSendEmail = async () => {
-    setIsSendingEmail(true)
-    try {
-      const domainInfo = await fetchDomainInfo(account.id)
-      if (!domainInfo) {
-        throw new Error("Failed to fetch domain information")
-      }
-
-      let to
-      if (selectedContactEmail) {
-        // Single contact email
-        to = selectedContactEmail
-      } else {
-        // Group email
-        const selectedContactEmails = contacts
-          .filter((contact) =>
-            contact.groups.some((group) =>
-              selectedGroups.some((sg) => sg.value === group.value)
-            )
-          )
-          .map((contact) => contact.email)
-
-        to = selectedContactEmails
-          .map((email) => {
-            const contact = contacts.find((c) => c.email === email)
-            return contact?.name ? `${contact.name} <${email}>` : email
-          })
-          .slice(0, 50)
-      }
-
-      const response = await fetch("/api/send-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          to,
-          subject: selectedContactEmail ? emailSubject : newMessageSubject,
-          emailBody: selectedContactEmail ? emailBody : newMessageBody,
-          domainName: domainInfo.domain_name,
-          senderName: domainInfo.sender_name,
-          apiKey: domainInfo.api_key,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error("Error response:", errorData)
-        throw new Error(errorData.error || "Failed to send email")
-      }
-
-      toast({
-        description: "Email sent successfully",
-      })
-
-      setIsEmailDialogOpen(false)
-      setIsNewMessageDialogOpen(false)
-      setEmailSubject("")
-      setEmailBody("")
-      setNewMessageSubject("")
-      setNewMessageBody("")
-      setSelectedContactEmail("")
-      setSelectedGroups([])
-      
-    } catch (error) {
-      console.error("Error sending email:", error)
-      toast({
-        variant: "destructive",
-        description: `Failed to send email: ${error}`,
-      })
-    } finally {
-      setIsSendingEmail(false)
-    }
   }
 
   return (
@@ -357,8 +253,6 @@ export function ContactsTable({
             onOpenChange={(open) => {
               if (!open) {
                 setIsEmailDialogOpen(false)
-                setEmailSubject("")
-                setEmailBody("")
                 setSelectedContactEmail("")
               }
               router.refresh()
@@ -371,37 +265,13 @@ export function ContactsTable({
                   Compose and send an email to the selected contact
                 </DialogDescription>
               </DialogHeader>
-              <div className="flex flex-col gap-2 flex-grow">
-                <div className="space-y-2">
-                  <Label>Subject</Label>
-                  <Input
-                    placeholder="Subject"
-                    value={emailSubject}
-                    onChange={(e) => setEmailSubject(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2 flex-grow">
-                  <Label>Body</Label>
-                  <StyledQuillEditor
-                    value={emailBody}
-                    onChange={setEmailBody}
-                    placeholder="Compose your email..."
-                  />
-                </div>
-                <div>
-                  <Button
-                    onClick={handleSendEmail}
-                    disabled={isSendingEmail}
-                    className="w-full"
-                  >
-                    {isSendingEmail ? (
-                      <Icons.spinner className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Send Email"
-                    )}
-                  </Button>
-                </div>
-              </div>
+              <MessageForm
+                selectedContactEmail={selectedContactEmail}
+                groups={groups}
+                contacts={contacts}
+                account={account}
+                onClose={() => setIsEmailDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
           <Dialog
@@ -461,9 +331,6 @@ export function ContactsTable({
             onOpenChange={(open) => {
               if (!open) {
                 setIsNewMessageDialogOpen(false)
-                setNewMessageSubject("")
-                setNewMessageBody("")
-                setSelectedGroups([])
               }
             }}
           >
@@ -474,53 +341,13 @@ export function ContactsTable({
                   Compose and send a new email to selected groups
                 </DialogDescription>
               </DialogHeader>
-              <div className="flex flex-col gap-2 flex-grow">
-                <div className="space-y-2">
-                  <Label>To</Label>
-                  <CreatableSelect
-                    isMulti
-                    options={groups}
-                    value={selectedGroups}
-                    onChange={(newValue) =>
-                      setSelectedGroups(newValue as Group[])
-                    }
-                    className="basic-multi-select"
-                    classNamePrefix="select"
-                    placeholder="Select groups..."
-                    styles={selectStyles}
-                    components={customComponents}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Subject</Label>
-                  <Input
-                    placeholder="Subject"
-                    value={newMessageSubject}
-                    onChange={(e) => setNewMessageSubject(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2 flex-grow">
-                  <Label>Body</Label>
-                  <StyledQuillEditor
-                    value={newMessageBody}
-                    onChange={setNewMessageBody}
-                    placeholder="Compose your email..."
-                  />
-                </div>
-                <div>
-                  <Button
-                    onClick={handleSendEmail}
-                    disabled={isSendingEmail}
-                    className="w-full"
-                  >
-                    {isSendingEmail ? (
-                      <Icons.spinner className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Send Email"
-                    )}
-                  </Button>
-                </div>
-              </div>
+              <MessageForm
+                selectedContactEmail=""
+                groups={groups}
+                contacts={contacts}
+                account={account}
+                onClose={() => setIsNewMessageDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
           <GroupsDialog

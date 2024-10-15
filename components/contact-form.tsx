@@ -49,7 +49,7 @@ type ContactFormProps = {
   onSuccess?: () => void  
 }
 
-export default function ContactForm({
+export function ContactForm({
   existingContact,
   account,
   groups,

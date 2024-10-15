@@ -1,10 +1,5 @@
-import Link from "next/link"
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-import { Plus } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-import ContactForm from "@/components/contact-form"
 import { ContactsTable } from "@/components/contacts"
 import { NewContactButton } from "@/components/new-contact"
 
