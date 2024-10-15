@@ -17,7 +17,7 @@ export function NewMessageButton({ account, groups, contacts }: NewMessageButton
   return (
     <>
       <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
-        New Message
+        Get Started
       </Button>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[625px]">

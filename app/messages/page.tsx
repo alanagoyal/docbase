@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { MessagesTable } from "@/components/messages"
-import { NewMessageButton } from "@/components/new-message-button"
+import { NewMessageButton } from "@/components/new-message"
 
 export default async function Messages() {
   const supabase = createClient()
