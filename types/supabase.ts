@@ -259,7 +259,14 @@ export type Database = {
           {
             foreignKeyName: "domains_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "domains_user_id_fkey1"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -470,6 +477,44 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          recipient: string
+          sender_id: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          recipient: string
+          sender_id: string
+          status?: string
+          subject: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          recipient?: string
+          sender_id?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       side_letters: {
         Row: {
           created_at: string
@@ -508,6 +553,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          messages: string[] | null
           name: string | null
           title: string | null
           updated_at: string | null
@@ -516,6 +562,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          messages?: string[] | null
           name?: string | null
           title?: string | null
           updated_at?: string | null
@@ -524,6 +571,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          messages?: string[] | null
           name?: string | null
           title?: string | null
           updated_at?: string | null
@@ -567,6 +615,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      append_message_to_user: {
+        Args: {
+          user_id: string
+          message_id: string
+        }
+        Returns: undefined
+      }
       checkIfUser: {
         Args: {
           given_mail: string

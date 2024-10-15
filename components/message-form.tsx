@@ -162,7 +162,7 @@ export function MessageForm({
       }
 
       toast({
-        description: "Email sent successfully and saved to database",
+        description: "Your message has been sent",
       });
 
       onClose();

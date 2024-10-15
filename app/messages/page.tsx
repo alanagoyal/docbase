@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
-
 import { MessagesTable } from "@/components/messages"
 import { NewMessageButton } from "@/components/new-message-button"
 
@@ -42,16 +41,10 @@ export default async function Messages() {
     .select("contact_id, group_id")
     .in("contact_id", contacts?.map((c) => c.id) || [])
 
-  const { data: domain, error: domainError } = await supabase
-    .from("domains")
-    .select("*")
-    .eq("user_id", user.id)
-    .single()
-
-  if (contactsError || groupsError || contactGroupsError || domainError) {
+  if (contactsError || groupsError || contactGroupsError) {
     console.error(
       "Error fetching data:",
-      contactsError || groupsError || contactGroupsError || domainError
+      contactsError || groupsError || contactGroupsError
     )
   }
 
