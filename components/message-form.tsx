@@ -18,14 +18,16 @@ import "@/styles/quill-custom.css"
 import { useRouter } from "next/navigation"
 
 type Group = { value: string; label: string; color: string }
-
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
+type User = Database["public"]["Tables"]["users"]["Row"]
+type Domain = Database["public"]["Tables"]["domains"]["Row"]
 
 interface NewMessageProps {
   selectedContactEmail: string
   groups: Group[]
   contacts: Contact[]
-  account: any
+  account: User
+  domain: Domain | null
   onClose: () => void
 }
 
@@ -34,6 +36,7 @@ export function MessageForm({
   groups,
   contacts,
   account,
+  domain,
   onClose,
 }: NewMessageProps) {
   const supabase = createClient()
@@ -62,27 +65,10 @@ export function MessageForm({
     },
   }
 
-  const fetchDomainInfo = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("domains")
-        .select("domain_name, sender_name, api_key")
-        .eq("user_id", userId)
-        .single()
-
-      if (error) throw error
-      return data
-    } catch (error) {
-      console.error("Error fetching domain information:", error)
-      return null
-    }
-  }
-
   const handleSendEmail = async () => {
     setIsSendingEmail(true);
     try {
-      const domainInfo = await fetchDomainInfo(account.id);
-      if (!domainInfo) {
+      if (!domain) {
         throw new Error("Failed to fetch domain information");
       }
 
@@ -115,9 +101,9 @@ export function MessageForm({
           to,
           subject,
           emailBody: body,
-          domainName: domainInfo.domain_name,
-          senderName: domainInfo.sender_name,
-          apiKey: domainInfo.api_key,
+          domainName: domain.domain_name,
+          senderName: domain.sender_name,
+          apiKey: domain.api_key,
         }),
       });
 

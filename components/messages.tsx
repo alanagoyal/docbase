@@ -22,20 +22,29 @@ import {
 import { MessageForm } from "./message-form"
 import { Button } from "./ui/button"
 import { Database } from "@/types/supabase"
+import { toast } from "./ui/use-toast"
+import { useRouter } from "next/navigation"
 
-type Message = Database['public']['Tables']['messages']['Row']
+type Message = Database["public"]["Tables"]["messages"]["Row"]
+type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
+type User = Database["public"]["Tables"]["users"]["Row"]
+type Domain = Database["public"]["Tables"]["domains"]["Row"]
+type Group = { value: string; label: string; color: string }
 
 export function MessagesTable({
   messages,
   groups,
   contacts,
   account,
+  domain,
 }: {
   messages: Message[]
-  groups: any[]
-  contacts: any[]
-  account: any
+  groups: Group[]
+  contacts: Contact[]
+  account: User
+  domain: Domain | null
 }) {
+  const router = useRouter()
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false)
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
 
@@ -63,7 +72,25 @@ export function MessagesTable({
               <Button
                 variant="ghost"
                 className="w-[150px]"
-                onClick={() => setIsNewMessageDialogOpen(true)}
+                onClick={() => {
+                  if (!domain) {
+                    toast({
+                      title: "Domain required",
+                      description:
+                        "Please add a domain to your account to start sending emails",
+                      action: (
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push("/account?tab=domain")}
+                        >
+                          Account
+                        </Button>
+                      ),
+                    })
+                  } else {
+                    setIsNewMessageDialogOpen(true)
+                  }
+                }}
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline-block ml-2">New</span>
@@ -141,6 +168,7 @@ export function MessagesTable({
             contacts={contacts}
             account={account}
             onClose={() => setIsNewMessageDialogOpen(false)}
+            domain={domain}
           />
         </DialogContent>
       </Dialog>

@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
-import { Mail, MailPlus, MenuIcon, Plus, X, UserPlus } from "lucide-react"
+import { Mail, MailPlus, MenuIcon, Plus, UserPlus, X } from "lucide-react"
+
 import { Database } from "@/types/supabase"
 import {
   Table,
@@ -14,6 +15,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+import { ContactForm } from "./contact-form"
+import { GroupsDialog } from "./groups-form"
+import { MessageForm } from "./message-form"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import {
@@ -30,11 +34,10 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
 import { toast } from "./ui/use-toast"
-import { GroupsDialog } from "./groups-form"
-import { MessageForm } from "./message-form"
-import { ContactForm } from "./contact-form"
 
-type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
+type Contact = Database["public"]["Tables"]["contacts"]["Row"] & {
+  groups: Group[]
+}
 type User = Database["public"]["Tables"]["users"]["Row"]
 type Domain = Database["public"]["Tables"]["domains"]["Row"]
 type Group = { value: string; label: string; color: string }
@@ -60,7 +63,6 @@ export function ContactsTable({
   >(null)
   const [isNewContactDialogOpen, setIsNewContactDialogOpen] = useState(false)
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false)
-  const [selectedGroups, setSelectedGroups] = useState<Group[]>([])
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false)
 
   useEffect(() => {
@@ -162,11 +164,33 @@ export function ContactsTable({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-[150px]">
-              <DropdownMenuItem onSelect={() => setIsNewMessageDialogOpen(true)}>
+              <DropdownMenuItem
+                onSelect={() => {
+                  if (!domain) {
+                    toast({
+                      title: "Domain required",
+                      description:
+                        "Please add a domain to your account to start sending emails",
+                      action: (
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push("/account?tab=domain")}
+                        >
+                          Account
+                        </Button>
+                      ),
+                    })
+                  } else {
+                    setIsNewMessageDialogOpen(true)
+                  }
+                }}
+              >
                 <Mail className="w-4 h-4 mr-2" />
                 Message
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setIsNewContactDialogOpen(true)}>
+              <DropdownMenuItem
+                onSelect={() => setIsNewContactDialogOpen(true)}
+              >
                 <UserPlus className="w-4 h-4 mr-2" />
                 Contact
               </DropdownMenuItem>
@@ -181,7 +205,10 @@ export function ContactsTable({
               <TableRow>
                 <TableHead className="w-1/4">Name</TableHead>
                 <TableHead className="w-1/4">Email</TableHead>
-                <TableHead className="w-1/4 cursor-pointer" onClick={() => setIsGroupsDialogOpen(true)}>
+                <TableHead
+                  className="w-1/4 cursor-pointer"
+                  onClick={() => setIsGroupsDialogOpen(true)}
+                >
                   Groups
                 </TableHead>
                 <TableHead className="w-1/4">Created</TableHead>
@@ -271,6 +298,7 @@ export function ContactsTable({
                 contacts={contacts}
                 account={account}
                 onClose={() => setIsEmailDialogOpen(false)}
+                domain={domain}
               />
             </DialogContent>
           </Dialog>
@@ -347,6 +375,7 @@ export function ContactsTable({
                 contacts={contacts}
                 account={account}
                 onClose={() => setIsNewMessageDialogOpen(false)}
+                domain={domain}
               />
             </DialogContent>
           </Dialog>

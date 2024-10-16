@@ -41,10 +41,16 @@ export default async function Messages() {
     .select("contact_id, group_id")
     .in("contact_id", contacts?.map((c) => c.id) || [])
 
-  if (contactsError || groupsError || contactGroupsError) {
+    const { data: domain, error: domainError } = await supabase
+    .from("domains")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle()
+
+  if (contactsError || groupsError || contactGroupsError || domainError) {
     console.error(
       "Error fetching data:",
-      contactsError || groupsError || contactGroupsError
+      contactsError || groupsError || contactGroupsError || domainError
     )
   }
 
@@ -81,6 +87,7 @@ export default async function Messages() {
       groups={formattedGroups}
       contacts={contactsWithGroups || []}
       account={account}
+      domain={domain}
     />
   ) : (
     <div className="container mx-auto px-4 py-8 flex justify-center items-center flex-col min-h-screen">
@@ -91,6 +98,7 @@ export default async function Messages() {
         account={account}
         groups={formattedGroups}
         contacts={contactsWithGroups || []}
+        domain={domain}
       />
     </div>
   )
