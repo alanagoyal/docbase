@@ -51,10 +51,18 @@ export function MessagesTable({
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 flex">
           <div className={`${selectedMessage ? 'w-1/2 border-r' : 'w-full'} flex flex-col`}>
-            <div className="p-4 border-b flex justify-between items-center">
-              <h1 className="text-2xl font-semibold">Messages</h1>
+            <div className="p-4 pt-10 border-b flex justify-between items-center">
+              {selectedMessage ? (
+                <h1 className="text-2xl font-semibold">Messages</h1>
+              ) : (
+                <>
+                  <div className="w-[150px]"></div>
+                  <h1 className="text-2xl font-semibold flex-grow text-center">Messages</h1>
+                </>
+              )}
               <Button
                 variant="ghost"
+                className="w-[150px]"
                 onClick={() => setIsNewMessageDialogOpen(true)}
               >
                 <Plus className="w-4 h-4" />
