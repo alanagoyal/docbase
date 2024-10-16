@@ -46,7 +46,6 @@ export default async function Contacts() {
       "Error fetching data:",
       contactsError || groupsError || contactGroupsError || domainError
     )
-    // Handle the error appropriately
   }
 
   const formattedGroups =
