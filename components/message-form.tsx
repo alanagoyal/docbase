@@ -13,9 +13,9 @@ import { Badge } from "./ui/badge"
 import { X } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 import { Database } from "@/types/supabase"
+import { useRouter } from "next/navigation"
 import "react-quill/dist/quill.snow.css"
 import "@/styles/quill-custom.css"
-import { useRouter } from "next/navigation"
 
 type Group = { value: string; label: string; color: string }
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { MessageForm } from "@/components/message-form"
 import { Database } from "@/types/supabase"
-import { useRouter } from "next/navigation"
 import { useDomainCheck } from "@/hooks/use-domain-check"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }

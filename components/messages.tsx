@@ -10,20 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-
 import { MessageForm } from "./message-form"
 import { Button } from "./ui/button"
 import { Database } from "@/types/supabase"
-import { toast } from "./ui/use-toast"
-import { useRouter } from "next/navigation"
 import { useDomainCheck } from "@/hooks/use-domain-check"
 
 type Message = Database["public"]["Tables"]["messages"]["Row"]
