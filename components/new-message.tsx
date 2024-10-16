@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { MessageForm } from "@/components/message-form"
 import { Database } from "@/types/supabase"
-import { toast } from "./ui/use-toast"
 import { useRouter } from "next/navigation"
+import { useDomainCheck } from "@/hooks/use-domain-check"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
 type User = Database["public"]["Tables"]["users"]["Row"]
@@ -21,30 +21,16 @@ type NewMessageButtonProps = {
 }
 
 export function NewMessageButton({ account, groups, contacts, domain }: NewMessageButtonProps) {
-  const router = useRouter()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const checkDomain = useDomainCheck(domain)
+
+  const handleNewMessage = () => {
+    checkDomain(() => setIsDialogOpen(true))
+  }
 
   return (
     <>
-      <Button variant="outline" onClick={() => {
-        if (!domain) {
-          toast({
-            title: "Domain required",
-            description:
-              "Please add a domain to your account to start sending emails",
-            action: (
-              <Button
-                variant="outline"
-                onClick={() => router.push("/account?tab=domain")}
-              >
-                Account
-              </Button>
-            ),
-          })
-        } else {
-          setIsDialogOpen(true)
-        }
-      }}>
+      <Button variant="outline" onClick={handleNewMessage}>
         Get Started
       </Button>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

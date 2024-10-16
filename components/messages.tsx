@@ -24,6 +24,7 @@ import { Button } from "./ui/button"
 import { Database } from "@/types/supabase"
 import { toast } from "./ui/use-toast"
 import { useRouter } from "next/navigation"
+import { useDomainCheck } from "@/hooks/use-domain-check"
 
 type Message = Database["public"]["Tables"]["messages"]["Row"]
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
@@ -44,9 +45,9 @@ export function MessagesTable({
   account: User
   domain: Domain | null
 }) {
-  const router = useRouter()
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false)
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
+  const checkDomain = useDomainCheck(domain)
 
   const formatRecipients = (recipients: string) => {
     return recipients
@@ -54,6 +55,10 @@ export function MessagesTable({
       .map(recipient => recipient.split(' <')[0])
       .join(', ');
   };
+
+  const handleNewMessage = () => {
+    checkDomain(() => setIsNewMessageDialogOpen(true))
+  }
 
   return (
     <div className="flex h-screen bg-white">
@@ -72,25 +77,7 @@ export function MessagesTable({
               <Button
                 variant="ghost"
                 className="w-[150px]"
-                onClick={() => {
-                  if (!domain) {
-                    toast({
-                      title: "Domain required",
-                      description:
-                        "Please add a domain to your account to start sending emails",
-                      action: (
-                        <Button
-                          variant="outline"
-                          onClick={() => router.push("/account?tab=domain")}
-                        >
-                          Account
-                        </Button>
-                      ),
-                    })
-                  } else {
-                    setIsNewMessageDialogOpen(true)
-                  }
-                }}
+                onClick={handleNewMessage}
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline-block ml-2">New</span>

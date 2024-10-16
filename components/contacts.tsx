@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { Mail, MailPlus, MenuIcon, Plus, UserPlus, X } from "lucide-react"
-
 import { Database } from "@/types/supabase"
 import {
   Table,
@@ -34,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
 import { toast } from "./ui/use-toast"
+import { useDomainCheck } from "@/hooks/use-domain-check"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & {
   groups: Group[]
@@ -64,6 +64,7 @@ export function ContactsTable({
   const [isNewContactDialogOpen, setIsNewContactDialogOpen] = useState(false)
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false)
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false)
+  const checkDomain = useDomainCheck(domain)
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -85,26 +86,12 @@ export function ContactsTable({
 
   const handleEmailButtonClick = useCallback(
     (contactEmail: string) => {
-      if (!domain) {
-        toast({
-          title: "Domain required",
-          description:
-            "Please add a domain to your account to start sending emails",
-          action: (
-            <Button
-              variant="outline"
-              onClick={() => router.push("/account?tab=domain")}
-            >
-              Account
-            </Button>
-          ),
-        })
-      } else {
+      checkDomain(() => {
         setSelectedContactEmail(contactEmail)
         setIsEmailDialogOpen(true)
-      }
+      })
     },
-    [domain, router]
+    [checkDomain]
   )
 
   async function onDelete(id: string) {
@@ -166,23 +153,7 @@ export function ContactsTable({
             <DropdownMenuContent className="w-[150px]">
               <DropdownMenuItem
                 onSelect={() => {
-                  if (!domain) {
-                    toast({
-                      title: "Domain required",
-                      description:
-                        "Please add a domain to your account to start sending emails",
-                      action: (
-                        <Button
-                          variant="outline"
-                          onClick={() => router.push("/account?tab=domain")}
-                        >
-                          Account
-                        </Button>
-                      ),
-                    })
-                  } else {
-                    setIsNewMessageDialogOpen(true)
-                  }
+                  checkDomain(() => setIsNewMessageDialogOpen(true))
                 }}
               >
                 <Mail className="w-4 h-4 mr-2" />
