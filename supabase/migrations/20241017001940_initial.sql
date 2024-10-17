@@ -105,6 +105,19 @@ create table "public"."links" (
 
 alter table "public"."links" enable row level security;
 
+create table "public"."messages" (
+    "id" uuid not null default gen_random_uuid(),
+    "created_at" timestamp with time zone not null default now(),
+    "sender_id" uuid not null,
+    "recipient" text not null,
+    "subject" text not null,
+    "body" text not null,
+    "status" text not null default 'sent'::text
+);
+
+
+alter table "public"."messages" enable row level security;
+
 create table "public"."side_letters" (
     "id" uuid not null default gen_random_uuid(),
     "created_at" timestamp with time zone not null default now(),
@@ -125,7 +138,8 @@ create table "public"."users" (
     "name" text,
     "updated_at" timestamp without time zone,
     "title" text,
-    "id" uuid not null default gen_random_uuid()
+    "id" uuid not null default gen_random_uuid(),
+    "messages" uuid[]
 );
 
 
@@ -168,6 +182,8 @@ CREATE UNIQUE INDEX investments_pkey ON public.investments USING btree (id);
 
 CREATE UNIQUE INDEX links_pkey ON public.links USING btree (id);
 
+CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id);
+
 CREATE UNIQUE INDEX side_letters_pkey ON public.side_letters USING btree (id);
 
 CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email);
@@ -193,6 +209,8 @@ alter table "public"."groups" add constraint "groups_pkey" PRIMARY KEY using ind
 alter table "public"."investments" add constraint "investments_pkey" PRIMARY KEY using index "investments_pkey";
 
 alter table "public"."links" add constraint "links_pkey" PRIMARY KEY using index "links_pkey";
+
+alter table "public"."messages" add constraint "messages_pkey" PRIMARY KEY using index "messages_pkey";
 
 alter table "public"."side_letters" add constraint "side_letters_pkey" PRIMARY KEY using index "side_letters_pkey";
 
@@ -272,6 +290,10 @@ alter table "public"."links" add constraint "links_created_by_fkey" FOREIGN KEY 
 
 alter table "public"."links" validate constraint "links_created_by_fkey";
 
+alter table "public"."messages" add constraint "messages_sender_id_fkey" FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE not valid;
+
+alter table "public"."messages" validate constraint "messages_sender_id_fkey";
+
 alter table "public"."users" add constraint "users_email_key" UNIQUE using index "users_email_key";
 
 alter table "public"."users" add constraint "users_name_email_unique" UNIQUE using index "users_name_email_unique";
@@ -281,6 +303,19 @@ alter table "public"."viewers" add constraint "viewers_link_id_fkey" FOREIGN KEY
 alter table "public"."viewers" validate constraint "viewers_link_id_fkey";
 
 set check_function_bodies = off;
+
+CREATE OR REPLACE FUNCTION public.append_message_to_user(user_id uuid, message_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+begin
+  update public.users
+  set messages = array_append(messages, message_id)
+  where id = user_id;
+end;
+$function$
+;
 
 CREATE OR REPLACE FUNCTION public."checkIfUser"(given_mail text)
  RETURNS boolean
@@ -1128,6 +1163,48 @@ grant truncate on table "public"."links" to "service_role";
 
 grant update on table "public"."links" to "service_role";
 
+grant delete on table "public"."messages" to "anon";
+
+grant insert on table "public"."messages" to "anon";
+
+grant references on table "public"."messages" to "anon";
+
+grant select on table "public"."messages" to "anon";
+
+grant trigger on table "public"."messages" to "anon";
+
+grant truncate on table "public"."messages" to "anon";
+
+grant update on table "public"."messages" to "anon";
+
+grant delete on table "public"."messages" to "authenticated";
+
+grant insert on table "public"."messages" to "authenticated";
+
+grant references on table "public"."messages" to "authenticated";
+
+grant select on table "public"."messages" to "authenticated";
+
+grant trigger on table "public"."messages" to "authenticated";
+
+grant truncate on table "public"."messages" to "authenticated";
+
+grant update on table "public"."messages" to "authenticated";
+
+grant delete on table "public"."messages" to "service_role";
+
+grant insert on table "public"."messages" to "service_role";
+
+grant references on table "public"."messages" to "service_role";
+
+grant select on table "public"."messages" to "service_role";
+
+grant trigger on table "public"."messages" to "service_role";
+
+grant truncate on table "public"."messages" to "service_role";
+
+grant update on table "public"."messages" to "service_role";
+
 grant delete on table "public"."side_letters" to "anon";
 
 grant insert on table "public"."side_letters" to "anon";
@@ -1460,6 +1537,22 @@ to authenticated
 with check (true);
 
 
+create policy "Users can insert their own messages"
+on "public"."messages"
+as permissive
+for insert
+to authenticated
+with check ((auth.uid() = sender_id));
+
+
+create policy "Users can select their own messages"
+on "public"."messages"
+as permissive
+for select
+to authenticated
+using ((auth.uid() = sender_id));
+
+
 create policy "Authenticated users can insert side letters"
 on "public"."side_letters"
 as permissive
@@ -1510,6 +1603,14 @@ as permissive
 for delete
 to authenticated
 using ((auth.uid() = id));
+
+
+create policy "Users can execute append_message_to_user"
+on "public"."users"
+as permissive
+for all
+to authenticated
+using (true);
 
 
 create policy "Users can read own account"
