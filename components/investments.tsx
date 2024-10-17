@@ -281,10 +281,7 @@ export default function Investments({
   async function sendEmail(investment: UserInvestment) {
     setIsSendingEmail(true)
     try {
-      const emailContentToSend = editableEmailContent.replace(
-        /<br\s*\/?>/gi,
-        ""
-      )
+      const emailContentToSend = editableEmailContent.replace(/<br\s*\/?>/gi, "")
 
       const body = {
         investmentData: investment,
@@ -307,11 +304,43 @@ export default function Investments({
         throw new Error(`Failed to send email: ${errorText}`)
       }
 
+      // Add message to the database
+      const { data: messageData, error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          sender_id: account.id,
+          recipient: emailTo,
+          subject: emailSubject,
+          body: emailContentToSend,
+          status: 'sent'
+        })
+        .select()
+
+      if (messageError) {
+        console.error("Error inserting message into database:", messageError)
+        throw new Error("Failed to save message in database")
+      }
+
+      if (!messageData || messageData.length === 0) {
+        throw new Error("No data returned after inserting message")
+      }
+
+      // Update user's messages array
+      const newMessageId = messageData[0].id
+      const { error: userUpdateError } = await supabase
+        .rpc('append_message_to_user', {
+          user_id: account.id,
+          message_id: newMessageId
+        })
+
+      if (userUpdateError) {
+        console.error("Error updating user's messages array:", userUpdateError)
+        // Consider whether you want to throw an error here or just log it
+      }
+
       toast({
         title: "Email sent",
-        description: `The email has been sent to ${
-          investment.founder?.email || "the founder's email"
-        }`,
+        description: `The email has been sent to ${emailTo}`,
       })
     } catch (error) {
       console.error("Error in sendEmail function:", error)

@@ -72,6 +72,31 @@
   }
 }
 
+.safe-html a {
+  color: #0000EE;
+  text-decoration: underline;
+}
+
+.safe-html a:visited {
+  color: #551A8B;
+}
+
+.safe-html a:hover, .safe-html a:focus {
+  text-decoration: none;
+}
+
+.safe-html {
+  white-space: pre-wrap;
+}
+
+.safe-html p {
+  margin: 0;
+}
+
+.safe-html p + p {
+  margin-top: 2em;
+}
+
 @layer base {
   * {
     @apply border-border;
