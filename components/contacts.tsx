@@ -33,6 +33,7 @@ import {
 } from "./ui/dropdown-menu"
 import { toast } from "./ui/use-toast"
 import { useDomainCheck } from "@/hooks/use-domain-check"
+import { ToastAction } from "./ui/toast"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & {
   groups: Group[]
@@ -95,13 +96,40 @@ export function ContactsTable({
 
   async function onDelete(id: string) {
     try {
-      let { error } = await supabase.from("contacts").delete().eq("id", id)
-      if (error) throw error
+      const { error, status } = await supabase
+        .from("contacts")
+        .delete()
+        .eq("id", id)
+
+      if (status === 409 || error?.code === "23503") {
+        // Conflict error or Foreign key violation
+        toast({
+          title: "Unable to delete contact",
+          description: "This contact is associated with an investment and cannot be deleted. Please remove the contact from the investment first.",
+          action: (
+            <ToastAction
+              altText="Investments"
+              onClick={() => router.push("/investments")}
+            >
+              Investments
+            </ToastAction>
+          ),
+        })
+      } else if (error) {
+        throw error
+      } else {
+        toast({
+          description: "Your contact has been deleted",
+        })
+        router.refresh()
+      }
+    } catch (error) {
+      console.error("Error deleting contact:", error)
       toast({
-        description: "Your contact has been deleted",
+        title: "Error",
+        description: "An error occurred while deleting the contact. Please try again.",
       })
-      router.refresh()
-    } catch (error) {}
+    }
   }
 
   const formatDate = (dateString: string | null) => {
