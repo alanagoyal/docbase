@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Mail, X, Plus } from "lucide-react"
 import { SafeHtml } from "./safe-html"
 import {
@@ -36,6 +36,7 @@ export function MessagesTable({
 }) {
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false)
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null)
   const checkDomain = useDomainCheck(domain)
 
   const formatRecipients = (recipients: string) => {
@@ -49,19 +50,23 @@ export function MessagesTable({
     checkDomain(() => setIsNewMessageDialogOpen(true))
   }
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && selectedMessage) {
-        setSelectedMessage(null)
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Escape' && selectedMessage) {
+      setSelectedMessage(null)
+    } else if (event.key === 'p' && hoveredMessageId) {
+      const message = messages.find(m => m.id === hoveredMessageId)
+      if (message) {
+        setSelectedMessage(message)
       }
     }
+  }, [selectedMessage, hoveredMessageId, messages])
 
+  useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [selectedMessage])
+  }, [handleKeyDown])
 
   return (
     <div className="flex h-screen bg-white">
@@ -94,6 +99,8 @@ export function MessagesTable({
                     selectedMessage?.id === message.id ? 'bg-blue-50' : ''
                   }`}
                   onClick={() => setSelectedMessage(message)}
+                  onMouseEnter={() => setHoveredMessageId(message.id)}
+                  onMouseLeave={() => setHoveredMessageId(null)}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-semibold">{message.subject}</span>
