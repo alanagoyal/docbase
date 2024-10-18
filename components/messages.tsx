@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Mail, X, Plus } from "lucide-react"
 import { SafeHtml } from "./safe-html"
 import {
@@ -48,6 +48,20 @@ export function MessagesTable({
   const handleNewMessage = () => {
     checkDomain(() => setIsNewMessageDialogOpen(true))
   }
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && selectedMessage) {
+        setSelectedMessage(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [selectedMessage])
 
   return (
     <div className="flex h-screen bg-white">
