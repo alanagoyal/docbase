@@ -139,7 +139,7 @@ export function MessagesTable({
   }, [handleKeyDown])
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen">
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 flex">
           <div className={`${selectedMessage ? 'w-1/2 border-r' : 'w-full'} flex flex-col`}>
@@ -166,8 +166,8 @@ export function MessagesTable({
                 <div
                   key={message.id}
                   id={`message-${message.id}`}
-                  className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${
-                    selectedIndex === index ? 'bg-blue-50' : ''
+                  className={`p-4 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                    selectedIndex === index ? 'bg-gray-100 dark:bg-gray-800' : ''
                   }`}
                   onClick={() => {
                     setSelectedMessage(message)
