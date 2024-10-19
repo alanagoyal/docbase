@@ -14,7 +14,7 @@ type User = Database["public"]["Tables"]["users"]["Row"]
 export function SiteHeader({ account }: { account: User }) {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center">
           <Link href="/" className="hidden md:flex text-2xl font-semibold mr-6">
             <span
