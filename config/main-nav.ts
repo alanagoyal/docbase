@@ -4,7 +4,7 @@ export interface MenuItem {
   icon: LucideIcon;
   label: string;
   shortcut: string;
-  href?: string;
+  href: string;
   action?: string;
   darkIcon?: LucideIcon;
 }
