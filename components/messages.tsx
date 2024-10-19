@@ -187,7 +187,7 @@ export function MessagesTable({
                     <span>{formatRecipients(message.recipient)}</span>
                   </div>
                   <div className="text-sm text-gray-600 mt-1 line-clamp-2">
-                    <SafeHtml html={message.body.slice(0, 100)} />
+                    <SafeHtml html={message.body} />
                   </div>
                 </div>
               ))}
