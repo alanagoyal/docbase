@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
@@ -45,6 +45,7 @@ export function MessageForm({
   const [body, setBody] = useState("")
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([])
   const [isSendingEmail, setIsSendingEmail] = useState(false)
+  const subjectInputRef = useRef<HTMLInputElement>(null)
 
   const customComponents = {
     MultiValue: ({ children, removeProps, ...props }: any) => {
@@ -63,6 +64,13 @@ export function MessageForm({
         </Badge>
       )
     },
+  }
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Tab' && !event.shiftKey) {
+      event.preventDefault()
+      subjectInputRef.current?.focus()
+    }
   }
 
   const handleSendEmail = async () => {
@@ -179,6 +187,7 @@ export function MessageForm({
             placeholder="Select groups..."
             styles={selectStyles}
             components={customComponents}
+            onKeyDown={handleKeyDown}
           />
         </div>
       )}
@@ -188,6 +197,7 @@ export function MessageForm({
           placeholder="Subject"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
+          ref={subjectInputRef}
         />
       </div>
       <div className="space-y-2 flex-grow">
