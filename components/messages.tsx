@@ -37,6 +37,7 @@ export function MessagesTable({
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false)
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const checkDomain = useDomainCheck(domain)
 
   const formatRecipients = (recipients: string) => {
@@ -53,13 +54,37 @@ export function MessagesTable({
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key === 'Escape' && selectedMessage) {
       setSelectedMessage(null)
+      setSelectedIndex(null)
     } else if (event.key === 'p' && hoveredMessageId) {
-      const message = messages.find(m => m.id === hoveredMessageId)
-      if (message) {
-        setSelectedMessage(message)
+      const index = messages.findIndex(m => m.id === hoveredMessageId)
+      if (index !== -1) {
+        setSelectedMessage(messages[index])
+        setSelectedIndex(index)
+      }
+    } else if (selectedMessage) {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault() // Prevent default scrolling
+        setSelectedIndex((prevIndex) => {
+          if (prevIndex === null) return 0
+          const newIndex = event.key === 'ArrowDown'
+            ? (prevIndex + 1) % messages.length
+            : (prevIndex - 1 + messages.length) % messages.length
+          return newIndex
+        })
       }
     }
   }, [selectedMessage, hoveredMessageId, messages])
+
+  useEffect(() => {
+    if (selectedIndex !== null) {
+      setSelectedMessage(messages[selectedIndex])
+      // Scroll the selected message into view
+      const messageElement = document.getElementById(`message-${messages[selectedIndex].id}`)
+      if (messageElement) {
+        messageElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }
+  }, [selectedIndex, messages])
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -92,13 +117,17 @@ export function MessagesTable({
               </Button>
             </div>
             <div className="overflow-auto flex-1">
-              {messages.map((message) => (
+              {messages.map((message, index) => (
                 <div
                   key={message.id}
+                  id={`message-${message.id}`}
                   className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${
-                    selectedMessage?.id === message.id ? 'bg-blue-50' : ''
+                    selectedIndex === index ? 'bg-blue-50' : ''
                   }`}
-                  onClick={() => setSelectedMessage(message)}
+                  onClick={() => {
+                    setSelectedMessage(message)
+                    setSelectedIndex(index)
+                  }}
                   onMouseEnter={() => setHoveredMessageId(message.id)}
                   onMouseLeave={() => setHoveredMessageId(null)}
                 >
@@ -143,7 +172,6 @@ export function MessagesTable({
           )}
         </main>
       </div>
-      
       <Dialog
         open={isNewMessageDialogOpen}
         onOpenChange={(open) => {
