@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { MenuIcon } from "lucide-react"
+import { isTyping } from "@/utils/is-typing"
 
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
@@ -37,13 +38,20 @@ type Link = Database["public"]["Tables"]["links"]["Row"] & {
 }
 
 export function Links({ links, account }: { links: Link[]; account: User }) {
-  const [searchTerm, setSearchTerm] = useState("")
   const supabase = createClient()
   const router = useRouter()
 
-  const filteredLinks = links.filter((link) =>
-    link.filename?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "n" && !isTyping()) {
+        e.preventDefault()
+        router.push("/links/new")
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [router])
 
   const handleCopyLink = (linkId: string) => {
     const link = `${process.env.NEXT_PUBLIC_SITE_URL}/links/view/${linkId}`
@@ -102,7 +110,7 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredLinks.map((link) => (
+            {links.map((link) => (
               <TableRow key={link.id}>
                 <TableCell className="font-medium">{link.filename}</TableCell>
                 <TableCell>

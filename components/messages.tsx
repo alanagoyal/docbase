@@ -27,7 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-
+import { isTyping } from "@/utils/is-typing"
 
 type Message = Database["public"]["Tables"]["messages"]["Row"]
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
@@ -137,6 +137,18 @@ export function MessagesTable({
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [handleKeyDown])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "n" && !isTyping()) {
+        e.preventDefault()
+        checkDomain(() => setIsNewMessageDialogOpen(true))
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [checkDomain])
 
   return (
     <div className="flex h-screen">

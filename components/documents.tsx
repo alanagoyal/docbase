@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { Download, MenuIcon } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -26,6 +28,7 @@ import {
 } from "@/components/ui/tooltip"
 
 import { toast } from "./ui/use-toast"
+import { isTyping } from "@/utils/is-typing"
 
 type Document = {
   id: string
@@ -35,6 +38,7 @@ type Document = {
   created_at: string
 }
 export function Documents({ documents }: { documents: Document[] }) {
+  const router = useRouter()
   const getEditLink = (document: Document) => {
     const fileName = document.document_name.toLowerCase()
     if (fileName.includes("safe") || fileName.includes("side letter")) {
@@ -80,6 +84,18 @@ export function Documents({ documents }: { documents: Document[] }) {
       timeZone: "UTC",
     })
   }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "n" && !isTyping()) {
+        e.preventDefault()
+        router.push("/links/new")
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [router])
 
   return (
     <TooltipProvider>

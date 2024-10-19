@@ -34,6 +34,7 @@ import {
 import { toast } from "./ui/use-toast"
 import { useDomainCheck } from "@/hooks/use-domain-check"
 import { ToastAction } from "./ui/toast"
+import { isTyping } from "@/utils/is-typing"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & {
   groups: Group[]
@@ -62,7 +63,6 @@ export function ContactsTable({
     (Contact & { groups: Group[] }) | null
   >(null)
   const [isNewContactDialogOpen, setIsNewContactDialogOpen] = useState(false)
-  const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false)
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false)
   const checkDomain = useDomainCheck(domain)
 
@@ -76,6 +76,18 @@ export function ContactsTable({
     return () => {
       document.removeEventListener("click", handleGlobalClick)
     }
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "n" && !isTyping()) {
+        e.preventDefault()
+        setIsNewContactDialogOpen(true)
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
   }, [])
 
   const handleEditDialogClose = useCallback(() => {
@@ -170,30 +182,14 @@ export function ContactsTable({
           Contacts
         </h1>
         <div className="flex space-x-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-[150px]">
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline-block ml-2">New</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[150px]">
-              <DropdownMenuItem
-                onSelect={() => {
-                  checkDomain(() => setIsNewMessageDialogOpen(true))
-                }}
-              >
-                <Mail className="w-4 h-4 mr-2" />
-                Message
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => setIsNewContactDialogOpen(true)}
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Contact
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            className="w-[150px]"
+            onClick={() => setIsNewContactDialogOpen(true)}
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline-block ml-2">New</span>
+          </Button>
         </div>
       </div>
       <div className="max-w-5xl mx-auto">
@@ -349,31 +345,6 @@ export function ContactsTable({
                   setIsNewContactDialogOpen(false)
                   router.refresh()
                 }}
-              />
-            </DialogContent>
-          </Dialog>
-          <Dialog
-            open={isNewMessageDialogOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                setIsNewMessageDialogOpen(false)
-              }
-            }}
-          >
-            <DialogContent className="flex flex-col max-w-2xl w-full">
-              <DialogHeader>
-                <DialogTitle>New Message</DialogTitle>
-                <DialogDescription>
-                  Compose and send a new email to selected groups
-                </DialogDescription>
-              </DialogHeader>
-              <MessageForm
-                selectedContactEmail=""
-                groups={groups}
-                contacts={contacts}
-                account={account}
-                onClose={() => setIsNewMessageDialogOpen(false)}
-                domain={domain}
               />
             </DialogContent>
           </Dialog>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 
@@ -49,6 +49,7 @@ import {
 import "@/styles/quill-custom.css"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
+import { isTyping } from "@/utils/is-typing"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -101,6 +102,18 @@ export default function Investments({
   const [emailTo, setEmailTo] = useState("")
   const [emailCc, setEmailCc] = useState("")
   const [emailSubject, setEmailSubject] = useState("")
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "n" && !isTyping()) {
+        e.preventDefault()
+        router.push("/investments/new")
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [router])
 
   const handleShareClick = (investment: UserInvestment) => {
     setSelectedInvestment(investment)
