@@ -748,7 +748,7 @@ $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.select_link(link_id uuid)
- RETURNS TABLE(id uuid, created_at timestamp with time zone, url text, password text, expires timestamp with time zone, filename text, created_by uuid)
+ RETURNS TABLE(id uuid, created_at timestamp with time zone, url text, password text, expires timestamp with time zone, filename text, created_by uuid, creator_name text)
  LANGUAGE plpgsql
  SECURITY DEFINER
 AS $function$
@@ -761,9 +761,12 @@ BEGIN
         l.password,
         l.expires,
         l.filename,
-        l.created_by
+        l.created_by,
+        u.name AS creator_name
     FROM
         links l
+    LEFT JOIN
+        users u ON l.created_by = u.id
     WHERE
         l.id = link_id;
 END;
