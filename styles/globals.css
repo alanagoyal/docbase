@@ -93,10 +93,6 @@
   margin: 0;
 }
 
-.safe-html p + p {
-  margin-top: 2em;
-}
-
 @layer base {
   * {
     @apply border-border;

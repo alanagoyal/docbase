@@ -1,4 +1,5 @@
 import { Resend } from "resend"
+import { EmailTemplate } from "@/components/templates/email-investment"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
       to: to,
       cc: cc,
       subject: subject,
-      html: emailContent,
+      react: EmailTemplate({ emailContent }),
     })
 
     if (error) {

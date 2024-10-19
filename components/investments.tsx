@@ -281,11 +281,12 @@ export default function Investments({
   async function sendEmail(investment: UserInvestment) {
     setIsSendingEmail(true)
     try {
-      const emailContentToSend = editableEmailContent.replace(/<br\s*\/?>/gi, "")
+      // Convert <br> tags to newline characters
+      const emailContent = editableEmailContent.replace(/<br\s*\/?>/gi, "\n")
 
       const body = {
         investmentData: investment,
-        emailContent: emailContentToSend,
+        emailContent,
         to: emailTo,
         cc: emailCc,
         subject: emailSubject,
@@ -311,7 +312,7 @@ export default function Investments({
           sender_id: account.id,
           recipient: emailTo,
           subject: emailSubject,
-          body: emailContentToSend,
+          body: emailContent, // Use the version with newline characters
           status: 'sent'
         })
         .select()
