@@ -14,6 +14,20 @@ import { MessageForm } from "./message-form"
 import { Button } from "./ui/button"
 import { Database } from "@/types/supabase"
 import { useDomainCheck } from "@/hooks/use-domain-check"
+import { createClient } from "@/utils/supabase/client"
+import { toast } from "./ui/use-toast"
+import { useRouter } from "next/navigation"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 
 type Message = Database["public"]["Tables"]["messages"]["Row"]
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
@@ -38,8 +52,12 @@ export function MessagesTable({
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null)
   const checkDomain = useDomainCheck(domain)
-
+  const supabase = createClient()
+  const router = useRouter()
+  
   const formatRecipients = (recipients: string) => {
     return recipients
       .split(', ')
@@ -49,6 +67,28 @@ export function MessagesTable({
 
   const handleNewMessage = () => {
     checkDomain(() => setIsNewMessageDialogOpen(true))
+  }
+
+  const deleteMessage = async (messageId: string) => {
+    console.log("Deleting message:", messageId)
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId)
+
+    if (error) {
+      console.error('Error deleting message:', error)
+      toast({
+        variant: 'destructive',
+        title: 'Failed to delete message',
+        description: error.message,
+      })
+    } else {
+      toast({
+        description: 'Message deleted successfully',
+      })
+      router.refresh()
+    }
   }
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
@@ -72,6 +112,11 @@ export function MessagesTable({
           return newIndex
         })
       }
+    }
+    if (event.key === 'd' && hoveredMessageId) {
+      event.preventDefault()
+      setMessageToDelete(hoveredMessageId)
+      setIsDeleteDialogOpen(true)
     }
   }, [selectedMessage, hoveredMessageId, messages])
 
@@ -197,6 +242,28 @@ export function MessagesTable({
           />
         </DialogContent>
       </Dialog>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the message. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (messageToDelete) {
+                deleteMessage(messageToDelete)
+                setMessageToDelete(null)
+              }
+              setIsDeleteDialogOpen(false)
+            }}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

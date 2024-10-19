@@ -1555,6 +1555,12 @@ for select
 to authenticated
 using ((auth.uid() = sender_id));
 
+create policy "Users can delete their own messages"
+on "public"."messages"
+as permissive
+for delete
+to authenticated
+using (auth.uid() = sender_id);
 
 create policy "Authenticated users can insert side letters"
 on "public"."side_letters"
