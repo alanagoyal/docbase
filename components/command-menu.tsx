@@ -8,7 +8,6 @@ import {
   CommandItem,
   CommandList,
   CommandShortcut,
-  CommandSeparator,
 } from "./ui/command";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -17,6 +16,7 @@ import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
 import { VisuallyHidden } from "./ui/visually-hidden";
 import { menuItems } from "@/config/user-nav";
+import { mainNavItems } from "@/config/main-nav";
 
 const isTyping = () => {
   const activeElement = document.activeElement;
@@ -24,7 +24,7 @@ const isTyping = () => {
     activeElement instanceof HTMLInputElement ||
     activeElement instanceof HTMLTextAreaElement ||
     (activeElement instanceof HTMLElement && activeElement.isContentEditable) ||
-    activeElement?.closest('[role="combobox"]') !== null // Check for select component
+    activeElement?.closest('[role="combobox"]') !== null
   );
 };
 
@@ -57,7 +57,8 @@ export function CommandMenu() {
           setOpen((open) => !open);
         } else {
           const pressedKey = e.key.toLowerCase();
-          const matchedItem = menuItems.find(item => item.shortcut.toLowerCase() === pressedKey);
+          const allItems = [...menuItems, ...mainNavItems];
+          const matchedItem = allItems.find(item => item.shortcut.toLowerCase() === pressedKey);
           
           if (matchedItem) {
             e.preventDefault();
@@ -78,7 +79,8 @@ export function CommandMenu() {
   }, [router, theme, setTheme, navigateAndCloseDialog, handleSignOut]);
 
   const handleSelect = useCallback((value: string) => {
-    const selectedItem = menuItems.find(item => 
+    const allItems = [...menuItems, ...mainNavItems];
+    const selectedItem = allItems.find(item => 
       item.href === `/${value}` || item.action === value
     );
     if (selectedItem) {
@@ -106,26 +108,24 @@ export function CommandMenu() {
       <CommandInput placeholder="Type a command or search..." />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup>
-          {menuItems.map((item, index) => (
-            <React.Fragment key={index}>
-              {item.action === "logout" && <CommandSeparator />}
-              <CommandItem 
-                onSelect={() => handleSelect(item.href?.slice(1) || item.action || '')}
-              >
-                {item.action === "theme" ? (
-                  theme === "light" ? (
-                    <Moon className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Sun className="mr-2 h-4 w-4" />
-                  )
+        <CommandGroup heading="Menu">
+          {[...mainNavItems, ...menuItems].map((item, index) => (
+            <CommandItem 
+              key={index}
+              onSelect={() => handleSelect(item.href?.slice(1) || item.action || '')}
+            >
+              {item.action === "theme" ? (
+                theme === "light" ? (
+                  <Moon className="mr-2 h-4 w-4" />
                 ) : (
-                  <item.icon className="mr-2 h-4 w-4" />
-                )}
-                <span>{item.label}</span>
-                <CommandShortcut>{item.shortcut}</CommandShortcut>
-              </CommandItem>
-            </React.Fragment>
+                  <Sun className="mr-2 h-4 w-4" />
+                )
+              ) : (
+                <item.icon className="mr-2 h-4 w-4" />
+              )}
+              <span>{item.label}</span>
+              <CommandShortcut>{item.shortcut}</CommandShortcut>
+            </CommandItem>
           ))}
         </CommandGroup>
       </CommandList>
