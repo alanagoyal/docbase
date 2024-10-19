@@ -1,6 +1,6 @@
 import { Link, Briefcase, User, Mail, LucideIcon } from "lucide-react";
 
-export interface MenuItem {
+export interface MainNavItem {
   icon: LucideIcon;
   label: string;
   shortcut: string;
@@ -9,7 +9,7 @@ export interface MenuItem {
   darkIcon?: LucideIcon;
 }
 
-export const mainNavItems: MenuItem[] = [
+export const mainNavItems: MainNavItem[] = [
   { href: "/links", label: "Links", shortcut: "L", icon: Link },
   { href: "/investments", label: "Investments", shortcut: "I", icon: Briefcase },
   { href: "/contacts", label: "Contacts", shortcut: "C", icon: User },
