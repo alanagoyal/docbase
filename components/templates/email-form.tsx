@@ -1,5 +1,6 @@
-import { Database } from "@/types/supabase"
 import * as React from "react"
+
+import { Database } from "@/types/supabase"
 
 type Fund = Database["public"]["Tables"]["funds"]["Row"]
 type Investor = Database["public"]["Tables"]["users"]["Row"]
@@ -19,11 +20,14 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
 }) => (
   <div>
     <p>Hi {name.split(" ")[0]},</p>
+    <br />
     <p>
-      {investor.name && investor.name.split(" ")[0]} from {fund.name} wants to make an investment
-      in your company. Please follow <a href={url}>this link</a> to enter your
-      information for the SAFE Agreement.
+      {investor.name && investor.name.split(" ")[0]} from {fund.name} wants to
+      make an investment in your company. Please follow{" "}
+      <a href={url}>this link</a> to enter your information for the SAFE
+      Agreement.
     </p>
+    <br />
     <p>
       Please note that your information will only be shared with {investor.name}{" "}
       from {fund.name} for the purposes of drafting the SAFE Agreement. Once
