@@ -30,16 +30,15 @@ const linkFormSchema = z.object({
 
 type Link = Database["public"]["Tables"]["links"]["Row"]
 type LinkFormValues = z.infer<typeof linkFormSchema>
+type User = Database["public"]["Tables"]["users"]["Row"]
 
-const defaultValues: Partial<LinkFormValues> = {
-  email: "",
-  password: "",
-}
-
-export default function ViewLinkForm({ link }: { link: Link }) {
+export default function ViewLinkForm({ link, account }: { link: Link, account: User }) {
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
-    defaultValues,
+    defaultValues: {
+      email: account?.email || "",
+      password: "",
+    },
   })
   const supabase = createClient()
   const passwordRequired = link?.password ? true : false
@@ -51,7 +50,7 @@ export default function ViewLinkForm({ link }: { link: Link }) {
       })
       return
     }
-    
+
     // Log viewer
     const updates = {
       link_id: link.id,
@@ -60,18 +59,37 @@ export default function ViewLinkForm({ link }: { link: Link }) {
     }
     await supabase.from("viewers").insert(updates)
 
-    if (!passwordRequired) {
-      window.open(link?.url, "_blank")
-      return
+    if (passwordRequired) {
+      // Check password
+      if (!bcrypt.compareSync(data.password!, link.password!)) {
+        toast({
+          description: "Incorrect password",
+        })
+        return
+      }
     }
 
-    // check password
-    if (bcrypt.compareSync(data.password!, link.password!)) {
-      window.open(link?.url, "_blank")
+    if (account) {
+      // Redirect to the link URL if the user is already authenticated
+      window.location.href = link.url
     } else {
-      toast({
-        description: "Incorrect password",
+      // Send magic link for unauthenticated users
+      const { error } = await supabase.auth.signInWithOtp({
+        email: data.email,
+        options: {
+          emailRedirectTo: link.url,
+        },
       })
+
+      if (error) {
+        toast({
+          description: "Error sending magic link. Please try again.",
+        })
+      } else {
+        toast({
+          description: "Magic link sent. Please check your email.",
+        })
+      }
     }
   }
 
@@ -89,7 +107,9 @@ export default function ViewLinkForm({ link }: { link: Link }) {
                     Email
                   </FormLabel>
                   <FormDescription className="pr-4">
-                    Please enter your email to view this document
+                    {account
+                      ? "Your email address will only be shared with the document owner"
+                      : "Please enter your email to receive a magic link"}
                   </FormDescription>
                 </div>
                 <FormControl>
@@ -98,6 +118,8 @@ export default function ViewLinkForm({ link }: { link: Link }) {
                     className="w-[200px]"
                     {...field}
                     autoComplete="off"
+                    disabled={!!account}
+                    value={account?.email || field.value}
                   />
                 </FormControl>
               </FormItem>
@@ -132,7 +154,7 @@ export default function ViewLinkForm({ link }: { link: Link }) {
           )}
           <div className="space-y-4">
             <Button type="submit" className="w-full">
-              View Document
+              {account ? "View Document" : "Send Magic Link"}
             </Button>
           </div>
         </form>

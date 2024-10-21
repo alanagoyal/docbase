@@ -40,6 +40,19 @@ export async function generateMetadata({
 export default async function Doc({ params }: { params: { id: string } }) {
   const supabase = createClient()
   const id = params.id
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data: account, error: accountError } = await supabase
+    .from("users")
+    .select()
+    .eq("id", user?.id)
+    .single()
+
+  if (accountError) {
+    console.error(accountError)
+  }
 
   const { data: link } = (await supabase
     .rpc("select_link", {
@@ -61,7 +74,7 @@ export default async function Doc({ params }: { params: { id: string } }) {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6 text-center">{link.filename}</h1>
-      <ViewLinkForm link={link} />
+      <ViewLinkForm link={link} account={account} />
     </div>
   )
 }
