@@ -30,5 +30,9 @@ export const EmailTemplate: React.FC<Readonly<EmailTemplateProps>> = ({
       submitted, they will reach out to you to get your approval before
       circulating the agreement for e-signing.
     </p>
+    <br />
+    <div>
+      Sent via <a href={process.env.NEXT_PUBLIC_SITE_URL}>DocBase</a>
+    </div>
   </div>
 )
