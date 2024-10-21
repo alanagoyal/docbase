@@ -83,11 +83,13 @@ export default function ViewLinkForm({ link, account }: { link: Link, account: U
 
       if (error) {
         toast({
-          description: "Error sending magic link. Please try again.",
+          title: "Failed to send magic link",
+          description: error.message,
         })
       } else {
         toast({
-          description: "Magic link sent. Please check your email.",
+          title: "Magic link sent to " + data.email,
+          description: "Please click the link in your email to continue",
         })
       }
     }
