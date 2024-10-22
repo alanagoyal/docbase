@@ -6,6 +6,7 @@ import * as bcrypt from "bcryptjs"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 
+import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -17,7 +18,6 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
-import { Database } from "@/types/supabase"
 
 const linkFormSchema = z.object({
   email: z
@@ -32,7 +32,13 @@ type Link = Database["public"]["Tables"]["links"]["Row"]
 type LinkFormValues = z.infer<typeof linkFormSchema>
 type User = Database["public"]["Tables"]["users"]["Row"]
 
-export default function ViewLinkForm({ link, account }: { link: Link, account: User }) {
+export default function ViewLinkForm({
+  link,
+  account,
+}: {
+  link: Link
+  account: User
+}) {
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
     defaultValues: {
@@ -41,7 +47,7 @@ export default function ViewLinkForm({ link, account }: { link: Link, account: U
     },
   })
   const supabase = createClient()
-  const passwordRequired = link?.password ? true : false
+  const passwordRequired = !!link?.password
 
   async function onSubmit(data: LinkFormValues) {
     if (!link.url) {
@@ -61,7 +67,11 @@ export default function ViewLinkForm({ link, account }: { link: Link, account: U
 
     if (passwordRequired) {
       // Check password
-      if (!bcrypt.compareSync(data.password!, link.password!)) {
+      if (
+        !data.password ||
+        !link.password ||
+        !bcrypt.compareSync(data.password, link.password)
+      ) {
         toast({
           description: "Incorrect password",
         })
@@ -74,22 +84,33 @@ export default function ViewLinkForm({ link, account }: { link: Link, account: U
       window.location.href = link.url
     } else {
       // Send magic link for unauthenticated users
-      const { error } = await supabase.auth.signInWithOtp({
-        email: data.email,
-        options: {
-          emailRedirectTo: link.url,
-        },
-      })
-
-      if (error) {
-        toast({
-          title: "Failed to send magic link",
-          description: error.message,
+      try {
+        console.log('Sending magic link request:', { email: data.email, linkId: link.id });
+        const response = await fetch("/api/send-view-link", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: data.email, linkId: link.id }),
         })
-      } else {
+
+        console.log('Magic link response status:', response.status);
+        const result = await response.json()
+        console.log('Magic link response data:', result);
+
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to send magic link")
+        }
+
         toast({
           title: "Magic link sent to " + data.email,
           description: "Please click the link in your email to continue",
+        })
+      } catch (error: any) {
+        console.error('Error sending magic link:', error);
+        toast({
+          title: "Failed to send magic link",
+          description: error.message,
         })
       }
     }

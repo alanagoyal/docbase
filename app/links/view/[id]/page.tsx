@@ -51,7 +51,7 @@ export default async function Doc({ params }: { params: { id: string } }) {
     .single()
 
   if (accountError) {
-    console.error(accountError)
+    console.error("accountError", accountError)
   }
 
   const { data: link } = (await supabase

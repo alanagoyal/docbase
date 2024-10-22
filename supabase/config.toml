@@ -73,6 +73,10 @@ content_path = "./supabase/templates/magic_link.html"
 subject = "Confirm Your Account"
 content_path = "./supabase/templates/signup.html"
 
+[auth.email.template.view_link]
+subject = "Your Docbase Document Link"
+content_path = "./supabase/templates/view_link.html"
+
 [analytics]
 enabled = false
 port = 54327
