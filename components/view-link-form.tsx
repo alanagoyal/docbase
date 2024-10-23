@@ -101,34 +101,31 @@ export default function ViewLinkForm({
 
     setIsLoading(true)
 
-    // Log viewer
-    const updates = {
-      link_id: link.id,
-      email: data.email,
-      viewed_at: new Date().toISOString(),
-    }
-    await supabase.from("viewers").insert(updates)
-
-    if (account) {
-      if (passwordRequired) {
-        // Check password
-        if (
-          !data.password ||
-          !link.password ||
-          !bcrypt.compareSync(data.password, link.password)
-        ) {
-          toast({
-            description: "Incorrect password",
-          })
-          setIsLoading(false)
-          return
-        }
+    try {
+      // Log viewer
+      const updates = {
+        link_id: link.id,
+        email: data.email,
+        viewed_at: new Date().toISOString(),
       }
-      // Password is correct or not required, show progress bar
-      setShowProgressBar(true)
-    } else {
-      // Send magic link for unauthenticated users
-      try {
+      await supabase.from("viewers").insert(updates)
+
+      if (account) {
+        if (passwordRequired) {
+          // Check password
+          if (!data.password || !link.password) {
+            throw new Error("Password is required")
+          }
+          
+          const isPasswordCorrect = await bcrypt.compare(data.password, link.password)
+          if (!isPasswordCorrect) {
+            throw new Error("Incorrect password")
+          }
+        }
+        // Password is correct or not required, show progress bar
+        setShowProgressBar(true)
+      } else {
+        // Send magic link for unauthenticated users
         const response = await fetch("/api/send-view-link", {
           method: "POST",
           headers: {
@@ -147,15 +144,15 @@ export default function ViewLinkForm({
           title: "Magic link sent to " + data.email,
           description: "Please click the link in your email to continue",
         })
-      } catch (error: any) {
-        console.error("Error sending magic link:", error)
-        toast({
-          title: "Failed to send magic link",
-          description: error.message,
-        })
-      } finally {
-        setIsLoading(false)
       }
+    } catch (error: any) {
+      console.error("Error in onSubmit:", error)
+      toast({
+        title: "Error",
+        description: error.message || "An unexpected error occurred",
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
