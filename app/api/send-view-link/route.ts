@@ -70,18 +70,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to generate link' }, { status: 500 });
     }
 
-    const magicLink = data.properties.action_link;
-    console.log('Generated magic link:', magicLink);
+    const tokenHash = data.properties.hashed_token;
+    const constructedLink = `${siteUrl}/auth/confirm?token_hash=${tokenHash}&type=magiclink&next=${encodeURIComponent(redirectTo)}`;
+    console.log('Generated magic link:', constructedLink);
 
     // Send the email with Resend
     const { data: emailData, error: emailError } = await resend.emails.send({
       from: 'Docbase <hi@basecase.vc>',
       to: email,
-      subject: 'Your Docbase Document Link',
+      subject: 'Your Docbase Link',
       html: `
-        <h1>Your Docbase Document Link</h1>
-        <p>Click the link below to view the document:</p>
-        <a href="${magicLink}">View Document</a>
+        <h2>Access Your Document in Docbase</h2>
+        <p>Follow <a href="${constructedLink}">this link</a> to view your document securely</p>
       `,
     });
 
