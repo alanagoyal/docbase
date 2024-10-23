@@ -196,7 +196,6 @@ export default function ViewLinkForm({
                     {...field}
                     autoComplete="off"
                     disabled={!!account}
-                    value={field.value}
                   />
                 </FormControl>
               </FormItem>
