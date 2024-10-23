@@ -8,8 +8,6 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null
   const next = searchParams.get("next") ?? "/"
 
-  ('token_hash:', token_hash);
-
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
   const decodedNext = decodeURIComponent(next);
   const fullNextUrl = new URL(decodedNext, siteUrl); 
