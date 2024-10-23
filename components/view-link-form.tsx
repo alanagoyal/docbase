@@ -40,7 +40,7 @@ export default function ViewLinkForm({
   account,
 }: {
   link: Link
-  account: User
+  account: User | null
 }) {
   const router = useRouter()
   const form = useForm<LinkFormValues>({
@@ -53,9 +53,17 @@ export default function ViewLinkForm({
   const supabase = createClient()
   const passwordRequired = !!link?.password
   const [progress, setProgress] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [showProgressBar, setShowProgressBar] = useState(false)
 
   useEffect(() => {
-    if (account && link.url) {
+    if (account && !passwordRequired) {
+      setShowProgressBar(true)
+    }
+  }, [account, passwordRequired])
+
+  useEffect(() => {
+    if (showProgressBar) {
       const duration = 2000 // 2 seconds
       const interval = 20 // Update every 20ms for smooth animation
       const incrementPerInterval = 100 / (duration / interval)
@@ -73,6 +81,7 @@ export default function ViewLinkForm({
         } else {
           console.error("Link URL is null")
         }
+        setShowProgressBar(false)
       }, duration)
 
       return () => {
@@ -80,7 +89,7 @@ export default function ViewLinkForm({
         clearTimeout(openLinkTimer)
       }
     }
-  }, [account, link.url])
+  }, [showProgressBar, link.url])
 
   async function onSubmit(data: LinkFormValues) {
     if (!link.url) {
@@ -90,6 +99,8 @@ export default function ViewLinkForm({
       return
     }
 
+    setIsLoading(true)
+
     // Log viewer
     const updates = {
       link_id: link.id,
@@ -98,23 +109,23 @@ export default function ViewLinkForm({
     }
     await supabase.from("viewers").insert(updates)
 
-    if (passwordRequired) {
-      // Check password
-      if (
-        !data.password ||
-        !link.password ||
-        !bcrypt.compareSync(data.password, link.password)
-      ) {
-        toast({
-          description: "Incorrect password",
-        })
-        return
-      }
-    }
-
     if (account) {
-      // Open the link URL in a new tab if the user is already authenticated
-      window.open(link.url, "_blank")
+      if (passwordRequired) {
+        // Check password
+        if (
+          !data.password ||
+          !link.password ||
+          !bcrypt.compareSync(data.password, link.password)
+        ) {
+          toast({
+            description: "Incorrect password",
+          })
+          setIsLoading(false)
+          return
+        }
+      }
+      // Password is correct or not required, show progress bar
+      setShowProgressBar(true)
     } else {
       // Send magic link for unauthenticated users
       try {
@@ -148,11 +159,13 @@ export default function ViewLinkForm({
           title: "Failed to send magic link",
           description: error.message,
         })
+      } finally {
+        setIsLoading(false)
       }
     }
   }
 
-  if (account) {
+  if (showProgressBar) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center flex-col min-h-[80vh]">
         <div className="max-w-md w-full text-center">
@@ -206,7 +219,7 @@ export default function ViewLinkForm({
               </FormItem>
             )}
           />
-          {passwordRequired && (
+          {passwordRequired && account && (
             <FormField
               control={form.control}
               name="password"
