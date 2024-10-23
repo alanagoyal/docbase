@@ -1,8 +1,11 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as bcrypt from "bcryptjs"
+import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 
@@ -39,6 +42,7 @@ export default function ViewLinkForm({
   link: Link
   account: User
 }) {
+  const router = useRouter()
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
     defaultValues: {
@@ -48,6 +52,35 @@ export default function ViewLinkForm({
   })
   const supabase = createClient()
   const passwordRequired = !!link?.password
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    if (account && link.url) {
+      const duration = 2000 // 2 seconds
+      const interval = 20 // Update every 20ms for smooth animation
+      const incrementPerInterval = 100 / (duration / interval)
+
+      const timer = setInterval(() => {
+        setProgress((oldProgress) => {
+          const newProgress = oldProgress + incrementPerInterval
+          return newProgress >= 100 ? 100 : newProgress
+        })
+      }, interval)
+
+      const openLinkTimer = setTimeout(() => {
+        if (link.url) {
+          window.open(link.url, "_blank")
+        } else {
+          console.error("Link URL is null")
+        }
+      }, duration)
+
+      return () => {
+        clearInterval(timer)
+        clearTimeout(openLinkTimer)
+      }
+    }
+  }, [account, link.url])
 
   async function onSubmit(data: LinkFormValues) {
     if (!link.url) {
@@ -80,12 +113,15 @@ export default function ViewLinkForm({
     }
 
     if (account) {
-      // Redirect to the link URL if the user is already authenticated
-      window.location.href = link.url
+      // Open the link URL in a new tab if the user is already authenticated
+      window.open(link.url, "_blank")
     } else {
       // Send magic link for unauthenticated users
       try {
-        console.log('Sending magic link request:', { email: data.email, linkId: link.id });
+        console.log("Sending magic link request:", {
+          email: data.email,
+          linkId: link.id,
+        })
         const response = await fetch("/api/send-view-link", {
           method: "POST",
           headers: {
@@ -94,9 +130,9 @@ export default function ViewLinkForm({
           body: JSON.stringify({ email: data.email, linkId: link.id }),
         })
 
-        console.log('Magic link response status:', response.status);
+        console.log("Magic link response status:", response.status)
         const result = await response.json()
-        console.log('Magic link response data:', result);
+        console.log("Magic link response data:", result)
 
         if (!response.ok) {
           throw new Error(result.error || "Failed to send magic link")
@@ -107,13 +143,35 @@ export default function ViewLinkForm({
           description: "Please click the link in your email to continue",
         })
       } catch (error: any) {
-        console.error('Error sending magic link:', error);
+        console.error("Error sending magic link:", error)
         toast({
           title: "Failed to send magic link",
           description: error.message,
         })
       }
     }
+  }
+
+  if (account) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center flex-col min-h-[80vh]">
+        <div className="max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            Opening Your Document
+          </h1>
+          <p className="text-gray-600 mb-6">
+            Please wait while we authenticate and prepare your document. It will
+            open in a new tab or begin downloading shortly.
+          </p>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              className="bg-blue-500 h-2.5 rounded-full transition-all duration-100 ease-out"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -142,7 +200,7 @@ export default function ViewLinkForm({
                     {...field}
                     autoComplete="off"
                     disabled={!!account}
-                    value={account?.email || field.value}
+                    value={field.value}
                   />
                 </FormControl>
               </FormItem>
