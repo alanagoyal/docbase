@@ -17,8 +17,6 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 
 // Access auth admin API
 const adminAuthClient = supabase.auth.admin;
-console.log('adminAuthClient', adminAuthClient);
-
 const resend = new Resend(resendApiKey);
 
 export async function POST(request: Request) {
@@ -37,9 +35,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid linkId format' }, { status: 400 });
     }
 
-    console.log('Received email:', email);
-    console.log('Received linkId:', linkId);
-
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
     if (!siteUrl) {
       console.error('NEXT_PUBLIC_SITE_URL is not defined');
@@ -47,7 +42,6 @@ export async function POST(request: Request) {
     }
 
     const redirectTo = `${siteUrl}/links/view/${linkId}`;
-    console.log('Redirecting to:', redirectTo);
 
     const { data, error } = await adminAuthClient.generateLink({
       email,
@@ -56,9 +50,6 @@ export async function POST(request: Request) {
         redirectTo: redirectTo,
       },
     });
-
-    // Add more logging here
-    console.log('Generated link data:', data);
 
     if (error) {
       console.error('Supabase error:', error);
@@ -72,7 +63,6 @@ export async function POST(request: Request) {
 
     const tokenHash = data.properties.hashed_token;
     const constructedLink = `${siteUrl}/auth/confirm?token_hash=${tokenHash}&type=magiclink&next=${encodeURIComponent(redirectTo)}`;
-    console.log('Generated magic link:', constructedLink);
 
     // Send the email with Resend
     const { data: emailData, error: emailError } = await resend.emails.send({
@@ -90,7 +80,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
     }
 
-    console.log('Email sent successfully:', emailData);
     return NextResponse.json({ message: 'View link sent successfully' });
   } catch (error) {
     console.error('Unexpected error:', error);

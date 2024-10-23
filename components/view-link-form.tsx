@@ -129,10 +129,6 @@ export default function ViewLinkForm({
     } else {
       // Send magic link for unauthenticated users
       try {
-        console.log("Sending magic link request:", {
-          email: data.email,
-          linkId: link.id,
-        })
         const response = await fetch("/api/send-view-link", {
           method: "POST",
           headers: {
@@ -141,9 +137,7 @@ export default function ViewLinkForm({
           body: JSON.stringify({ email: data.email, linkId: link.id }),
         })
 
-        console.log("Magic link response status:", response.status)
         const result = await response.json()
-        console.log("Magic link response data:", result)
 
         if (!response.ok) {
           throw new Error(result.error || "Failed to send magic link")

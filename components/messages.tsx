@@ -70,7 +70,6 @@ export function MessagesTable({
   }
 
   const deleteMessage = async (messageId: string) => {
-    console.log("Deleting message:", messageId)
     const { error } = await supabase
       .from('messages')
       .delete()
