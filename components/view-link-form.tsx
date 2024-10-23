@@ -1,11 +1,13 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as bcrypt from "bcryptjs"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 
+import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -17,7 +19,6 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
-import { Database } from "@/types/supabase"
 
 const linkFormSchema = z.object({
   email: z
@@ -30,19 +31,61 @@ const linkFormSchema = z.object({
 
 type Link = Database["public"]["Tables"]["links"]["Row"]
 type LinkFormValues = z.infer<typeof linkFormSchema>
+type User = Database["public"]["Tables"]["users"]["Row"]
 
-const defaultValues: Partial<LinkFormValues> = {
-  email: "",
-  password: "",
-}
-
-export default function ViewLinkForm({ link }: { link: Link }) {
+export default function ViewLinkForm({
+  link,
+  account,
+}: {
+  link: Link
+  account: User | null
+}) {
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
-    defaultValues,
+    defaultValues: {
+      email: account?.email || "",
+      password: "",
+    },
   })
   const supabase = createClient()
-  const passwordRequired = link?.password ? true : false
+  const passwordRequired = !!link?.password && account
+  const [progress, setProgress] = useState(0)
+  const [showProgressBar, setShowProgressBar] = useState(false)
+
+  useEffect(() => {
+    if (account && !passwordRequired) {
+      setShowProgressBar(true)
+    }
+  }, [account, passwordRequired])
+
+  useEffect(() => {
+    if (showProgressBar) {
+      const duration = 2000 // 2 seconds
+      const interval = 20 // Update every 20ms for smooth animation
+      const incrementPerInterval = 100 / (duration / interval)
+
+      const timer = setInterval(() => {
+        setProgress((oldProgress) => {
+          const newProgress = oldProgress + incrementPerInterval
+          return newProgress >= 100 ? 100 : newProgress
+        })
+      }, interval)
+
+      const openLinkTimer = setTimeout(() => {
+        if (link.url) {
+          window.open(link.url, "_blank")
+        } else {
+          console.error("Link URL is null")
+        }
+        setShowProgressBar(false)
+      }, duration)
+
+      return () => {
+        clearInterval(timer)
+        clearTimeout(openLinkTimer)
+      }
+    }
+  }, [showProgressBar, link.url])
 
   async function onSubmit(data: LinkFormValues) {
     if (!link.url) {
@@ -51,28 +94,80 @@ export default function ViewLinkForm({ link }: { link: Link }) {
       })
       return
     }
-    
-    // Log viewer
-    const updates = {
-      link_id: link.id,
-      email: data.email,
-      viewed_at: new Date().toISOString(),
-    }
-    await supabase.from("viewers").insert(updates)
 
-    if (!passwordRequired) {
-      window.open(link?.url, "_blank")
-      return
-    }
+    try {
+      // Log viewer
+      const updates = {
+        link_id: link.id,
+        email: data.email,
+        viewed_at: new Date().toISOString(),
+      }
+      await supabase.from("viewers").insert(updates)
 
-    // check password
-    if (bcrypt.compareSync(data.password!, link.password!)) {
-      window.open(link?.url, "_blank")
-    } else {
+      if (account) {
+        if (passwordRequired) {
+          // Check password
+          if (!data.password || !link.password) {
+            throw new Error("Password is required")
+          }
+          
+          const isPasswordCorrect = bcrypt.compareSync(data.password, link.password)
+          if (!isPasswordCorrect) {
+            throw new Error("Incorrect password")
+          }
+        }
+        // Password is correct or not required, show progress bar
+        setShowProgressBar(true)
+      } else {
+        // Send magic link for unauthenticated users
+        const response = await fetch("/api/send-view-link", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: data.email, linkId: link.id }),
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to send magic link")
+        }
+
+        toast({
+          title: "Magic link sent to " + data.email,
+          description: "Please click the link in your email to continue",
+        })
+      }
+    } catch (error: any) {
+      console.error("Error in onSubmit:", error)
       toast({
-        description: "Incorrect password",
+        title: "Error",
+        description: error.message || "An unexpected error occurred",
       })
-    }
+    } 
+  }
+
+  if (showProgressBar) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center flex-col min-h-[80vh]">
+        <div className="max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            Opening Your Document
+          </h1>
+          <p className="text-gray-600 mb-6">
+            Please wait while we authenticate and prepare your document. It will
+            open in a new tab or begin downloading shortly.
+          </p>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              className="bg-blue-500 h-2.5 rounded-full transition-all duration-100 ease-out"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -89,7 +184,9 @@ export default function ViewLinkForm({ link }: { link: Link }) {
                     Email
                   </FormLabel>
                   <FormDescription className="pr-4">
-                    Please enter your email to view this document
+                    {account
+                      ? "Your email address will only be shared with the document owner"
+                      : "Please enter your email to receive a magic link"}
                   </FormDescription>
                 </div>
                 <FormControl>
@@ -98,6 +195,7 @@ export default function ViewLinkForm({ link }: { link: Link }) {
                     className="w-[200px]"
                     {...field}
                     autoComplete="off"
+                    disabled={!!account}
                   />
                 </FormControl>
               </FormItem>
@@ -132,7 +230,7 @@ export default function ViewLinkForm({ link }: { link: Link }) {
           )}
           <div className="space-y-4">
             <Button type="submit" className="w-full">
-              View Document
+              {account ? "View Document" : "Send Magic Link"}
             </Button>
           </div>
         </form>
