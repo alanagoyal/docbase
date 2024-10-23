@@ -111,7 +111,7 @@ export default function ViewLinkForm({
             throw new Error("Password is required")
           }
           
-          const isPasswordCorrect = await bcrypt.compare(data.password, link.password)
+          const isPasswordCorrect = bcrypt.compareSync(data.password, link.password)
           if (!isPasswordCorrect) {
             throw new Error("Incorrect password")
           }
