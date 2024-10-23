@@ -1,11 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as bcrypt from "bcryptjs"
-import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 
@@ -42,7 +40,6 @@ export default function ViewLinkForm({
   link: Link
   account: User | null
 }) {
-  const router = useRouter()
   const form = useForm<LinkFormValues>({
     resolver: zodResolver(linkFormSchema),
     defaultValues: {
@@ -51,9 +48,8 @@ export default function ViewLinkForm({
     },
   })
   const supabase = createClient()
-  const passwordRequired = !!link?.password
+  const passwordRequired = !!link?.password && account
   const [progress, setProgress] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
   const [showProgressBar, setShowProgressBar] = useState(false)
 
   useEffect(() => {
@@ -98,8 +94,6 @@ export default function ViewLinkForm({
       })
       return
     }
-
-    setIsLoading(true)
 
     try {
       // Log viewer
@@ -151,9 +145,7 @@ export default function ViewLinkForm({
         title: "Error",
         description: error.message || "An unexpected error occurred",
       })
-    } finally {
-      setIsLoading(false)
-    }
+    } 
   }
 
   if (showProgressBar) {
@@ -210,7 +202,7 @@ export default function ViewLinkForm({
               </FormItem>
             )}
           />
-          {passwordRequired && account && (
+          {passwordRequired && (
             <FormField
               control={form.control}
               name="password"
