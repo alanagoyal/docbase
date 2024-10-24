@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { isTyping } from "@/utils/is-typing"
+import Link from 'next/link'
 
 type Message = Database["public"]["Tables"]["messages"]["Row"]
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
@@ -59,10 +60,32 @@ export function MessagesTable({
   const router = useRouter()
   
   const formatRecipients = (recipients: string) => {
+    const emailToContact = new Map(contacts.map(contact => [contact.email, contact]));
     return recipients
       .split(', ')
-      .map(recipient => recipient.split(' <')[0])
-      .join(', ');
+      .map(recipient => {
+        const email = recipient.match(/<(.+)>/)?.[1] || recipient;
+        const contact = emailToContact.get(email);
+        if (contact) {
+          return (
+            <Link
+              key={contact.id}
+              href={`/contacts?contactId=${contact.id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                router.push(`/contacts?contactId=${contact.id}`);
+              }}
+              className="hover:underline cursor-pointer"
+            >
+              {contact.name}
+            </Link>
+          );
+        }
+        return recipient.split(' <')[0];
+      })
+      .reduce((prev, curr, i) => {
+        return i === 0 ? [curr] : [...prev, ', ', curr];
+      }, [] as React.ReactNode[]);
   };
 
   const handleNewMessage = () => {
@@ -217,7 +240,9 @@ export function MessagesTable({
               </div>
               <div className="p-4 overflow-auto flex-1">
                 <div className="flex items-center mb-4">
-                  <span className="font-medium mr-2">{formatRecipients(selectedMessage.recipient)}</span>
+                  <span className="font-medium mr-2">
+                    {formatRecipients(selectedMessage.recipient)}
+                  </span>
                   <span className="text-sm text-gray-500">
                     {new Date(selectedMessage.created_at).toLocaleString()}
                   </span>

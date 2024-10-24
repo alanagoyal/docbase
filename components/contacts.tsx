@@ -35,6 +35,7 @@ import { toast } from "./ui/use-toast"
 import { useDomainCheck } from "@/hooks/use-domain-check"
 import { ToastAction } from "./ui/toast"
 import { isTyping } from "@/utils/is-typing"
+import Link from 'next/link'
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & {
   groups: Group[]
@@ -64,6 +65,7 @@ export function ContactsTable({
   >(null)
   const [isNewContactDialogOpen, setIsNewContactDialogOpen] = useState(false)
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false)
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const checkDomain = useDomainCheck(domain)
 
   useEffect(() => {
@@ -89,6 +91,19 @@ export function ContactsTable({
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [])
+
+  useEffect(() => {
+    // Check if there's a contact ID in the URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const contactId = urlParams.get('contactId')
+    if (contactId) {
+      const contact = contacts.find(c => c.id === contactId)
+      if (contact) {
+        setSelectedContact(contact)
+        setIsEditDialogOpen(true)
+      }
+    }
+  }, [contacts])
 
   const handleEditDialogClose = useCallback(() => {
     setIsEditDialogOpen(false)
@@ -212,7 +227,20 @@ export function ContactsTable({
             <TableBody>
               {contacts.map((contact: any) => (
                 <TableRow key={contact.id}>
-                  <TableCell>{contact.name}</TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/contacts?contactId=${contact.id}`}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setSelectedContact(contact)
+                        setIsEditDialogOpen(true)
+                        router.push(`/contacts?contactId=${contact.id}`)
+                      }}
+                      className="hover:underline cursor-pointer"
+                    >
+                      {contact.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>{contact.email}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -301,6 +329,7 @@ export function ContactsTable({
             onOpenChange={(open) => {
               if (!open) {
                 handleEditDialogClose()
+                router.push('/contacts')
               }
             }}
           >
