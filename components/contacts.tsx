@@ -1,10 +1,14 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { isTyping } from "@/utils/is-typing"
 import { createClient } from "@/utils/supabase/client"
 import { Mail, MailPlus, MenuIcon, Plus, UserPlus, X } from "lucide-react"
+
 import { Database } from "@/types/supabase"
+import { useDomainCheck } from "@/hooks/use-domain-check"
 import {
   Table,
   TableBody,
@@ -13,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+
 import { ContactForm } from "./contact-form"
 import { GroupsDialog } from "./groups-form"
 import { MessageForm } from "./message-form"
@@ -31,11 +36,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu"
-import { toast } from "./ui/use-toast"
-import { useDomainCheck } from "@/hooks/use-domain-check"
 import { ToastAction } from "./ui/toast"
-import { isTyping } from "@/utils/is-typing"
-import Link from 'next/link'
+import { toast } from "./ui/use-toast"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & {
   groups: Group[]
@@ -65,7 +67,9 @@ export function ContactsTable({
   >(null)
   const [isNewContactDialogOpen, setIsNewContactDialogOpen] = useState(false)
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false)
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(
+    null
+  )
   const checkDomain = useDomainCheck(domain)
 
   useEffect(() => {
@@ -95,9 +99,9 @@ export function ContactsTable({
   useEffect(() => {
     // Check if there's a contact ID in the URL
     const urlParams = new URLSearchParams(window.location.search)
-    const contactId = urlParams.get('contactId')
+    const contactId = urlParams.get("contactId")
     if (contactId) {
-      const contact = contacts.find(c => c.id === contactId)
+      const contact = contacts.find((c) => c.id === contactId)
       if (contact) {
         setSelectedContact(contact)
         setIsEditDialogOpen(true)
@@ -132,7 +136,8 @@ export function ContactsTable({
         // Conflict error or Foreign key violation
         toast({
           title: "Unable to delete contact",
-          description: "This contact is associated with an investment and cannot be deleted. Please remove the contact from the investment first.",
+          description:
+            "This contact is associated with an investment and cannot be deleted. Please remove the contact from the investment first.",
           action: (
             <ToastAction
               altText="Investments"
@@ -154,7 +159,8 @@ export function ContactsTable({
       console.error("Error deleting contact:", error)
       toast({
         title: "Error",
-        description: "An error occurred while deleting the contact. Please try again.",
+        description:
+          "An error occurred while deleting the contact. Please try again.",
       })
     }
   }
@@ -227,20 +233,7 @@ export function ContactsTable({
             <TableBody>
               {contacts.map((contact: any) => (
                 <TableRow key={contact.id}>
-                  <TableCell>
-                    <Link
-                      href={`/contacts?contactId=${contact.id}`}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        setSelectedContact(contact)
-                        setIsEditDialogOpen(true)
-                        router.push(`/contacts?contactId=${contact.id}`)
-                      }}
-                      className="hover:underline cursor-pointer"
-                    >
-                      {contact.name}
-                    </Link>
-                  </TableCell>
+                  <TableCell>{contact.name}</TableCell>
                   <TableCell>{contact.email}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -329,7 +322,7 @@ export function ContactsTable({
             onOpenChange={(open) => {
               if (!open) {
                 handleEditDialogClose()
-                router.push('/contacts')
+                router.push("/contacts")
               }
             }}
           >
