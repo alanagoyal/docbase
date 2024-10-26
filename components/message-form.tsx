@@ -1,25 +1,29 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useRef, useState } from "react"
+import { useRouter } from "next/navigation"
+import { selectStyles } from "@/utils/select-styles"
+import { createClient } from "@/utils/supabase/client"
+import { X } from "lucide-react"
+import CreatableSelect from "react-select/creatable"
+
+import { Database } from "@/types/supabase"
+
+import { Icons } from "./icons"
+import { StyledQuillEditor } from "./quill-editor"
+import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import { StyledQuillEditor } from "./quill-editor"
-import { Icons } from "./icons"
 import { toast } from "./ui/use-toast"
-import CreatableSelect from "react-select/creatable"
-import { selectStyles } from "@/utils/select-styles"
-import { Badge } from "./ui/badge"
-import { X } from "lucide-react"
-import { createClient } from "@/utils/supabase/client"
-import { Database } from "@/types/supabase"
-import { useRouter } from "next/navigation"
 import "react-quill/dist/quill.snow.css"
 import "@/styles/quill-custom.css"
 import { isValidEmail } from "@/utils/validation"
 
 type Group = { value: string; label: string; color: string }
-type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
+type Contact = Database["public"]["Tables"]["contacts"]["Row"] & {
+  groups: Group[]
+}
 type User = Database["public"]["Tables"]["users"]["Row"]
 type Domain = Database["public"]["Tables"]["domains"]["Row"]
 
@@ -54,12 +58,12 @@ export function MessageForm({
 
   const customComponents = {
     MultiValue: ({ children, removeProps, ...props }: any) => {
-      const isEmail = 'isEmail' in props.data && props.data.isEmail;
+      const isEmail = "isEmail" in props.data && props.data.isEmail
       return (
         <Badge
           className="flex items-center gap-1 m-1"
           style={{
-            backgroundColor: isEmail ? 'gray' : props.data.color,
+            backgroundColor: isEmail ? "gray" : props.data.color,
             color: "white",
           }}
         >
@@ -68,22 +72,25 @@ export function MessageForm({
             <X size={14} />
           </span>
         </Badge>
-      );
+      )
     },
   }
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Tab' && !event.shiftKey) {
+    if (event.key === "Tab" && !event.shiftKey) {
       event.preventDefault()
       subjectInputRef.current?.focus()
     }
   }
 
   const handleRecipientChange = (newValue: any, actionMeta: any) => {
-    if (actionMeta.action === 'create-option') {
+    if (actionMeta.action === "create-option") {
       const newOption = newValue[newValue.length - 1]
       if (isValidEmail(newOption.value)) {
-        setRecipients([...newValue.slice(0, -1), { ...newOption, isEmail: true }])
+        setRecipients([
+          ...newValue.slice(0, -1),
+          { ...newOption, isEmail: true },
+        ])
       } else {
         // Optionally, show an error message for invalid email
         toast({
@@ -98,19 +105,21 @@ export function MessageForm({
   }
 
   const handleSendEmail = async () => {
-    setIsSendingEmail(true);
+    setIsSendingEmail(true)
     try {
       if (!domain) {
-        throw new Error("Failed to fetch domain information");
+        throw new Error("Failed to fetch domain information")
       }
 
-      console.log("All recipients:", recipients);
-
-      const emailRecipients = recipients.filter((r): r is { value: string; label: string; isEmail: true } => 'isEmail' in r && r.isEmail).map(r => r.value)
-      console.log("Email recipients:", emailRecipients);
-
-      const groupRecipients = recipients.filter((r): r is Group => !('isEmail' in r)) as Group[]
-      console.log("Group recipients:", groupRecipients);
+      const emailRecipients = recipients
+        .filter(
+          (r): r is { value: string; label: string; isEmail: true } =>
+            "isEmail" in r && r.isEmail
+        )
+        .map((r) => r.value)
+      const groupRecipients = recipients.filter(
+        (r): r is Group => !("isEmail" in r)
+      ) as Group[]
 
       const selectedContactEmails = contacts
         .filter((contact) =>
@@ -118,22 +127,22 @@ export function MessageForm({
             groupRecipients.some((sg) => sg.value === contactGroup.value)
           )
         )
-        .map((contact) => contact.email);
-      console.log("Selected contact emails from groups:", selectedContactEmails);
+        .map((contact) => contact.email)
 
-      const to = Array.from(new Set([...emailRecipients, ...selectedContactEmails]))
+      const to = Array.from(
+        new Set([...emailRecipients, ...selectedContactEmails])
+      )
         .map((email) => {
-          const contact = contacts.find((c) => c.email === email);
+          const contact = contacts.find((c) => c.email === email)
           if (contact?.name) {
-            return `${contact.name} <${email}>`;
+            return `${contact.name} <${email}>`
           } else {
             // Extract the part before @ as the name if no contact name is available
-            const name = email.split('@')[0];
-            return `${name} <${email}>`;
+            const name = email.split("@")[0]
+            return `${name} <${email}>`
           }
         })
-        .slice(0, 50);
-      console.log("Final 'to' array:", to);
+        .slice(0, 50)
 
       const response = await fetch("/api/send-email", {
         method: "POST",
@@ -148,66 +157,68 @@ export function MessageForm({
           senderName: domain.sender_name,
           apiKey: domain.api_key,
         }),
-      });
-
-      console.log("API response status:", response.status);
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-        throw new Error(errorData.error || "Failed to send email");
+        const errorData = await response.json()
+        console.error("Error response:", errorData)
+        throw new Error(errorData.error || "Failed to send email")
       }
 
       // Add message to the database
       const { data: messageData, error: messageError } = await supabase
-        .from('messages')
+        .from("messages")
         .insert({
           sender_id: account.id,
-          recipient: Array.isArray(to) ? to.join(', ') : to,
+          recipient: Array.isArray(to) ? to.join(", ") : to,
           subject,
           body,
-          status: 'sent'
+          status: "sent",
         })
-        .select();
+        .select()
 
       if (messageError) {
-        console.error("Error inserting message into database:", messageError);
-        throw new Error("Failed to save message in database");
+        console.error("Error inserting message into database:", messageError)
+        throw new Error("Failed to save message in database")
       }
 
       if (!messageData || messageData.length === 0) {
-        throw new Error("No data returned after inserting message");
+        throw new Error("No data returned after inserting message")
       }
 
       // Update user's messages array
-      const newMessageId = messageData[0].id;
-      const { error: userUpdateError } = await supabase
-        .rpc('append_message_to_user', {
+      const newMessageId = messageData[0].id
+      const { error: userUpdateError } = await supabase.rpc(
+        "append_message_to_user",
+        {
           user_id: account.id,
-          message_id: newMessageId
-        });
+          message_id: newMessageId,
+        }
+      )
 
       if (userUpdateError) {
-        console.error("Error updating user's messages array:", userUpdateError);
+        console.error("Error updating user's messages array:", userUpdateError)
         // Consider whether you want to throw an error here or just log it
       }
 
       toast({
         description: "Your message has been sent",
-      });
+      })
 
-      onClose();
+      onClose()
     } catch (error) {
-      console.error("Error sending email:", error);
+      console.error("Error sending email:", error)
       toast({
         variant: "destructive",
-        description: `Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      });
+        description: `Failed to send email: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      })
     } finally {
-      setIsSendingEmail(false);
-      router.refresh();
+      setIsSendingEmail(false)
+      router.refresh()
     }
-  };
+  }
 
   return (
     <div className="flex flex-col gap-2 flex-grow">
