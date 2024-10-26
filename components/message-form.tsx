@@ -16,11 +16,15 @@ import { Database } from "@/types/supabase"
 import { useRouter } from "next/navigation"
 import "react-quill/dist/quill.snow.css"
 import "@/styles/quill-custom.css"
+import { isValidEmail } from "@/utils/validation"
 
 type Group = { value: string; label: string; color: string }
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
 type User = Database["public"]["Tables"]["users"]["Row"]
 type Domain = Database["public"]["Tables"]["domains"]["Row"]
+
+// Update the Recipient type
+type Recipient = Group | { value: string; label: string; isEmail: true }
 
 interface NewMessageProps {
   selectedContactEmail: string
@@ -46,14 +50,16 @@ export function MessageForm({
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([])
   const [isSendingEmail, setIsSendingEmail] = useState(false)
   const subjectInputRef = useRef<HTMLInputElement>(null)
+  const [recipients, setRecipients] = useState<Recipient[]>([])
 
   const customComponents = {
     MultiValue: ({ children, removeProps, ...props }: any) => {
+      const isEmail = 'isEmail' in props.data && props.data.isEmail;
       return (
         <Badge
           className="flex items-center gap-1 m-1"
           style={{
-            backgroundColor: props.data.color,
+            backgroundColor: isEmail ? 'gray' : props.data.color,
             color: "white",
           }}
         >
@@ -62,7 +68,7 @@ export function MessageForm({
             <X size={14} />
           </span>
         </Badge>
-      )
+      );
     },
   }
 
@@ -73,6 +79,24 @@ export function MessageForm({
     }
   }
 
+  const handleRecipientChange = (newValue: any, actionMeta: any) => {
+    if (actionMeta.action === 'create-option') {
+      const newOption = newValue[newValue.length - 1]
+      if (isValidEmail(newOption.value)) {
+        setRecipients([...newValue.slice(0, -1), { ...newOption, isEmail: true }])
+      } else {
+        // Optionally, show an error message for invalid email
+        toast({
+          variant: "destructive",
+          description: `Invalid email address: ${newOption.value}`,
+        })
+        setRecipients(newValue.slice(0, -1))
+      }
+    } else {
+      setRecipients(newValue)
+    }
+  }
+
   const handleSendEmail = async () => {
     setIsSendingEmail(true);
     try {
@@ -80,25 +104,36 @@ export function MessageForm({
         throw new Error("Failed to fetch domain information");
       }
 
-      let to;
-      if (selectedContactEmail) {
-        to = selectedContactEmail;
-      } else {
-        const selectedContactEmails = contacts
-          .filter((contact) =>
-            contact.groups.some((contactGroup) =>
-              selectedGroups.some((sg) => sg.value === contactGroup.value)
-            )
-          )
-          .map((contact) => contact.email);
+      console.log("All recipients:", recipients);
 
-        to = selectedContactEmails
-          .map((email) => {
-            const contact = contacts.find((c) => c.email === email);
-            return contact?.name ? `${contact.name} <${email}>` : email;
-          })
-          .slice(0, 50);
-      }
+      const emailRecipients = recipients.filter((r): r is { value: string; label: string; isEmail: true } => 'isEmail' in r && r.isEmail).map(r => r.value)
+      console.log("Email recipients:", emailRecipients);
+
+      const groupRecipients = recipients.filter((r): r is Group => !('isEmail' in r)) as Group[]
+      console.log("Group recipients:", groupRecipients);
+
+      const selectedContactEmails = contacts
+        .filter((contact) =>
+          contact.groups.some((contactGroup) =>
+            groupRecipients.some((sg) => sg.value === contactGroup.value)
+          )
+        )
+        .map((contact) => contact.email);
+      console.log("Selected contact emails from groups:", selectedContactEmails);
+
+      const to = Array.from(new Set([...emailRecipients, ...selectedContactEmails]))
+        .map((email) => {
+          const contact = contacts.find((c) => c.email === email);
+          if (contact?.name) {
+            return `${contact.name} <${email}>`;
+          } else {
+            // Extract the part before @ as the name if no contact name is available
+            const name = email.split('@')[0];
+            return `${name} <${email}>`;
+          }
+        })
+        .slice(0, 50);
+      console.log("Final 'to' array:", to);
 
       const response = await fetch("/api/send-email", {
         method: "POST",
@@ -114,6 +149,8 @@ export function MessageForm({
           apiKey: domain.api_key,
         }),
       });
+
+      console.log("API response status:", response.status);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -180,11 +217,11 @@ export function MessageForm({
           <CreatableSelect
             isMulti
             options={groups}
-            value={selectedGroups}
-            onChange={(newValue) => setSelectedGroups(newValue as Group[])}
+            value={recipients}
+            onChange={handleRecipientChange}
             className="basic-multi-select"
             classNamePrefix="select"
-            placeholder="Select groups..."
+            placeholder="Enter email addresses or select groups..."
             styles={selectStyles}
             components={customComponents}
             onKeyDown={handleKeyDown}
