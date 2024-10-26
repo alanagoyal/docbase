@@ -173,86 +173,82 @@ export function MessagesTable({
   }, [checkDomain])
 
   return (
-    <div className="flex h-screen">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 flex">
-          <div className={`${selectedMessage ? 'w-1/2 border-r' : 'w-full'} flex flex-col`}>
-            <div className="p-4 pt-10 border-b flex justify-between items-center">
-              {selectedMessage ? (
-                <h1 className="text-2xl font-semibold">Messages</h1>
-              ) : (
-                <>
-                  <div className="w-[150px]"></div>
-                  <h1 className="text-2xl font-semibold flex-grow text-center">Messages</h1>
-                </>
-              )}
-              <Button
-                variant="ghost"
-                className="w-[150px]"
-                onClick={handleNewMessage}
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline-block ml-2">New</span>
-              </Button>
-            </div>
-            <div className="overflow-auto flex-1">
-              {messages.map((message, index) => (
-                <div
-                  key={message.id}
-                  id={`message-${message.id}`}
-                  className={`p-4 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                    selectedIndex === index ? 'bg-gray-100 dark:bg-gray-800' : ''
-                  }`}
-                  onClick={() => {
-                    setSelectedMessage(message)
-                    setSelectedIndex(index)
-                  }}
-                  onMouseEnter={() => setHoveredMessageId(message.id)}
-                  onMouseLeave={() => setHoveredMessageId(null)}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold">{message.subject}</span>
-                    <span className="text-sm text-gray-500">
-                      {new Date(message.created_at).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Mail className="w-4 h-4 mr-2" />
-                    <span>{formatRecipients(message.recipient)}</span>
-                  </div>
-                  <div className="text-sm text-gray-600 mt-1 line-clamp-2">
-                    <SafeHtml html={message.body} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {selectedMessage && (
-            <div className="w-1/2 flex flex-col">
-              <div className="p-4 border-b flex justify-between items-center">
-                <h2 className="text-xl font-semibold">{selectedMessage.subject}</h2>
-                <button 
-                  onClick={() => setSelectedMessage(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <div className="p-4 overflow-auto flex-1">
-                <div className="flex items-center mb-4">
-                  <span className="font-medium mr-2">
-                    {formatRecipients(selectedMessage.recipient)}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {new Date(selectedMessage.created_at).toLocaleString()}
-                  </span>
-                </div>
-                <SafeHtml html={selectedMessage.body} />
-              </div>
-            </div>
+    <div className="flex h-screen overflow-hidden">
+      <div className={`flex flex-col ${selectedMessage ? 'w-1/2 border-r' : 'w-full'}`}>
+        <div className="p-4 pt-10 border-b flex justify-between items-center flex-shrink-0">
+          {selectedMessage ? (
+            <h1 className="text-2xl font-semibold">Messages</h1>
+          ) : (
+            <>
+              <div className="w-[150px]"></div>
+              <h1 className="text-2xl font-semibold flex-grow text-center">Messages</h1>
+            </>
           )}
-        </main>
+          <Button
+            variant="ghost"
+            className="w-[150px]"
+            onClick={handleNewMessage}
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline-block ml-2">New</span>
+          </Button>
+        </div>
+        <div className="overflow-y-auto flex-grow">
+          {messages.map((message, index) => (
+            <div
+              key={message.id}
+              id={`message-${message.id}`}
+              className={`p-4 border-b cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                selectedIndex === index ? 'bg-gray-100 dark:bg-gray-800' : ''
+              }`}
+              onClick={() => {
+                setSelectedMessage(message)
+                setSelectedIndex(index)
+              }}
+              onMouseEnter={() => setHoveredMessageId(message.id)}
+              onMouseLeave={() => setHoveredMessageId(null)}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold">{message.subject}</span>
+                <span className="text-sm text-gray-500">
+                  {new Date(message.created_at).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-center text-sm text-gray-600">
+                <Mail className="w-4 h-4 mr-2" />
+                <span>{formatRecipients(message.recipient)}</span>
+              </div>
+              <div className="text-sm text-gray-600 mt-1 line-clamp-2">
+                <SafeHtml html={message.body} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
+      {selectedMessage && (
+        <div className="w-1/2 flex flex-col">
+          <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
+            <h2 className="text-xl font-semibold">{selectedMessage.subject}</h2>
+            <button 
+              onClick={() => setSelectedMessage(null)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="p-4 overflow-y-auto flex-grow">
+            <div className="flex items-center mb-4">
+              <span className="font-medium mr-2">
+                {formatRecipients(selectedMessage.recipient)}
+              </span>
+              <span className="text-sm text-gray-500">
+                {new Date(selectedMessage.created_at).toLocaleString()}
+              </span>
+            </div>
+            <SafeHtml html={selectedMessage.body} />
+          </div>
+        </div>
+      )}
       <Dialog
         open={isNewMessageDialogOpen}
         onOpenChange={(open) => {
