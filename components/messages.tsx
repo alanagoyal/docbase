@@ -109,6 +109,9 @@ export function MessagesTable({
       toast({
         description: 'Message deleted successfully',
       })
+      // Reset selection after successful deletion
+      setSelectedMessage(null)
+      setSelectedIndex(null)
       router.refresh()
     }
   }
@@ -143,13 +146,17 @@ export function MessagesTable({
   }, [selectedMessage, hoveredMessageId, messages])
 
   useEffect(() => {
-    if (selectedIndex !== null) {
+    if (selectedIndex !== null && selectedIndex >= 0 && selectedIndex < messages.length) {
       setSelectedMessage(messages[selectedIndex])
       // Scroll the selected message into view
       const messageElement = document.getElementById(`message-${messages[selectedIndex].id}`)
       if (messageElement) {
         messageElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       }
+    } else {
+      // Reset selection if the index is invalid
+      setSelectedMessage(null)
+      setSelectedIndex(null)
     }
   }, [selectedIndex, messages])
 
