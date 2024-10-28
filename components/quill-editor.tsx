@@ -12,12 +12,12 @@ interface StyledQuillEditorProps {
 
 export const StyledQuillEditor: React.FC<StyledQuillEditorProps> = ({ value, onChange, placeholder }) => {
   return (
-    <div className="styled-quill-wrapper">
+    <div className="styled-quill-wrapper h-[250px]">
       <ReactQuill
         theme="snow"
         value={value}
         onChange={onChange}
-        className="flex-grow"
+        className="flex-grow h-full"
         placeholder={placeholder}
         modules={{
           toolbar: [
