@@ -112,18 +112,25 @@ CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      className
-    )}
-    {...props}
-  />
+  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item> & {
+    onClickCapture?: (event: React.MouseEvent) => void;
+  }
+>(({ className, onClickCapture, ...props }, ref) => (
+  <div 
+    onClickCapture={onClickCapture}
+    className="w-full hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
+  >
+    <CommandPrimitive.Item
+      ref={ref}
+      className={cn(
+        "relative flex w-full select-none items-center px-2 py-1.5 text-sm outline-none",
+        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  </div>
 ))
-
 CommandItem.displayName = CommandPrimitive.Item.displayName
 
 const CommandShortcut = ({

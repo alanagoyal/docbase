@@ -78,22 +78,16 @@ export function CommandMenu() {
     return () => document.removeEventListener("keydown", down);
   }, [router, theme, setTheme, navigateAndCloseDialog, handleSignOut]);
 
-  const handleSelect = useCallback((value: string) => {
-    const allItems = [...menuItems, ...mainNavItems];
-    const selectedItem = allItems.find(item => 
-      item.href === `/${value}` || item.action === value
-    );
-    if (selectedItem) {
-      if (selectedItem.href) {
-        navigateAndCloseDialog(selectedItem.href);
-      } else if (selectedItem.action === 'theme') {
-        setTheme(theme === 'light' ? 'dark' : 'light');
-        setOpen(false);
-      } else if (selectedItem.action === 'logout') {
-        handleSignOut();
-      }
+  const handleItemClick = (item: any) => {    
+    if (item.href) {
+      navigateAndCloseDialog(item.href);
+    } else if (item.action === 'theme') {
+      setTheme(theme === 'light' ? 'dark' : 'light');
+      setOpen(false);
+    } else if (item.action === 'logout') {
+      handleSignOut();
     }
-  }, [navigateAndCloseDialog, setTheme, theme, handleSignOut]);
+  };
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
@@ -112,7 +106,11 @@ export function CommandMenu() {
           {[...mainNavItems, ...menuItems].map((item, index) => (
             <CommandItem 
               key={index}
-              onSelect={() => handleSelect(item.href?.slice(1) || item.action || '')}
+              onClickCapture={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleItemClick(item);
+              }}
             >
               {item.action === "theme" ? (
                 theme === "light" ? (
@@ -124,7 +122,7 @@ export function CommandMenu() {
                 <item.icon className="mr-2 h-4 w-4" />
               )}
               <span>{item.label}</span>
-              <CommandShortcut>{item.shortcut}</CommandShortcut>
+              {item.shortcut && <CommandShortcut>{item.shortcut}</CommandShortcut>}
             </CommandItem>
           ))}
         </CommandGroup>
