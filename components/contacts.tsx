@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { isTyping } from "@/utils/is-typing"
 import { createClient } from "@/utils/supabase/client"
-import { Mail, MailPlus, MenuIcon, Plus, UserPlus, X } from "lucide-react"
+import { Mail, MailPlus, MenuIcon, Plus, UserPlus, X, Info } from "lucide-react"
 
 import { Database } from "@/types/supabase"
 import { useDomainCheck } from "@/hooks/use-domain-check"
@@ -38,6 +38,12 @@ import {
 } from "./ui/dropdown-menu"
 import { ToastAction } from "./ui/toast"
 import { toast } from "./ui/use-toast"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & {
   groups: Group[]
@@ -224,7 +230,19 @@ export function ContactsTable({
                   className="w-1/4 cursor-pointer"
                   onClick={() => setIsGroupsDialogOpen(true)}
                 >
-                  Groups
+                  <div className="flex items-center gap-1">
+                    Groups
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Click to edit groups</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </TableHead>
                 <TableHead className="w-1/4">Created</TableHead>
                 <TableHead className="w-1/4">Actions</TableHead>
