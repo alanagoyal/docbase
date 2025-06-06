@@ -1,6 +1,6 @@
 # Docbase
 
-Docbase is an all-in-one platform to create investment documents, share them securely, and communicate with your contacts. I built it for myself to replace multiple tools I use everyday as a founder and investor.
+Docbase is an all-in-one Docsend alternative.
 
 ## Getting Started
 ### Clone the repository
