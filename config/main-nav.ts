@@ -11,7 +11,6 @@ export interface MainNavItem {
 
 export const mainNavItems: MainNavItem[] = [
   { href: "/links", label: "Links", shortcut: "L", icon: Link },
-  { href: "/investments", label: "Investments", shortcut: "I", icon: Briefcase },
   { href: "/contacts", label: "Contacts", shortcut: "C", icon: User },
   { href: "/messages", label: "Messages", shortcut: "M", icon: Mail },
 ];
