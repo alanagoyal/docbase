@@ -25,7 +25,6 @@ const sendEmailSchema = z.object({
   domainName: z.string().min(1).max(200),
   senderName: z.string().min(1).max(200),
 })
-
 export async function POST(req: Request) {
   try {
     const body = await req.json()
