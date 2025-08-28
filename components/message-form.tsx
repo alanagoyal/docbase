@@ -155,7 +155,6 @@ export function MessageForm({
           emailBody: body,
           domainName: domain.domain_name,
           senderName: domain.sender_name,
-          apiKey: domain.api_key,
         }),
       })
 

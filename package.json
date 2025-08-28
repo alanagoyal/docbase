@@ -67,7 +67,7 @@
     "react-quill": "^2.0.0",
     "react-select": "^5.8.0",
     "resend": "^3.5.0",
-    "sharp": "^0.31.3",
+    "sharp": "^0.34.3",
     "supabase": "^1.200.3",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7",
