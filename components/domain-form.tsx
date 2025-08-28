@@ -33,6 +33,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { toast } from "@/components/ui/use-toast"
+import { clientLogger } from "@/lib/client-logger"
 
 const domainFormSchema = z.object({
   domainName: z.string().min(1, "Domain name is required"),
@@ -122,7 +123,7 @@ export default function DomainForm({
           : "Your domain has been successfully created and saved to your profile.",
       })
     } catch (error) {
-      console.error("Error:", error)
+      clientLogger.error('Error creating/updating domain', { error })
       toast({
         title: "Error creating domain",
         description:

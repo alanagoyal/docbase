@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
+import { clientLogger } from "@/lib/client-logger"
 
 import { EntitySelector } from "./entity-selector"
 import { Icons } from "./icons"
@@ -100,7 +101,7 @@ export default function AccountForm({ account }: { account: User }) {
       .eq("user_id", account.id)
 
     if (contactError) {
-      console.error("Error fetching contact data:", contactError)
+      clientLogger.error('Error fetching contact data', { contactError })
       return
     }
 
@@ -161,7 +162,7 @@ export default function AccountForm({ account }: { account: User }) {
       })
       setShowAdditionalFields(false)
     } catch (error) {
-      console.error(error)
+      clientLogger.error('Error updating account', { error })
       toast({
         description: "Error updating account",
       })
@@ -188,7 +189,7 @@ export default function AccountForm({ account }: { account: User }) {
         .maybeSingle()
 
       if (selectError) {
-        console.error("Error checking existing contact:", selectError)
+        clientLogger.error('Error checking existing contact', { selectError })
         return null
       }
 
@@ -201,7 +202,7 @@ export default function AccountForm({ account }: { account: User }) {
           .select()
 
         if (updateError) {
-          console.error("Error updating contact:", updateError)
+          clientLogger.error('Error updating contact', { updateError })
           return null
         }
 
@@ -214,14 +215,14 @@ export default function AccountForm({ account }: { account: User }) {
           .select()
 
         if (insertError) {
-          console.error("Error creating new contact:", insertError)
+          clientLogger.error('Error creating new contact', { insertError })
           return null
         }
 
         return newContact[0].id
       }
     } catch (error) {
-      console.error("Error processing contact:", error)
+      clientLogger.error('Error processing contact', { error })
       return null
     }
   }
@@ -241,7 +242,7 @@ export default function AccountForm({ account }: { account: User }) {
       .eq("name", data.entity_name)
 
     if (existingFundError) {
-      console.error("Error checking existing fund:", existingFundError)
+      clientLogger.error('Error checking existing fund', { existingFundError })
       return true
     }
 
@@ -259,7 +260,7 @@ export default function AccountForm({ account }: { account: User }) {
       .select()
 
     if (newFundError) {
-      console.error("Error creating fund:", newFundError)
+      clientLogger.error('Error creating fund', { newFundError })
       return true
     } else {
       setEntities((prevEntities) => [
@@ -292,7 +293,7 @@ export default function AccountForm({ account }: { account: User }) {
       await supabase.from("companies").select().eq("name", data.entity_name)
 
     if (existingCompanyError) {
-      console.error("Error checking existing company:", existingCompanyError)
+      clientLogger.error('Error checking existing company', { existingCompanyError })
       return true
     }
 
@@ -310,7 +311,7 @@ export default function AccountForm({ account }: { account: User }) {
       .select()
 
     if (newCompanyError) {
-      console.error("Error creating company:", newCompanyError)
+      clientLogger.error('Error creating company', { newCompanyError })
       return true
     } else {
       setEntities((prevEntities) => [
@@ -376,7 +377,7 @@ export default function AccountForm({ account }: { account: User }) {
           variant: "destructive",
           description: `Failed to delete the ${entityType}`,
         })
-        console.error(`Error deleting ${entityType}:`, error)
+        clientLogger.error(`Error deleting ${entityType}`, { error })
       } else {
         toast({
           description: `${
@@ -388,7 +389,7 @@ export default function AccountForm({ account }: { account: User }) {
         setShowAdditionalFields(false)
       }
     } catch (error) {
-      console.error(`Error processing deletion of ${entityType}:`, error)
+      clientLogger.error(`Error processing deletion of ${entityType}`, { error })
       toast({
         variant: "destructive",
         description: `An error occurred while deleting the ${entityType}`,
@@ -566,7 +567,7 @@ export default function AccountForm({ account }: { account: User }) {
           description: "Signature block image parsed successfully",
         })
       } catch (error) {
-        console.error("Error parsing signature block:", error)
+        clientLogger.error('Error parsing signature block', { error })
         toast({
           description: "Unable to parse signature block",
         })

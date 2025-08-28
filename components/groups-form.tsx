@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "./ui/input"
 import { toast } from "./ui/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { clientLogger } from "@/lib/client-logger"
 
 type Group = { id: string; name: string; color: string }
 
@@ -45,7 +46,7 @@ export function GroupsDialog({ isOpen, onClose, userId, onGroupsChange }: Groups
   const saveGroups = useCallback(async (groupsToSave: Group[]) => {
     const { error } = await supabase.from("groups").upsert(groupsToSave)
     if (error) {
-      console.error("Error updating groups:", error)
+      clientLogger.error('Error updating groups', { error })
     } else {
       setHasChanges(true)
       router.refresh()
@@ -71,7 +72,7 @@ export function GroupsDialog({ isOpen, onClose, userId, onGroupsChange }: Groups
       .eq("created_by", userId)
 
     if (error) {
-      console.error("Error fetching groups:", error)
+      clientLogger.error('Error fetching groups', { error })
       toast({ variant: "destructive", description: "Failed to fetch groups" })
     } else {
       setGroups(data || [])
@@ -93,7 +94,7 @@ export function GroupsDialog({ isOpen, onClose, userId, onGroupsChange }: Groups
     const { error } = await supabase.from("groups").delete().eq("id", id)
 
     if (error) {
-      console.error("Error removing group:", error)
+      clientLogger.error('Error removing group', { error })
       toast({ variant: "destructive", description: "Failed to remove group" })
     } else {
       setGroups(groups.filter((group) => group.id !== id))
@@ -111,7 +112,7 @@ export function GroupsDialog({ isOpen, onClose, userId, onGroupsChange }: Groups
       .select()
 
     if (error) {
-      console.error("Error adding group:", error)
+      clientLogger.error('Error adding group', { error })
     } else if (data) {
       setGroups([...groups, data[0]])
       setNewGroupId(data[0].id)

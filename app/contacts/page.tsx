@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { ContactsTable } from "@/components/contacts"
 import { NewContactButton } from "@/components/new-contact"
+import { logger } from "@/lib/logger"
 
 export default async function Contacts() {
   const supabase = createClient()
@@ -42,10 +43,12 @@ export default async function Contacts() {
     .single()
 
   if (contactsError || groupsError || contactGroupsError || domainError) {
-    console.error(
-      "Error fetching data:",
-      contactsError || groupsError || contactGroupsError || domainError
-    )
+    logger.error('Error fetching data', {
+      contactsError,
+      groupsError,
+      contactGroupsError,
+      domainError
+    })
   }
 
   const formattedGroups =

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { createClient } from "@/utils/supabase/server"
+import { logger } from "@/lib/logger"
 
 import { ViewerData } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
@@ -18,7 +19,7 @@ export default async function AnalyticsPage({
   })
 
   if (error) {
-    console.error("Error fetching analytics:", error)
+    logger.error('Error fetching analytics', { error })
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center flex-col min-h-screen">
         <h1 className="text-2xl text-center font-bold mb-6">

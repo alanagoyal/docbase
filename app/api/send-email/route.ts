@@ -3,6 +3,7 @@ import { Resend } from "resend"
 import { z } from "zod"
 import { createClient } from "@/utils/supabase/server"
 import { NewEmailTemplate } from "@/components/templates/new-email"
+import { logger } from "@/lib/logger"
 
 // Custom email validation that handles both plain emails and formatted emails like "Name <email@domain.com>"
 const emailOrFormattedEmail = z.string().refine((val) => {
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     // Validate input
     const validationResult = sendEmailSchema.safeParse(body)
     if (!validationResult.success) {
-      console.error("Validation failed for send-email:", {
+      logger.error('Validation failed for send-email', {
         errors: validationResult.error.errors,
         receivedData: body
       })
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
       .single()
 
     if (domainError) {
-      console.error("Domain lookup error:", domainError)
+      logger.error('Domain lookup error', { error: domainError })
       // Fallback: try to get any domain for this user
       const { data: anyDomain, error: anyDomainError } = await supabase
         .from('domains')
@@ -75,19 +76,19 @@ export async function POST(req: Request) {
       }
       
       // Use the found domain instead
-      console.log("Using fallback domain:", anyDomain.domain_name)
+      logger.info('Using fallback domain', { domainName: anyDomain.domain_name })
       domainName = anyDomain.domain_name
       senderName = anyDomain.sender_name
       domain = anyDomain
     }
 
     if (!domain) {
-      console.error("Domain not found for user:", user.id, "domain:", domainName)
+      logger.error('Domain not found for user', { userId: user.id, domainName })
       return NextResponse.json({ error: 'Domain not found or unauthorized' }, { status: 403 })
     }
 
     if (!domain.api_key) {
-      console.error("No API key configured for domain:", domainName)
+      logger.error('No API key configured for domain', { domainName })
       return NextResponse.json({ error: 'No API key configured for this domain' }, { status: 400 })
     }
 
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
     })
 
     if (error) {
-      console.error("Resend API error:", error)
+      logger.error('Resend API error', { error })
       return NextResponse.json({ error: "Failed to send email" }, { status: 500 })
     }
     return NextResponse.json(data)
@@ -110,7 +111,7 @@ export async function POST(req: Request) {
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
     }
-    console.error("Unexpected error in send-email route:", error)
+    logger.error('Unexpected error in send-email route', { error })
     return NextResponse.json({ error: "Unexpected error occurred" }, { status: 500 })
   }
 }

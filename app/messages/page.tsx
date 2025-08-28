@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/utils/supabase/server"
 import { MessagesTable } from "@/components/messages"
 import { NewMessageButton } from "@/components/new-message"
+import { logger } from "@/lib/logger"
 
 export default async function Messages() {
   const supabase = createClient()
@@ -48,10 +49,12 @@ export default async function Messages() {
     .maybeSingle()
 
   if (contactsError || groupsError || contactGroupsError || domainError) {
-    console.error(
-      "Error fetching data:",
-      contactsError || groupsError || contactGroupsError || domainError
-    )
+    logger.error('Error fetching data', {
+      contactsError,
+      groupsError,
+      contactGroupsError,
+      domainError
+    })
   }
 
   const formattedGroups =
@@ -78,7 +81,7 @@ export default async function Messages() {
   }))
 
   if (error) {
-    console.error("Error fetching messages:", error)
+    logger.error('Error fetching messages', { error })
   }
 
   return messages && messages.length > 0 ? (
