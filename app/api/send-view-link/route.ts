@@ -2,10 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { validate as isUuid } from 'uuid';
 import { Resend } from 'resend';
+import { z } from 'zod';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const resendApiKey = process.env.RESEND_API_KEY!;
+const sendViewLinkSchema = z.object({
+  email: z.string().email(),
+  linkId: z.string().uuid(),
+})
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'dummy-service-role-key';
+const resendApiKey = process.env.RESEND_API_KEY || 'dummy-resend-key';
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: {
@@ -21,19 +27,18 @@ const resend = new Resend(resendApiKey);
 
 export async function POST(request: Request) {
   try {
-    const { email, linkId } = await request.json();
+    const body = await request.json();
 
-    // Validate input presence
-    if (!email || !linkId) {
-      console.error('Missing required fields:', { email, linkId });
-      return NextResponse.json({ error: 'Email and linkId are required' }, { status: 400 });
+    // Validate input
+    const validationResult = sendViewLinkSchema.safeParse(body)
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: validationResult.error.errors },
+        { status: 400 }
+      )
     }
 
-    // Validate UUID format
-    if (!isUuid(linkId)) {
-      console.error('Invalid UUID format for linkId:', linkId);
-      return NextResponse.json({ error: 'Invalid linkId format' }, { status: 400 });
-    }
+    const { email, linkId } = validationResult.data
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
     if (!siteUrl) {
@@ -82,6 +87,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: 'View link sent successfully' });
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
     console.error('Unexpected error:', error);
     return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
   }
