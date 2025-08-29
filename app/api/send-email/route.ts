@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     
     // Basic input validation without complex schemas
-    const { to, subject, emailBody, domainName, senderName } = body
+    let { to, subject, emailBody, domainName, senderName } = body
     
     // Simple existence checks
     if (!to || !subject || !emailBody || !domainName || !senderName) {
