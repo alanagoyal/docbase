@@ -1,130 +1,150 @@
-# Logging Configuration
+# Simple Production Logging
 
-This document outlines the logging system implemented for production hardening.
+A lightweight logging solution that replaces console statements with structured, environment-aware logging.
 
-## Overview
+## Key Benefits
 
-The application uses Pino for structured logging with environment-based configuration, automatic log rotation, and security features.
+✅ **Zero Dependencies** - No external logging libraries needed  
+✅ **Environment Aware** - Different log levels and formats for dev vs production  
+✅ **Security** - Automatic redaction of sensitive data (passwords, tokens, API keys)  
+✅ **Structured** - JSON format in production for easy parsing and monitoring  
+✅ **Familiar** - Still uses console.log/console.error under the hood  
 
-## Features
+## How It Works
 
-### 1. Environment-Based Configuration
-- **Development**: Pretty-printed logs with colors, debug level
-- **Production**: JSON structured logs, warn level, automatic rotation
-- **Test**: Error level only
-
-### 2. Log Levels
-- `debug`: Detailed debugging information (development only)
-- `info`: General information about application behavior  
-- `warn`: Warning messages that may indicate issues
-- `error`: Error conditions that should be investigated
-
-### 3. Security Features
-- **Automatic Redaction**: Sensitive fields like passwords, tokens, API keys are automatically redacted
-- **Secure Log Storage**: Production logs are stored with restricted permissions (750)
-- **Log Rotation**: Daily rotation with 7-day retention, 10MB size limit per file
-
-### 4. Production Log Management
-- **Location**: `/var/log/docbase/` (configurable via `LOG_DIR` env var)
-- **Rotation**: Daily rotation, 7 days retention
-- **Size Limit**: 10MB per log file
-- **Permissions**: 750 (read/write for owner, read for group)
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `NODE_ENV` | `development` | Environment mode |
-| `LOG_LEVEL` | Auto-detected | Override log level |
-| `LOG_DIR` | `/var/log/docbase` | Log directory for production |
-
-## Usage
-
-### Server-Side Logging
-```typescript
-import { logger } from '@/lib/logger'
-
-logger.info('User action completed', { userId, action })
-logger.error('Database error', { error, query })
-logger.warn('Rate limit approaching', { userId, requests })
+### Development (Readable Format)
 ```
-
-### Client-Side Logging
-```typescript
-import { clientLogger } from '@/lib/client-logger'
-
-clientLogger.error('API request failed', { status, url })
-clientLogger.info('User interaction', { component, action })
-```
-
-## Deployment Setup
-
-### 1. Create Log Directory
-```bash
-sudo mkdir -p /var/log/docbase
-sudo chown -R $USER:$USER /var/log/docbase
-sudo chmod 750 /var/log/docbase
-```
-
-### 2. Set Environment Variables
-```bash
-export NODE_ENV=production
-export LOG_LEVEL=warn
-export LOG_DIR=/var/log/docbase
-```
-
-### 3. Log Monitoring
-Consider implementing log monitoring solutions like:
-- ELK Stack (Elasticsearch, Logstash, Kibana)
-- Grafana Loki
-- Cloud logging services (AWS CloudWatch, GCP Cloud Logging)
-
-## Log Format
-
-### Development
-```
-[2024-01-15 10:30:45] INFO: User logged in
-    userId: "abc123"
-    ip: "192.168.1.1"
-```
-
-### Production
-```json
-{
-  "level": "info",
-  "time": "2024-01-15T15:30:45.123Z",
-  "pid": 12345,
-  "hostname": "app-server-01",
-  "service": "docbase",
-  "msg": "User logged in",
+[2024-01-15T10:30:45.123Z] INFO: User logged in {
   "userId": "abc123",
   "ip": "192.168.1.1"
 }
 ```
 
-## Migration from console.log
-
-All console.log/console.error statements have been replaced with structured logging:
-
-- ✅ 59 console statements replaced across 23 files
-- ✅ API routes use server-side logger
-- ✅ React components use client-side logger  
-- ✅ Automatic environment variable validation
-- ✅ Removed all dummy key fallbacks
-
-## Troubleshooting
-
-### Log Directory Permission Issues
-```bash
-sudo chown -R www-data:www-data /var/log/docbase
-sudo chmod -R 750 /var/log/docbase
+### Production (JSON Format)  
+```json
+{"timestamp":"2024-01-15T10:30:45.123Z","level":"info","message":"User logged in","service":"docbase","userId":"abc123","ip":"192.168.1.1"}
 ```
 
-### Log Rotation Not Working
-Check if the application has write permissions to the log directory and sufficient disk space.
+## Usage
 
-### High Log Volume
-Adjust log level in production:
-```bash
-export LOG_LEVEL=error  # Only log errors
+### Server-Side (API routes, pages)
+```typescript
+import { logger } from '@/lib/logger'
+
+// Simple message
+logger.info('User action completed')
+
+// With metadata
+logger.error('Database connection failed', { 
+  userId: '123', 
+  database: 'payments',
+  error: error.message 
+})
+
+// Sensitive data automatically redacted
+logger.debug('User credentials', { 
+  username: 'john',
+  password: 'secret123'  // -> '[REDACTED]'
+})
 ```
+
+### Client-Side (React components)
+```typescript
+import { clientLogger } from '@/lib/client-logger'
+
+clientLogger.error('API request failed', { 
+  url: '/api/users', 
+  status: 500 
+})
+```
+
+## Log Levels
+
+| Environment | Default Level | What Gets Logged |
+|-------------|---------------|------------------|
+| development | debug | All messages (debug, info, warn, error) |
+| production  | warn  | Only warnings and errors |
+| test        | error | Only errors |
+
+Override with: `LOG_LEVEL=info`
+
+## Security Features
+
+**Automatic Secret Redaction:**
+- `password`, `token`, `api_key`, `apiKey`, `secret`, `key`
+- Any field containing these terms gets replaced with `[REDACTED]`
+
+```typescript
+logger.info('Payment processed', {
+  amount: 100,
+  apiKey: 'sk_live_123',     // -> '[REDACTED]'
+  userToken: 'token_456'     // -> '[REDACTED]'
+})
+```
+
+## Production Benefits
+
+### 1. Monitoring Integration
+Production logs are JSON formatted, making them easy to:
+- Parse with log aggregators (ELK, Splunk, DataDog)
+- Search and filter by fields
+- Set up automated alerts
+
+### 2. Performance
+- Log level filtering prevents unnecessary logging in production
+- No external dependencies = faster startup
+- Still uses native console methods = no performance overhead
+
+### 3. Debugging
+Structured metadata makes production debugging much easier:
+```typescript
+// Instead of: console.log("Error in payment for user 123")
+logger.error('Payment processing failed', {
+  userId: '123',
+  amount: 99.99,
+  paymentMethod: 'credit_card',
+  errorCode: 'CARD_DECLINED',
+  transactionId: 'txn_abc123'
+})
+```
+
+## Migration Summary
+
+**Before (59+ scattered console statements):**
+```javascript
+console.log("User login successful")
+console.error("Payment failed:", error)
+console.log("Processing order for", userId, "amount:", amount)
+```
+
+**After (Structured logging):**
+```typescript
+logger.info('User login successful', { userId, loginMethod })
+logger.error('Payment processing failed', { userId, amount, error: error.message })
+logger.info('Order processing started', { userId, amount, orderId })
+```
+
+## Implementation Details
+
+- **86 lines of code** - Simple, maintainable
+- **No runtime dependencies** - Zero impact on bundle size
+- **Environment detection** - Automatically adjusts behavior
+- **Type safe** - Full TypeScript support
+- **Same API everywhere** - One logger for all files
+
+## Quick Setup
+
+1. Import and use:
+```typescript
+import { logger } from '@/lib/logger'
+logger.info('Hello production!')
+```
+
+2. Set log level (optional):
+```bash
+export LOG_LEVEL=warn
+```
+
+3. That's it! 🎉
+
+This approach gives you 80% of the benefits of complex logging solutions with 20% of the complexity.
