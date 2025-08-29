@@ -1,61 +1,20 @@
 import { NextResponse } from 'next/server';
 import { Resend } from "resend"
-import { z } from "zod"
 import { createClient } from "@/utils/supabase/server"
 import { NewEmailTemplate } from "@/components/templates/new-email"
 import { logger } from "@/lib/logger"
-
-// Temporary: More permissive validation for debugging
-const sendEmailSchema = z.object({
-  to: z.union([z.string(), z.array(z.string())]).refine((val) => {
-    // Allow any non-empty string or array of non-empty strings
-    if (Array.isArray(val)) {
-      return val.length > 0 && val.every(email => typeof email === 'string' && email.length > 0)
-    }
-    return typeof val === 'string' && val.length > 0
-  }, {
-    message: "Must be a non-empty string or array of non-empty strings"
-  }),
-  subject: z.string().min(1),
-  emailBody: z.string().min(1),
-  domainName: z.string().min(1),
-  senderName: z.string().min(1),
-})
 export async function POST(req: Request) {
   try {
     const body = await req.json()
     
-    // Debug logging to understand the request structure
-    logger.info('Send email request received', {
-      bodyKeys: Object.keys(body),
-      toType: typeof body.to,
-      toValue: body.to,
-      subjectType: typeof body.subject,
-      emailBodyType: typeof body.emailBody,
-      domainNameType: typeof body.domainName,
-      senderNameType: typeof body.senderName,
-    })
+    // Basic input validation without complex schemas
+    const { to, subject, emailBody, domainName, senderName } = body
     
-    // Temporary: Skip validation for debugging
-    // const validationResult = sendEmailSchema.safeParse(body)
-    // if (!validationResult.success) {
-    //   logger.error('Validation failed for send-email', {
-    //     errors: validationResult.error.errors,
-    //     receivedData: body
-    //   })
-    //   return NextResponse.json(
-    //     { 
-    //       error: "Invalid input", 
-    //       details: validationResult.error.errors,
-    //       receivedFields: Object.keys(body),
-    //       debug: "Check server logs for detailed validation errors"
-    //     },
-    //     { status: 400 }
-    //   )
-    // }
-    
-    // Extract data directly without validation
-    let { to, subject, emailBody, domainName, senderName } = body
+    // Simple existence checks
+    if (!to || !subject || !emailBody || !domainName || !senderName) {
+      logger.error('Missing required fields in send-email request', { receivedFields: Object.keys(body) })
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
 
     // Get authenticated user and their domain/API key from server-side
     const supabase = createClient()

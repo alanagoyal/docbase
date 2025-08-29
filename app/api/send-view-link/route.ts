@@ -2,13 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { validate as isUuid } from 'uuid';
 import { Resend } from 'resend';
-import { z } from 'zod';
 import { logger } from '@/lib/logger';
-
-const sendViewLinkSchema = z.object({
-  email: z.string().email(),
-  linkId: z.string().uuid(),
-})
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://build-placeholder.supabase.co';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'build-placeholder';
@@ -28,18 +22,19 @@ const resend = new Resend(resendApiKey);
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const { email, linkId } = await request.json();
 
-    // Validate input
-    const validationResult = sendViewLinkSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: validationResult.error.errors },
-        { status: 400 }
-      )
+    // Basic validation
+    if (!email || !linkId) {
+      logger.error('Missing required fields in send-view-link request', { email: !!email, linkId: !!linkId });
+      return NextResponse.json({ error: 'Email and linkId are required' }, { status: 400 });
     }
 
-    const { email, linkId } = validationResult.data
+    // Validate UUID format
+    if (!isUuid(linkId)) {
+      logger.error('Invalid UUID format for linkId', { linkId });
+      return NextResponse.json({ error: 'Invalid linkId format' }, { status: 400 });
+    }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
     if (!siteUrl) {
