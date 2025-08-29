@@ -236,6 +236,8 @@ export function MessageForm({
             styles={selectStyles}
             components={customComponents}
             onKeyDown={handleKeyDown}
+            createOptionPosition="first"
+            formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
           />
         </div>
       )}
