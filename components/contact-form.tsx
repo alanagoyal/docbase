@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
 import { getColorForGroup } from "@/utils/group-colors"
 import { v4 as uuidv4 } from 'uuid';
+import { clientLogger } from "@/lib/client-logger"
 
 const memberFormSchema = z.object({
   email: z
@@ -86,7 +87,7 @@ export function ContactForm({
       .single();
 
     if (error) {
-      console.error("Error creating group:", error);
+      clientLogger.error('Error creating group', { error });
       toast({
         description: "Failed to create new group. Please try again.",
         variant: "destructive",
@@ -186,7 +187,7 @@ export function ContactForm({
       if (onSuccess) onSuccess() 
       router.refresh()
     } catch (error) {
-      console.error("Error adding/updating contact:", error)
+      clientLogger.error('Error adding/updating contact', { error })
       toast({
         description: "An error occurred. Please try again.",
         variant: "destructive",

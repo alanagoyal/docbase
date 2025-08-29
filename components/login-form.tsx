@@ -24,6 +24,7 @@ import { Input } from "./ui/input"
 import { toast } from "./ui/use-toast"
 import { Icons } from "./icons"
 import { useState } from "react"
+import { clientLogger } from "@/lib/client-logger"
 
 export interface LoginFormData {
   email: string
@@ -67,7 +68,7 @@ export function LoginForm({ login }: LoginFormProps) {
         })
       }
     } catch (error) {
-      console.error("Login failed:", error)
+      clientLogger.error('Login failed', { error })
       toast({
         title: "Login failed",
         description: "An unexpected error occurred. Please try again later.",

@@ -3,15 +3,16 @@ import { NextResponse } from 'next/server';
 import { validate as isUuid } from 'uuid';
 import { Resend } from 'resend';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 const sendViewLinkSchema = z.object({
   email: z.string().email(),
   linkId: z.string().uuid(),
 })
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'dummy-service-role-key';
-const resendApiKey = process.env.RESEND_API_KEY || 'dummy-resend-key';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://build-placeholder.supabase.co';
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'build-placeholder';
+const resendApiKey = process.env.RESEND_API_KEY || 'build-placeholder';
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: {
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
     if (!siteUrl) {
-      console.error('NEXT_PUBLIC_SITE_URL is not defined');
+      logger.error('NEXT_PUBLIC_SITE_URL is not defined');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
@@ -57,12 +58,12 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      console.error('Supabase error:', error);
+      logger.error('Supabase error', { error });
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     if (!data || !data.properties || !data.properties.action_link) {
-      console.error('No action link generated');
+      logger.error('No action link generated');
       return NextResponse.json({ error: 'Failed to generate link' }, { status: 500 });
     }
 
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
     });
 
     if (emailError) {
-      console.error('Resend error:', emailError);
+      logger.error('Resend error', { error: emailError });
       return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
     }
 
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error', { error });
     return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
   }
 }

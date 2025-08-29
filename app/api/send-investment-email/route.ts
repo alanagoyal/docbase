@@ -1,7 +1,9 @@
 import { Resend } from "resend"
 import { EmailTemplate } from "@/components/templates/email-investment"
+import { logger } from "@/lib/logger"
 
-const resend = new Resend(process.env.RESEND_API_KEY || 'dummy-key-for-build')
+const resendApiKey = process.env.RESEND_API_KEY || 'build-placeholder';
+const resend = new Resend(resendApiKey);
 
 export async function POST(req: Request) {
   const body = await req.json()

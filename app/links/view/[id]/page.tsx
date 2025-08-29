@@ -1,6 +1,7 @@
 import { Metadata } from "next"
 import Link from "next/link"
 import { createClient } from "@/utils/supabase/server"
+import { logger } from "@/lib/logger"
 
 import { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
@@ -51,7 +52,7 @@ export default async function Doc({ params }: { params: { id: string } }) {
     .single()
 
   if (accountError) {
-    console.error("accountError", accountError)
+    logger.error('Account error', { accountError })
   }
 
   const { data: link } = (await supabase

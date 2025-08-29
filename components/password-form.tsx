@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
+import { clientLogger } from "@/lib/client-logger"
 
 type PasswordFormValues = {
   password: string
@@ -70,7 +71,7 @@ export default function PasswordTabContent() {
 
       toast({ description: "Password saved!" })
     } catch (error) {
-      console.error(error)
+      clientLogger.error('Failed to set password', { error })
       toast({
         description:
           error instanceof Error ? error.message : "Failed to set password",

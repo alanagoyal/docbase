@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
+import { clientLogger } from "@/lib/client-logger"
 
 const linkFormSchema = z.object({
   email: z
@@ -75,7 +76,7 @@ export default function ViewLinkForm({
         if (link.url) {
           window.open(link.url, "_blank")
         } else {
-          console.error("Link URL is null")
+          clientLogger.error('Link URL is null')
         }
         setShowProgressBar(false)
       }, duration)
@@ -140,7 +141,7 @@ export default function ViewLinkForm({
         })
       }
     } catch (error: any) {
-      console.error("Error in onSubmit:", error)
+      clientLogger.error('Error in onSubmit', { error })
       toast({
         title: "Error",
         description: error.message || "An unexpected error occurred",

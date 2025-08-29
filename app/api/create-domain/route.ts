@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { logger } from '@/lib/logger';
 
 export async function POST(req: Request) {
   const { domainName, apiKey } = await req.json();
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ id: createResult.data?.id });
   } catch (error: any) {
-    console.error('Error creating domain:', error);
+    logger.error('Error creating domain', { error, domainName });
 
     // If the domain is already registered, fetch the list of domains and return the existing domain
     if (error.statusCode === 403 && error.name === 'validation_error' && error.message.includes('has been registered already')) {

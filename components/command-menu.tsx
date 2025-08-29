@@ -17,6 +17,7 @@ import { Moon, Sun } from "lucide-react";
 import { VisuallyHidden } from "./ui/visually-hidden";
 import { menuItems } from "@/config/user-nav";
 import { mainNavItems } from "@/config/main-nav";
+import { clientLogger } from "@/lib/client-logger";
 
 const isTyping = () => {
   const activeElement = document.activeElement;
@@ -44,7 +45,7 @@ export function CommandMenu() {
   const handleSignOut = async () => {
     const supabase = createClient();
     const { error } = await supabase.auth.signOut();
-    if (error) console.error(error);
+    if (error) clientLogger.error('Sign out error', { error });
     router.push("/login");
     router.refresh();
   };

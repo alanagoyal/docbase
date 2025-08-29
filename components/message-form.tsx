@@ -19,6 +19,7 @@ import { toast } from "./ui/use-toast"
 import "react-quill/dist/quill.snow.css"
 import "@/styles/quill-custom.css"
 import { isValidEmail } from "@/utils/validation"
+import { clientLogger } from "@/lib/client-logger"
 
 type Group = { value: string; label: string; color: string }
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & {
@@ -160,7 +161,7 @@ export function MessageForm({
 
       if (!response.ok) {
         const errorData = await response.json()
-        console.error("Error response:", errorData)
+        clientLogger.error('Error response', { errorData })
         throw new Error(errorData.error || "Failed to send email")
       }
 
@@ -177,7 +178,7 @@ export function MessageForm({
         .select()
 
       if (messageError) {
-        console.error("Error inserting message into database:", messageError)
+        clientLogger.error('Error inserting message into database', { messageError })
         throw new Error("Failed to save message in database")
       }
 
@@ -196,7 +197,7 @@ export function MessageForm({
       )
 
       if (userUpdateError) {
-        console.error("Error updating user's messages array:", userUpdateError)
+        clientLogger.error('Error updating user messages array', { userUpdateError })
         // Consider whether you want to throw an error here or just log it
       }
 
@@ -206,7 +207,7 @@ export function MessageForm({
 
       onClose()
     } catch (error) {
-      console.error("Error sending email:", error)
+      clientLogger.error('Error sending email', { error })
       toast({
         variant: "destructive",
         description: `Failed to send email: ${

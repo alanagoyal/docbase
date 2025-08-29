@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Switch } from "./ui/switch"
 import { toast } from "./ui/use-toast"
+import { clientLogger } from "@/lib/client-logger"
 
 const linkFormSchema = z
   .object({
@@ -105,7 +106,7 @@ export default function LinkForm({
         file,
       })
     } else {
-      console.error("Error: No file selected and no existing link")
+      clientLogger.error('No file selected and no existing link')
     }
   }
 
@@ -208,7 +209,7 @@ export default function LinkForm({
       router.push("/links")
       router.refresh()
     } catch (error) {
-      console.error(error);
+      clientLogger.error('Error saving link', { error });
       toast({
         description: "An error occurred while saving the link",
         variant: "destructive",

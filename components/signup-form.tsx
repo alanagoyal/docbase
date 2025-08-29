@@ -27,6 +27,7 @@ import { Input } from "./ui/input"
 import { ToastAction } from "./ui/toast"
 import { toast } from "./ui/use-toast"
 import { useState } from "react"
+import { clientLogger } from "@/lib/client-logger"
 
 export interface SignupFormData {
   email: string
@@ -74,7 +75,7 @@ export function SignupForm({ signup }: SignupFormProps) {
       const response = await signup(data)
       if (response && !response.success) {
         if (response.errorMessage === "User already registered") {
-          console.error(response.errorMessage)
+          clientLogger.error('User already registered', { errorMessage: response.errorMessage })
           toast({
             title: "Account already exists",
             description: "Please sign in or sign up with another email",
@@ -100,7 +101,7 @@ export function SignupForm({ signup }: SignupFormProps) {
         })
       }
     } catch (error) {
-      console.error("Sign up failed:", error)
+      clientLogger.error('Sign up failed', { error })
       toast({
         title: "Sign up failed",
         description: "An unexpected error occurred. Please try again later.",

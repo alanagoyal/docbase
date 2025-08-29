@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { isTyping } from "@/utils/is-typing"
 import Link from 'next/link'
+import { clientLogger } from "@/lib/client-logger"
 
 type Message = Database["public"]["Tables"]["messages"]["Row"]
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
@@ -99,7 +100,7 @@ export function MessagesTable({
       .eq('id', messageId)
 
     if (error) {
-      console.error('Error deleting message:', error)
+      clientLogger.error('Error deleting message', { error })
       toast({
         variant: 'destructive',
         title: 'Failed to delete message',

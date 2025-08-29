@@ -44,6 +44,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip"
+import { clientLogger } from "@/lib/client-logger"
 
 type Contact = Database["public"]["Tables"]["contacts"]["Row"] & {
   groups: Group[]
@@ -162,7 +163,7 @@ export function ContactsTable({
         router.refresh()
       }
     } catch (error) {
-      console.error("Error deleting contact:", error)
+      clientLogger.error('Error deleting contact', { error })
       toast({
         title: "Error",
         description:

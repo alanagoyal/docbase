@@ -2,8 +2,10 @@ import { Resend } from "resend"
 import { z } from "zod"
 import { EmailTemplate } from "@/components/templates/email-form"
 import { Database } from "@/types/supabase"
+import { logger } from "@/lib/logger"
 
-const resend = new Resend(process.env.RESEND_API_KEY || 'dummy-key-for-build')
+const resendApiKey = process.env.RESEND_API_KEY || 'build-placeholder';
+const resend = new Resend(resendApiKey);
 
 const sendFormEmailSchema = z.object({
   name: z.string().min(1).max(100),

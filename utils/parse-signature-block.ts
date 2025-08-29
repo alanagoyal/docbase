@@ -1,6 +1,7 @@
 "use client"
 
-import { toast } from "@/components/ui/use-toast" 
+import { toast } from "@/components/ui/use-toast"
+import { clientLogger } from "@/lib/client-logger" 
 
 export async function parseSignatureBlock(file: File): Promise<{
   entity_name?: string
@@ -25,7 +26,7 @@ export async function parseSignatureBlock(file: File): Promise<{
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("API Error:", errorText)
+      clientLogger.error('API Error', { status: response.status, errorText })
       throw new Error(`Failed to parse signature block: ${response.status} ${errorText}`)
     }
 
@@ -41,7 +42,7 @@ export async function parseSignatureBlock(file: File): Promise<{
 
     return data
   } catch (error) {
-    console.error("Error in parseSignatureBlock:", error)
+    clientLogger.error('Error in parseSignatureBlock', { error })
     throw error
   }
 }

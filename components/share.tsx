@@ -25,6 +25,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "./ui/form"
 import { Input } from "./ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { toast } from "./ui/use-toast"
+import { clientLogger } from "@/lib/client-logger"
 
 type User = Database["public"]["Tables"]["users"]["Row"]
 
@@ -67,7 +68,7 @@ export function Share({
           variant: "destructive",
           description: "Unable to copy to clipboard",
         })
-        console.error("Unable to copy text: ", err)
+        clientLogger.error('Unable to copy text', { error: err })
       })
   }
 
@@ -135,7 +136,7 @@ export function Share({
       onOpenChange(false)
       onEmailSent()
     } catch (error) {
-      console.error(error)
+      clientLogger.error('Failed to process request', { error })
       toast({
         variant: "destructive",
         title: "Error",

@@ -1,5 +1,6 @@
 import { invoke, initLogger, wrapTraced } from "braintrust";
 import { NextResponse } from 'next/server';
+import { logger } from "@/lib/logger";
 
 initLogger({
   projectName: "docbase",
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error("Error in API route:", error);
+    logger.error('Error in API route', { error });
     return NextResponse.json({ error: error }, { status: 500 });
   }
 }
@@ -32,7 +33,7 @@ const handleRequest = wrapTraced(async function handleRequest(base64Image: strin
     });
     return result;
   } catch (error) {
-    console.error("Error in handleRequest:", error);
+    logger.error('Error in handleRequest', { error });
     throw error;
   }
 });
