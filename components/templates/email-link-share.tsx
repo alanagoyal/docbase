@@ -29,7 +29,7 @@ export const EmailLinkShareTemplate: React.FC<Readonly<EmailLinkShareProps>> = (
     <br />
     {message && (
       <>
-        <p><em>"{message}"</em></p>
+        <p><em>&ldquo;{message}&rdquo;</em></p>
         <br />
       </>
     )}
