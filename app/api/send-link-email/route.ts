@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       .from('links')
       .select('*')
       .eq('id', linkId)
-      .eq('user_id', user.id)
+      .eq('created_by', user.id)
       .single()
 
     if (linkError || !link) {
