@@ -53,6 +53,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // First, let's check if the link exists at all
+    const { data: linkCheck, error: linkCheckError } = await supabase
+      .from('links')
+      .select('*')
+      .eq('id', linkId)
+      .single()
+
+    logger.info('Link check result', { linkId, linkExists: !!linkCheck, linkCheckError })
+
+    if (linkCheck) {
+      logger.info('Link details', { 
+        linkId, 
+        createdBy: linkCheck.created_by, 
+        userId: user.id, 
+        idsMatch: linkCheck.created_by === user.id 
+      })
+    }
+
     // Get the link details and verify ownership
     const { data: link, error: linkError } = await supabase
       .from('links')
@@ -62,7 +80,13 @@ export async function POST(req: Request) {
       .single()
 
     if (linkError || !link) {
-      logger.error('Link not found or unauthorized', { linkId, userId: user.id })
+      logger.error('Link not found or unauthorized', { 
+        linkId, 
+        userId: user.id, 
+        linkError,
+        linkExists: !!linkCheck,
+        linkCreatedBy: linkCheck?.created_by 
+      })
       return NextResponse.json({ error: 'Link not found or unauthorized' }, { status: 404 })
     }
 
