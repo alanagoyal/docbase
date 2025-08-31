@@ -138,18 +138,26 @@ export function ShareLinkModal({
         })
         .slice(0, 50)
 
+      const requestData = {
+        to,
+        linkId: link.id,
+        message: message || undefined,
+        domainName: domain.domain_name,
+        senderName: domain.sender_name,
+      }
+
+      clientLogger.info('Sending link email request', { 
+        requestData,
+        linkId: link.id,
+        linkObject: link
+      })
+
       const response = await fetch("/api/send-link-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          to,
-          linkId: link.id,
-          message: message || undefined,
-          domainName: domain.domain_name,
-          senderName: domain.sender_name,
-        }),
+        body: JSON.stringify(requestData),
       })
 
       if (!response.ok) {

@@ -53,42 +53,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // First, let's check if the link exists at all
-    const { data: linkCheck, error: linkCheckError } = await supabase
-      .from('links')
-      .select('*')
-      .eq('id', linkId)
-      .single()
+    // Get the user's links using the same RPC function as the page
+    const { data: userLinks, error: userLinksError } = await supabase.rpc("get_user_links_with_views", {
+      id_arg: user.id,
+    })
 
-    logger.info('Link check result', { linkId, linkExists: !!linkCheck, linkCheckError })
-
-    if (linkCheck) {
-      logger.info('Link details', { 
-        linkId, 
-        createdBy: linkCheck.created_by, 
-        userId: user.id, 
-        idsMatch: linkCheck.created_by === user.id 
-      })
+    if (userLinksError) {
+      logger.error('Error fetching user links', { error: userLinksError, userId: user.id })
+      return NextResponse.json({ error: 'Failed to fetch user links' }, { status: 500 })
     }
 
-    // Get the link details and verify ownership
-    const { data: link, error: linkError } = await supabase
-      .from('links')
-      .select('*')
-      .eq('id', linkId)
-      .eq('created_by', user.id)
-      .single()
+    // Find the specific link
+    const link = userLinks?.find((l: any) => l.id === linkId)
 
-    if (linkError || !link) {
+    if (!link) {
       logger.error('Link not found or unauthorized', { 
         linkId, 
         userId: user.id, 
-        linkError,
-        linkExists: !!linkCheck,
-        linkCreatedBy: linkCheck?.created_by 
+        userLinksCount: userLinks?.length || 0,
+        availableLinkIds: userLinks?.map((l: any) => l.id) || []
       })
       return NextResponse.json({ error: 'Link not found or unauthorized' }, { status: 404 })
     }
+
+    logger.info('Link found successfully', { linkId, userId: user.id, linkFilename: link.filename })
 
     // Get user details for sender info
     const { data: sender, error: senderError } = await supabase
