@@ -8,6 +8,7 @@ import { MenuIcon } from "lucide-react"
 import { isTyping } from "@/utils/is-typing"
 
 import { Database } from "@/types/supabase"
+import { ShareLinkModal } from "./share-link-modal"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -36,10 +37,23 @@ type User = Database["public"]["Tables"]["users"]["Row"]
 type Link = Database["public"]["Tables"]["links"]["Row"] & {
   view_count: number
 }
+type Contact = Database["public"]["Tables"]["contacts"]["Row"] & { groups: Group[] }
+type Domain = Database["public"]["Tables"]["domains"]["Row"]
+type Group = { value: string; label: string; color: string }
 
-export function Links({ links, account }: { links: Link[]; account: User }) {
+interface LinksProps {
+  links: Link[]
+  account: User
+  contacts: Contact[]
+  groups: Group[]
+  domain: Domain | null
+}
+
+export function Links({ links, account, contacts, groups, domain }: LinksProps) {
   const supabase = createClient()
   const router = useRouter()
+  const [shareModalOpen, setShareModalOpen] = useState(false)
+  const [selectedLink, setSelectedLink] = useState<Link | null>(null)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -78,6 +92,11 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
       description: "Your link has been deleted",
     })
     router.refresh()
+  }
+
+  const handleShareLink = (link: Link) => {
+    setSelectedLink(link)
+    setShareModalOpen(true)
   }
 
   const formatDate = (dateString: string | null) => {
@@ -158,6 +177,9 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
                       <DropdownMenuItem>
                         <Link href={`/links/edit/${link.id}`}>Edit</Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleShareLink(link)}>
+                        Email
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => deleteLink(link.id)}>
                         Delete
                       </DropdownMenuItem>
@@ -169,6 +191,21 @@ export function Links({ links, account }: { links: Link[]; account: User }) {
           </TableBody>
         </Table>
       </div>
+      
+      {selectedLink && (
+        <ShareLinkModal
+          link={selectedLink}
+          account={account}
+          domain={domain}
+          contacts={contacts}
+          groups={groups}
+          isOpen={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false)
+            setSelectedLink(null)
+          }}
+        />
+      )}
     </TooltipProvider>
   )
 }
