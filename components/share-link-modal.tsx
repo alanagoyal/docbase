@@ -204,7 +204,7 @@ export function ShareLinkModal({
               styles={selectStyles}
               components={customComponents}
               createOptionPosition="first"
-              formatCreateLabel={(inputValue) => `Add &ldquo;${inputValue}&rdquo;`}
+              formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
             />
           </div>
           
