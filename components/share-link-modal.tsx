@@ -56,13 +56,13 @@ export function ShareLinkModal({
       const isEmail = "isEmail" in props.data && props.data.isEmail
       return (
         <div
-          className="flex items-center gap-1 m-1 px-2 py-1 rounded text-white text-sm"
+          className="m-1 flex items-center gap-1 rounded px-2 py-1 text-sm text-white"
           style={{
             backgroundColor: isEmail ? "#6b7280" : props.data.color,
           }}
         >
           {children}
-          <span {...removeProps} className="cursor-pointer hover:opacity-75 ml-1">
+          <span {...removeProps} className="ml-1 cursor-pointer hover:opacity-75">
             ×
           </span>
         </div>
@@ -187,7 +187,7 @@ export function ShareLinkModal({
         <DialogHeader>
           <DialogTitle>Share Link</DialogTitle>
           <DialogDescription>
-            Share "{link.filename}" with others via email
+            Share &ldquo;{link.filename}&rdquo; with others via email
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
@@ -204,7 +204,7 @@ export function ShareLinkModal({
               styles={selectStyles}
               components={customComponents}
               createOptionPosition="first"
-              formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
+              formatCreateLabel={(inputValue) => `Add &ldquo;${inputValue}&rdquo;`}
             />
           </div>
           
@@ -227,9 +227,9 @@ export function ShareLinkModal({
               disabled={isSharing}
             >
               {isSharing ? (
-                <Icons.spinner className="h-4 w-4 animate-spin mr-2" />
+                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Mail className="h-4 w-4 mr-2" />
+                <Mail className="mr-2 h-4 w-4" />
               )}
               Share Link
             </Button>

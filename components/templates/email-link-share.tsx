@@ -60,7 +60,7 @@ export const EmailLinkShareTemplate: React.FC<Readonly<EmailLinkShareProps>> = (
     </p>
     <br />
     <p style={{ fontSize: '12px', color: '#666' }}>
-      If you're having trouble clicking the button above, copy and paste this URL into your browser:<br />
+      If you&rsquo;re having trouble clicking the button above, copy and paste this URL into your browser:<br />
       <a href={linkUrl} style={{ color: '#007bff' }}>{linkUrl}</a>
     </p>
     <br />
