@@ -1,5 +1,7 @@
 # Docbase
 
+> **Status:** The hosted website is no longer live as of November 12, 2026. The source code remains available for reference and self-hosting.
+
 Docbase is an all-in-one Docsend alternative.
 
 ## Getting Started
